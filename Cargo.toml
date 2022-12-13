@@ -2,6 +2,9 @@
 name = "hedron"
 version = "0.1.0"
 edition = "2021"
+author = "feenster"
+description = "An all-in-one 3D modelling library"
+license = "MIT"
 
 [dependencies]
 glam = "0.22.0"
