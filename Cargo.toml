@@ -1,0 +1,17 @@
+[package]
+name = "hedron"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+glam = "0.22.0"
+bytemuck = "1.12.3"
+
+serde = "1.0.143"
+rand = "0.8.5"
+colored = {version = "2.0" }
+num-traits = "0.2.15"
+lazy_static = "1.4.0"
+
+bevy = { version = "0.9.0" } 
+bevy-inspector-egui = { version = "0.14.0" }
