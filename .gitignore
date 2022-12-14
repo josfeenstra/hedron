@@ -1,1 +1,5 @@
 /target
+
+# this should never be created. Hedron must be used within the same workspace.
+# see https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html
+/Cargo.lock
