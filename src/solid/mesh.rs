@@ -269,7 +269,7 @@ impl Mesh {
 mod test {
     use super::Mesh;
     use glam::vec3;
-    use std::{fs, io::Write};
+    use std::io::Write;
 
     #[test]
     fn write_some_obj() {
