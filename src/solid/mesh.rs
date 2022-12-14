@@ -29,7 +29,7 @@ impl Mesh {
     //   .      .      .
     //  ( ) .. ( ) .. ( )
     // ```
-    pub fn new_weave(width: usize, verts: Grid2<Option<(Vec3, Vec2)>>) -> Mesh {
+    pub fn new_weave(verts: Grid2<Option<(Vec3, Vec2)>>) -> Mesh {
         let mut mesh = Mesh::default();
 
         // add all verts, and dummy zero vectors at zero spots
@@ -51,8 +51,7 @@ impl Mesh {
 
         // add triangles by lacing patches
         for i in 0..verts.size() {
-            let x = i % width;
-            let y = i / width;
+            let (x, y) = verts.to_xy(i);
 
             if x == 0 || y == 0 {
                 continue;
@@ -60,8 +59,8 @@ impl Mesh {
 
             let ia = i;
             let ib = i - 1;
-            let ic = i - width;
-            let id = i - 1 - width;
+            let ic = i - verts.width;
+            let id = i - 1 - verts.width;
 
             let a = verts.get_unsafe(ia);
             let b = verts.get_unsafe(ib);

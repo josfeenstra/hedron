@@ -69,12 +69,18 @@ impl<T: Clone + Copy + Default> Grid2<T> {
     // }
 
     #[inline]
-    fn to_index(&self, x: usize, y: usize) -> Option<usize> {
+    pub fn to_index(&self, x: usize, y: usize) -> Option<usize> {
         if x >= self.width || y >= self.height {
             None
         } else {
             Some((y as usize * self.width) + x as usize)
         }
+    }
+
+    pub fn to_xy(&self, i: usize) -> (usize, usize) {
+        let x = i % self.width;
+        let y = i / self.width;
+        (x, y)
     }
 
     pub fn get_column(&self, x: usize) -> Vec<T> {
@@ -91,6 +97,10 @@ impl<T: Clone + Copy + Default> Grid2<T> {
             v[x] = self.get(x, y).unwrap();
         }
         v
+    }
+
+    pub fn iter_xy<'a>(&'a self) -> impl Iterator<Item = (usize, usize)> + 'a {
+        (0..self.width).flat_map(|x| (0..self.height).map(move |y| (x, y)))
     }
 
     // fn to_coord(&self, i: usize) -> (i32, i32) {
