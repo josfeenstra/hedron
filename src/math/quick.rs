@@ -5,6 +5,7 @@ use glam::Vec3;
 use num_traits::float::Float;
 use std::f32::consts::FRAC_PI_2;
 use std::f32::consts::PI;
+use std::ops::Range;
 
 /// TODO add this to a vector / points area when we get it
 /// convert a spherical coordinate to a cartesian one
@@ -175,4 +176,16 @@ pub fn bounce_out(mut t: f32) -> f32 {
 #[inline]
 pub fn smooth(t: f32) -> f32 {
     t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
+}
+
+pub fn normalize(t: f32, range: &Range<f32>) -> f32 {
+    (t - range.start) / (range.end - range.start)
+}
+
+pub fn remap(t: f32, from: &Range<f32>, to: &Range<f32>, clamped: bool) -> f32 {
+    let mut norm = normalize(t, from);
+    if clamped {
+        norm = f32::clamp(norm, 0.0, 1.0);
+    }
+    lerp(norm, to.start, to.end)
 }
