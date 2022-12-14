@@ -1,19 +1,141 @@
-use glam::{Vec2, Vec3};
+use std::io::Write;
+
+use glam::{vec2, vec3, Vec2, Vec3};
+
+use crate::data::Grid2;
 
 #[derive(Default)]
 pub struct Mesh {
     pub verts: Vec<Vec3>,
-    pub uvs: Option<Vec<Vec2>>,
+    pub uvs: Vec<Vec2>,
     pub tri: Vec<usize>,
 }
 
 impl Mesh {
-    pub fn new(verts: Vec<Vec3>, tri: Vec<usize>) -> Self {
-        Self {
-            verts,
-            tri,
-            uvs: None,
+    pub fn new(verts: Vec<Vec3>, tri: Vec<usize>, uvs: Vec<Vec2>) -> Self {
+        Self { verts, tri, uvs }
+    }
+
+    // Get a grid mesh from weaving vertices of a grid.
+    // The grid can deal with holes, use None vertices to indicate holes
+    // We do this by finding 'valid cells' of 4 vertices, and lacing them like this:
+    // Corners of 3 vertices are also created.
+    // ```
+    //  (d)----(c) .. ( )
+    //   |  \   |      .
+    //   |   \  |      .
+    //  (b)----(a) .. ( )
+    //   .      .      .
+    //   .      .      .
+    //  ( ) .. ( ) .. ( )
+    // ```
+    pub fn new_weave(width: usize, verts: Grid2<Option<(Vec3, Vec2)>>) -> Mesh {
+        let mut mesh = Mesh::default();
+
+        // add all verts, and dummy zero vectors at zero spots
+        for x in 0..verts.width {
+            for y in 0..verts.height {
+                let res = verts.get(x, y).unwrap();
+                match res {
+                    Some((pos, uv)) => {
+                        mesh.verts.push(pos);
+                        mesh.uvs.push(uv);
+                    }
+                    None => {
+                        mesh.verts.push(vec3(0., 0., 0.));
+                        mesh.uvs.push(vec2(0., 0.));
+                    }
+                }
+            }
         }
+
+        // add triangles by lacing patches
+        for i in 0..verts.size() {
+            let x = i % width;
+            let y = i / width;
+
+            if x == 0 || y == 0 {
+                continue;
+            }
+
+            let ia = i;
+            let ib = i - 1;
+            let ic = i - width;
+            let id = i - 1 - width;
+
+            let a = verts.get_unsafe(ia);
+            let b = verts.get_unsafe(ib);
+            let c = verts.get_unsafe(ic);
+            let d = verts.get_unsafe(id);
+
+            // do some bitmask checking to get corner triangles
+            // there is no elegant way to do this,
+            // since we have to get the triangle counter-clockwise direction right
+            if a.is_some() && b.is_some() && c.is_some() && d.is_some() {
+                mesh.tri.append(&mut vec![ia, id, ib]);
+                mesh.tri.append(&mut vec![ia, ic, id]);
+            } else if a.is_some() && b.is_some() && c.is_some() {
+                mesh.tri.append(&mut vec![ia, ic, ib]);
+            } else if a.is_some() && b.is_some() && d.is_some() {
+                mesh.tri.append(&mut vec![ia, id, ib]);
+            } else if a.is_some() && c.is_some() && d.is_some() {
+                mesh.tri.append(&mut vec![ia, ic, id]);
+            } else if b.is_some() && c.is_some() && d.is_some() {
+                mesh.tri.append(&mut vec![ib, ic, id]);
+            }
+        }
+
+        // TODO clean away all unused vertices
+        // return mesh.to_clean();
+        mesh
+    }
+
+    //
+    pub fn new_diamonds(points: Vec<Vec3>, size: f32) -> Mesh {
+        let mut meshes = Vec::new();
+        for point in points {
+            meshes.push(Mesh::new_diamond(point, size))
+        }
+        Mesh::from_join(meshes)
+    }
+
+    pub fn new_diamond(center: Vec3, size: f32) -> Mesh {
+        let mut mesh = Mesh::default();
+
+        mesh.verts
+            .push(Vec3::new(center.x + size, center.y, center.z));
+        mesh.verts
+            .push(Vec3::new(center.x - size, center.y, center.z));
+        mesh.verts
+            .push(Vec3::new(center.x, center.y + size, center.z));
+        mesh.verts
+            .push(Vec3::new(center.x, center.y - size, center.z));
+        mesh.verts
+            .push(Vec3::new(center.x, center.y, center.z + size));
+        mesh.verts
+            .push(Vec3::new(center.x, center.y, center.z - size));
+
+        mesh.tri.append(&mut vec![
+            4, 0, 2, 4, 2, 1, 4, 1, 3, 4, 3, 0, 5, 2, 0, 5, 1, 2, 5, 3, 1, 5, 0, 3,
+        ]);
+
+        mesh
+    }
+
+    // simple join, not taking common verts into account
+    pub fn from_join(meshes: Vec<Mesh>) -> Mesh {
+        let mut mesh = Mesh::default();
+
+        let mut vertcount = 0;
+        for mut other in meshes {
+            let length = other.verts.len();
+            mesh.verts.append(&mut other.verts);
+            mesh.tri
+                .append(&mut other.tri.iter().map(|t| t + vertcount).collect());
+            vertcount += length;
+        }
+
+        mesh
     }
 
     pub fn get_triangles(&self) -> Vec<(usize, usize, usize)> {
@@ -34,5 +156,136 @@ impl Mesh {
             edges.push((c, a));
         }
         edges
+    }
+
+    pub fn to_clean(&self) -> Mesh {
+        // TODO: identify all vertices which are not references by any triangle,
+        // exclude them
+        // then update the triangle vertex pointers.
+        todo!();
+    }
+
+    pub fn write_obj(
+        &self,
+        path: &str,
+        name_obj: &str,
+        name_mtl: &str,
+        name_texture: &str,
+    ) -> Result<(), std::io::Error> {
+        let mat_name = "Material";
+
+        // both the texture and mtl should be in the same folder
+        let mtl = Mesh::gen_mtl_buffer(
+            "mtl generated by Sfered Scanner, written by Geodelta",
+            mat_name,
+            Some(name_texture),
+        )?;
+        let obj = self.gen_obj_buffer(
+            "obj generated by Sfered Scanner, written by Geodelta",
+            Some(mat_name),
+            Some(name_mtl),
+        )?;
+
+        let texture_path = path.to_owned() + name_texture;
+        let mtl_path = path.to_owned() + name_mtl;
+        let obj_path = path.to_owned() + name_obj;
+
+        let mut obj_file = std::fs::File::create(obj_path)?;
+        obj_file.write_all(&obj)?;
+        let mut mtl_path = std::fs::File::create(mtl_path)?;
+        mtl_path.write_all(&mtl)?;
+
+        // TODO write texture
+
+        Ok(())
+    }
+
+    pub fn gen_mtl_buffer(
+        header: &str,
+        mat_name: &str,
+        texture_path: Option<&str>,
+    ) -> Result<Vec<u8>, std::io::Error> {
+        let mut mtl = Vec::new();
+        writeln!(&mut mtl, "# {}", header)?;
+        writeln!(&mut mtl, "newmtl {}", mat_name)?;
+        writeln!(&mut mtl, "Ns 250.000000")?;
+        writeln!(&mut mtl, "Ka 1.000000 1.000000 1.000000")?;
+        writeln!(&mut mtl, "Kd 0.000000 0.000000 0.000000")?;
+        writeln!(&mut mtl, "Ks 0.000000 0.000000 0.000000")?;
+        writeln!(&mut mtl, "Ke 0.000000 0.000000 0.000000")?;
+        writeln!(&mut mtl, "Ni 1.450000")?;
+        writeln!(&mut mtl, "d 1.000000")?;
+        writeln!(&mut mtl, "illum 2")?;
+        if let Some(path) = texture_path {
+            writeln!(&mut mtl, "{}", format!("map_Ka {}", texture_path.unwrap()))?;
+            writeln!(&mut mtl, "{}", format!("map_Kd {}", texture_path.unwrap()))?;
+            writeln!(&mut mtl, "{}", format!("map_Ks {}", texture_path.unwrap()))?;
+        }
+        Ok(mtl)
+    }
+
+    pub fn gen_obj_buffer(
+        &self,
+        header: &str,
+        mat_name: Option<&str>,
+        mtl_path: Option<&str>,
+    ) -> Result<Vec<u8>, std::io::Error> {
+        let mut obj = Vec::new();
+        let o = &mut obj;
+
+        writeln!(o, "# {}", header)?;
+
+        if mtl_path.is_some() && mat_name.is_some() {
+            writeln!(o, "mtllib {}", mtl_path.unwrap())?;
+            writeln!(o, "usemtl {}", mat_name.unwrap())?;
+        }
+        for vert in self.verts.iter() {
+            writeln!(o, "v {} {} {}", vert.x, vert.y, vert.z)?;
+        }
+        for uv in self.uvs.iter() {
+            writeln!(o, "vt {} {}", uv.x, uv.y)?;
+        }
+
+        if self.uvs.len() == self.verts.len() {
+            println!("lala");
+            for (a, b, c) in self.get_triangles() {
+                let (a, b, c) = (a + 1, b + 1, c + 1);
+                writeln!(o, "f {a}/{a} {b}/{b} {c}/{c}")?;
+            }
+        } else {
+            for (a, b, c) in self.get_triangles() {
+                let (a, b, c) = (a + 1, b + 1, c + 1);
+                println!("f {a} {b} {c}");
+                writeln!(o, "f {a} {b} {c}")?;
+            }
+        }
+        Ok(obj)
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+#[cfg(test)]
+mod test {
+    use super::Mesh;
+    use glam::vec3;
+    use std::{fs, io::Write};
+
+    #[test]
+    fn write_some_obj() {
+        let mesh = Mesh::new_diamond(vec3(0.5, 0.5, 0.5), 1.333);
+
+        mesh.write_obj("../data-results/", "some.obj", "some.mtl", "some.png")
+            .expect("something went wrong!");
+    }
+
+    #[test]
+    fn write_file() {
+        let mut buffer = Vec::new();
+        writeln!(&mut buffer, "test").unwrap();
+        writeln!(&mut buffer, "formatted {}", "arguments").unwrap();
+
+        let mut file = std::fs::File::create("data.txt").expect("create failed");
+        file.write_all(&buffer).expect("write failed");
     }
 }

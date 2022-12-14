@@ -1,8 +1,8 @@
 use glam::IVec2;
 
 /**
- A grid data structure
- */
+A grid data structure
+*/
 pub struct Grid2<T> {
     pub width: usize,
     pub height: usize,
@@ -13,10 +13,13 @@ pub type Matrix = Grid2<f32>;
 
 // basic data methods
 impl<T: Clone + Copy + Default> Grid2<T> {
-
     pub fn new(width: usize, height: usize) -> Self {
         let items = vec![T::default(); width * height];
-        Self {width, height, items}
+        Self {
+            width,
+            height,
+            items,
+        }
     }
 
     #[inline]
@@ -43,8 +46,15 @@ impl<T: Clone + Copy + Default> Grid2<T> {
     }
 
     #[inline]
+    pub fn get_unsafe(&self, id: usize) -> T {
+        self.items[id]
+    }
+
+    #[inline]
     pub fn get_i32(&self, x: i32, y: i32) -> Option<T> {
-        if x < 0 || y < 0 { return None };
+        if x < 0 || y < 0 {
+            return None;
+        };
         let id = self.to_index(x as usize, y as usize)?;
         Some(self.items[id])
     }
@@ -71,7 +81,7 @@ impl<T: Clone + Copy + Default> Grid2<T> {
         let mut v = vec![T::default(); self.height];
         for y in 0..self.height {
             v[y] = self.get(x, y).unwrap();
-        }   
+        }
         v
     }
 
@@ -80,7 +90,7 @@ impl<T: Clone + Copy + Default> Grid2<T> {
         for x in 0..self.width {
             v[x] = self.get(x, y).unwrap();
         }
-        v      
+        v
     }
 
     // fn to_coord(&self, i: usize) -> (i32, i32) {
