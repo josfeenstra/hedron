@@ -22,6 +22,46 @@ impl<T: Clone + Copy + Default> Grid2<T> {
         }
     }
 
+    // ASSUMES a uniformly stacked Vec!!!
+    pub fn from_stacked_columns(stacked: Vec<Vec<T>>) -> Grid2<T> {
+        assert!(stacked.len() > 0);
+        Self {
+            width: stacked.len(),
+            height: stacked[0].len(),
+            items: stacked.into_iter().flatten().collect(),
+        }
+    }
+
+    pub fn from_stacked_rows(stacked: &Vec<Vec<T>>) -> Grid2<T> {
+        assert!(stacked.len() > 0);
+        let width = stacked[0].len();
+        let height = stacked.len();
+        let mut grid = Grid2::new(width, height);
+
+        for x in 0..width {
+            for y in 0..height {
+                grid.set(x, y, stacked[y][x]);
+            }
+        }
+
+        grid
+    }
+
+    pub fn from_stacked_rows_flipped(stacked: &Vec<Vec<T>>) -> Grid2<T> {
+        assert!(stacked.len() > 0);
+        let width = stacked.len();
+        let height = stacked[0].len();
+        let mut grid = Grid2::new(width, height);
+
+        for x in 0..width {
+            for y in 0..height {
+                grid.set(x, y, stacked[x][y]);
+            }
+        }
+
+        grid
+    }
+
     #[inline]
     pub fn size(&self) -> usize {
         self.width * self.height
@@ -100,10 +140,34 @@ impl<T: Clone + Copy + Default> Grid2<T> {
     }
 
     pub fn iter_xy<'a>(&'a self) -> impl Iterator<Item = (usize, usize)> + 'a {
-        (0..self.width).flat_map(|x| (0..self.height).map(move |y| (x, y)))
+        (0..self.height).flat_map(|y| (0..self.width).map(move |x| (x, y)))
     }
 
     // fn to_coord(&self, i: usize) -> (i32, i32) {
     //     ((i % self.width) as i32, (i / self.width) as i32)
     // }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Grid2;
+
+    #[test]
+    fn test_grid() {
+        let mut grid = Grid2::<f32>::new(4, 5);
+
+        assert_eq!(grid.to_xy(0), (0, 0));
+        assert_eq!(grid.to_xy(1), (1, 0));
+        assert_eq!(grid.to_xy(4), (0, 1));
+        assert_eq!(grid.to_xy(5), (1, 1));
+
+        assert_eq!(grid.to_index(0, 0), Some(0));
+        assert_eq!(grid.to_index(1, 0), Some(1));
+        assert_eq!(grid.to_index(0, 1), Some(4));
+        assert_eq!(grid.to_index(1, 1), Some(5));
+
+        // for (x, y) in grid.iter_xy() {
+        //     grid.set(x, y, grid.get(x, y).unwrap() + 2.0);
+        // }
+    }
 }
