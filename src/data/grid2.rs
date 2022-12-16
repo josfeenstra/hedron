@@ -154,7 +154,7 @@ mod tests {
 
     #[test]
     fn test_grid() {
-        let mut grid = Grid2::<f32>::new(4, 5);
+        let grid = Grid2::<f32>::new(4, 5);
 
         assert_eq!(grid.to_xy(0), (0, 0));
         assert_eq!(grid.to_xy(1), (1, 0));
