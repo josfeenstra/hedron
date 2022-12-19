@@ -19,3 +19,4 @@ lazy_static = "1.4.0"
 # TODO optional, non-default
 bevy = { version = "0.9.0" } 
 bevy-inspector-egui = { version = "0.14.0" }
+anyhow = "1.0.68"

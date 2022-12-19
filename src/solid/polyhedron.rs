@@ -1,5 +1,6 @@
 use super::Mesh;
 use crate::data::{Pool, Ptr};
+use anyhow::Result;
 use bevy_inspector_egui::egui::plot::Polygon;
 use glam::{vec3, Vec3};
 
@@ -29,7 +30,7 @@ pub struct Vert {
 // ```
 #[derive(Default, Debug)]
 pub struct HalfEdge {
-    pub to: VertPtr,
+    pub from: VertPtr,
     pub next: Option<EdgePtr>,
     pub twin: Option<EdgePtr>,
     pub face: Option<FacePtr>,
@@ -62,10 +63,10 @@ impl Polyhedron {
         let d: VertPtr = hedron.add_vert(vec3(0., 1., 0.));
 
         const UP: Vec3 = Vec3::Z;
-        hedron.add_edge_twins(a, b, &UP);
-        hedron.add_edge_twins(b, c, &UP);
-        hedron.add_edge_twins(c, d, &UP);
-        hedron.add_edge_twins(d, a, &UP);
+        hedron.add_edge_twins(a, b, &UP, &UP);
+        hedron.add_edge_twins(b, c, &UP, &UP);
+        hedron.add_edge_twins(c, d, &UP, &UP);
+        hedron.add_edge_twins(d, a, &UP, &UP);
 
         hedron
     }
@@ -128,7 +129,16 @@ impl Polyhedron {
         false
     }
 
-    pub fn add_edge_twins(&mut self, a: VertPtr, b: VertPtr, normal: &Vec3) -> Option<()> {
+    /// add two half edges between a and b, order doesnt matter.
+    /// We need a normal to determine disk ordering, when inserting
+    /// these half edges in the network of existing half edges
+    pub fn add_edge_twins(
+        &mut self,
+        a: VertPtr,
+        b: VertPtr,
+        a_normal: &Vec3,
+        b_normal: &Vec3,
+    ) -> Option<()> {
         // TODO add cases were one of the two does already exist
         // for now, quit if any one exist
         if self.has_half_edge(a, b) || self.has_half_edge(b, a) {
@@ -136,24 +146,25 @@ impl Polyhedron {
         }
 
         // build the edge twins
-        let to_a = self.edges.push(HalfEdge {
-            to: a,
+        let from_a = self.edges.push(HalfEdge {
+            from: a,
             next: None,
             twin: None,
             face: None,
         });
-        let to_b = self.edges.push(HalfEdge {
-            to: b,
+        let from_b = self.edges.push(HalfEdge {
+            from: b,
             next: None,
             twin: None,
             face: None,
         });
 
-        self.edges.get_mut(to_a)?.twin = Some(to_b);
-        self.edges.get_mut(to_b)?.twin = Some(to_a);
+        // set twin pointers
+        self.edges.get_mut(from_a)?.twin = Some(from_b);
+        self.edges.get_mut(from_b)?.twin = Some(from_a);
 
-        self.add_edge_to_disk(a, to_a)?;
-        self.add_edge_to_disk(b, to_b)?;
+        self.add_edge_to_vertex(from_a, a_normal);
+        self.add_edge_to_vertex(from_b, b_normal);
 
         Some(())
     }
@@ -164,31 +175,75 @@ impl Polyhedron {
         self.edges.delete(edge)
     }
 
+    /// TODO make the signature (vp: VertPtr, incoming vec, normal)
+    /// To show that we really dont do anything with the incoming edge pointer other than query things
+    fn get_disk_neighbors(&self, ep: EdgePtr, normal: &Vec3) -> Option<(EdgePtr, EdgePtr)> {
+        let edge = self.edges.get(ep)?;
+        let vert = self.verts.get(edge.from)?;
+        let disk_edges = self.get_disk(edge.from)?;
+
+        // TODO incoming vert
+
+        let incoming_edges = disk_edges
+            .iter()
+            .skip(1)
+            .step_by(2)
+            .map(|ep| self.edges.get(*ep).unwrap().twin.unwrap());
+
+        let neighbors = incoming_edges.map(|vp| self.verts.get(vp).unwrap().pos);
+
+        let nb_vecs = neighbors.map(|nb| nb - vert.pos);
+
+        // TODO do the actual ordering steps
+
+        // based on ordering, figure out which two edges need to be retuned (incoming and its neighbors)
+
+        todo!();
+    }
+
+    /// get the edges, lined as a disk around a vertex.
+    /// starts with the outgoing edge the vertex points to
+    fn get_disk(&self, vp: VertPtr) -> Option<Vec<EdgePtr>> {
+        let start = self.verts.get(vp)?.edge?;
+        let mut disk = Vec::new();
+        let mut cursor = start;
+        loop {
+            let outc = self.edges.get(cursor)?;
+            let inc = self.edges.get(outc.twin?)?;
+            disk.push(cursor);
+            disk.push(outc.twin?);
+            cursor = inc.next?;
+            if cursor == start {
+                break;
+            }
+        }
+        Some(disk)
+    }
+
     /// set the `next` property of a given edge by adding the edge to the conceptual 'disk' of a vertex
     /// set the `vert` property of a vertex to the first added edge
-    fn add_edge_to_disk(&mut self, vert_ptr: VertPtr, edge_ptr: EdgePtr) -> Option<()> {
-        let vert = self.verts.get_mut(vert_ptr)?;
-        let edge = self.edges.get_mut(edge_ptr)?;
-        let twin_ptr = edge.twin.expect("we are always working with twins for now");
-        let twin = self.edges.get_mut(twin_ptr)?;
+    fn add_edge_to_vertex(&mut self, ep: EdgePtr, normal: &Vec3) {
+        // pointer business
+        let ep_outwards = ep;
+        let e_outwards = self.edges.get_mut(ep).expect("ptr");
+        let vp = e_outwards.from;
+        let v = self.verts.get_mut(vp).expect("ptr");
+        let ep_inwards = e_outwards
+            .twin
+            .expect("we should always have a twin at this point.");
+        let e_inwards = self.edges.get_mut(ep_inwards).expect("ptr");
 
-        if vert.edge.is_none() {
-            vert.edge = Some(edge_ptr);
-            edge.next = Some(twin_ptr)
-        } else if let Some(sm) = vert.edge {
-        }
+        if v.edge.is_none() {
+            // we are the first edge to be added to this vertex
+            v.edge = Some(ep);
+            e_inwards.next = Some(ep);
+        } else if let Some(disk_start) = v.edge {
+            let (ep_nb_inwards, ep_nb_outwards) = self.get_disk_neighbors(ep_outwards, normal);
+            let e_nb_inwards = self.edges.get_mut(ep_nb_inwards).expect("ptr");
 
-        if (v.edge == -1) {
-            // set two pointers:
-            v.edge = ei; // I am the vertex's first edge
-            twin.next = ei; // that means my twin points back to me
-        } else {
-            let [ei_before, ei_after] = this.getDiskPositions(ei);
-            let [e_before, e_after] = [this.getEdge(ei_before), this.getEdge(ei_after)];
-
-            // set two pointers:
-            this.getEdge(e_before.twin).next = ei;
-            twin.next = this.getEdgeIndex(e_after);
+            // e_nb_inwards
+            e_inwards.next = Some(ep_nb_outwards);
+            e_nb_inwards.next = Some(ep_outwards);
         }
     }
 
