@@ -32,20 +32,20 @@ pub struct Face {
 /// Desprite the name, the model can also be used as a planar partition.
 /// It all depends on the normals used to determine the edge ordering around a vertex
 #[derive(Default, Debug)]
-pub struct Hedron {
+pub struct Polyhedron {
     verts: Pool<Vert>, // disk operations should present a normal to orient around within the function itself. It should not be stored
     edges: Pool<HalfEdge>,
     faces: Pool<Face>, // TODO implement faces later!
 }
 
-impl Hedron {
+impl Polyhedron {
     pub fn new() -> Self {
-        Hedron::default()
+        Polyhedron::default()
     }
 
     /// The triangle orientation of the mesh must be consistent!
     pub fn from_mesh(mesh: &Mesh) -> Self {
-        let mut hedron = Hedron::new();
+        let mut hedron = Polyhedron::new();
 
         for vert in mesh.verts.iter() {
             hedron.add_vert(*vert);
@@ -106,12 +106,12 @@ impl Hedron {
 
 #[cfg(test)]
 mod tests {
-    use crate::solid::Hedron;
+    use crate::solid::Polyhedron;
     use glam::{vec3, Vec3};
 
     #[test]
     fn hedron() {
-        let mut hedron = Hedron::new();
+        let mut hedron = Polyhedron::new();
         let a = hedron.add_vert(vec3(1.0, 0.0, 0.0));
         let b = hedron.add_vert(vec3(1.0, 1.0, 0.0));
         let c = hedron.add_vert(vec3(0.0, 0.0, 1.0));
