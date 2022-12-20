@@ -1,7 +1,9 @@
-use glam::Vec3;
-use bevy_inspector_egui::egui::plot::Polygon;
 use super::Mesh;
-use crate::data::{Ptr, Pool};
+use crate::{
+    data::{Pool, Ptr},
+    planar::Polygon,
+};
+use glam::Vec3;
 
 pub type VertPtr = Ptr;
 pub type EdgePtr = Ptr;
@@ -27,8 +29,8 @@ pub struct Face {
 }
 
 /// A polyhedron model.
-/// Desprite the name, the model can also be used as a planar partition. 
-/// It all depends on the normals used to determine the edge ordering around a vertex 
+/// Desprite the name, the model can also be used as a planar partition.
+/// It all depends on the normals used to determine the edge ordering around a vertex
 #[derive(Default, Debug)]
 pub struct Hedron {
     verts: Pool<Vert>, // disk operations should present a normal to orient around within the function itself. It should not be stored
@@ -37,15 +39,14 @@ pub struct Hedron {
 }
 
 impl Hedron {
-
     pub fn new() -> Self {
         Hedron::default()
     }
 
-    /// The triangle orientation of the mesh must be consistent! 
+    /// The triangle orientation of the mesh must be consistent!
     pub fn from_mesh(mesh: &Mesh) -> Self {
         let mut hedron = Hedron::new();
-        
+
         for vert in mesh.verts.iter() {
             hedron.add_vert(*vert);
         }
@@ -54,7 +55,7 @@ impl Hedron {
             let (a, b, c) = (
                 hedron.get_vert(ia).unwrap(),
                 hedron.get_vert(ib).unwrap(),
-                hedron.get_vert(ic).unwrap()
+                hedron.get_vert(ic).unwrap(),
             );
             // get triangle normal
             // normal
@@ -64,8 +65,7 @@ impl Hedron {
             // hedron.add_edge(a, b, normal);
         }
 
-
-        hedron 
+        hedron
     }
 
     fn get_faces(&self) -> Vec<Polygon> {
@@ -74,9 +74,9 @@ impl Hedron {
     }
 
     /////////////////////////////////////////////////////////////// Transactions
-    
+
     fn add_vert(&mut self, pos: Vec3) -> VertPtr {
-        self.verts.push(Vert {pos, edge: None}) as VertPtr
+        self.verts.push(Vert { pos, edge: None }) as VertPtr
     }
 
     fn get_vert(&self, vert: VertPtr) -> Option<&Vert> {
@@ -84,12 +84,12 @@ impl Hedron {
     }
 
     fn delete_vert(&mut self, vert: VertPtr) {
-        // 1. delete all edges having to do with this vert 
+        // 1. delete all edges having to do with this vert
         // 2. delete the vert
         self.verts.delete(vert);
     }
 
-    // NOTE: A - B is a different half edge than B - A. 
+    // NOTE: A - B is a different half edge than B - A.
     fn has_half_edge(&self, a: VertPtr, b: VertPtr) -> bool {
         false
     }
@@ -99,30 +99,25 @@ impl Hedron {
         // self.edges.push(HalfEdge { });
     }
 
-    fn delete_edge(&mut self, ) {
-
-    }
+    fn delete_edge(&mut self) {}
 
     /////////////////////////////////////////////////////////////// Movement
-    
-
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{solid::Hedron};
+    use crate::solid::Hedron;
     use glam::{vec3, Vec3};
-
 
     #[test]
     fn hedron() {
         let mut hedron = Hedron::new();
-        let a = hedron.add_vert(vec3(1.0,0.0,0.0));
-        let b = hedron.add_vert(vec3(1.0,1.0,0.0));
-        let c = hedron.add_vert(vec3(0.0,0.0,1.0));
-        assert_eq!(a , 0);
-        assert_eq!(b , 1);
-        assert_eq!(c , 2);
+        let a = hedron.add_vert(vec3(1.0, 0.0, 0.0));
+        let b = hedron.add_vert(vec3(1.0, 1.0, 0.0));
+        let c = hedron.add_vert(vec3(0.0, 0.0, 1.0));
+        assert_eq!(a, 0);
+        assert_eq!(b, 1);
+        assert_eq!(c, 2);
 
         const UP: Vec3 = Vec3::Z;
         let p = hedron.add_half_edge(a, b, &UP);
@@ -132,5 +127,3 @@ mod tests {
         println!("{:?}", hedron);
     }
 }
-
-
