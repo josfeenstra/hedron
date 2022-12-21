@@ -34,9 +34,9 @@ pub struct Vert {
 #[derive(Default, Debug)]
 pub struct HalfEdge {
     pub from: VertPtr,
-    pub next: Option<EdgePtr>,
-    pub twin: Option<EdgePtr>,
-    pub face: Option<FacePtr>,
+    pub next: EdgePtr, // edge always has a next
+    pub twin: EdgePtr, // in our case, edge always has a twin. optional twins comes later TODO
+    pub face: Option<FacePtr>, // not every loop is filled
 }
 
 #[derive(Default, Debug)]
@@ -108,7 +108,7 @@ impl Polyhedron {
         hedron
     }
 
-    /////////////////////////////////////////////////////////////// Getting
+    /////////////////////////////////////////////////////////////// Getting Geometry
 
     pub fn get_loops_as_faces(&self) -> Vec<Polygon> {
         // traverse all faces, construct polygon faces from them
@@ -119,6 +119,13 @@ impl Polyhedron {
         self.verts.iter().map(|v| v.pos).collect()
     }
 
+    
+    fn get_edge_verts(&self, ep: EdgePtr) -> (Vec3, Vec3) {
+        let e = self.edge(ep);
+        let t = self.edge(e.twin);
+        (self.vert(e.from).pos, self.vert(t.from).pos)
+    }
+
     pub fn get_all_debug_lines(&self) -> Vec<Vec3> {
         todo!()
     }
@@ -127,11 +134,19 @@ impl Polyhedron {
     
     // this is not a very rusty way of doing things, but come on, I need some progress :)
 
-    fn edge(&mut self, ep: EdgePtr) -> &mut HalfEdge {
+    fn edge(&self, ep: EdgePtr) -> &HalfEdge {
+        self.edges.get(ep).expect("edge ptr not found!")
+    }
+    
+    fn vert(&self, vp: VertPtr) -> &Vert {
+        self.verts.get(vp).expect("vert ptr not found!")
+    }
+
+    fn mut_edge(&mut self, ep: EdgePtr) -> &mut HalfEdge {
         self.edges.get_mut(ep).expect("edge ptr not found!")
     }
     
-    fn vert(&mut self, vp: VertPtr) -> &mut Vert {
+    fn mut_vert(&mut self, vp: VertPtr) -> &mut Vert {
         self.verts.get_mut(vp).expect("vert ptr not found!")
     }
 
@@ -145,6 +160,14 @@ impl Polyhedron {
         false
     }
 
+    fn delete_edge(&mut self, edge: EdgePtr) {
+        // remove references to this edge
+
+        self.edges.delete(edge)
+    }
+
+    /////////////////////////////////////////////////////////////// Complex Transactions 
+
     /// add two half edges between a and b, order doesnt matter.
     /// We need a normal to determine disk ordering, when inserting
     /// these half edges in the network of existing half edges
@@ -155,59 +178,56 @@ impl Polyhedron {
         a_normal: &Vec3,
         b_normal: &Vec3,
     ) -> Option<()> {
-        // TODO add cases were one of the two does already exist
-        // for now, quit if any one exist
-        if self.has_half_edge(a, b) || self.has_half_edge(b, a) {
+        let Some((from_a, from_b)) = self.add_dangling_twins(a, b) else {
             return None;
-        }
-
-        // build the edge twins
-        let from_a = self.edges.push(HalfEdge {
-            from: a,
-            next: None,
-            twin: None,
-            face: None,
-        });
-        let from_b = self.edges.push(HalfEdge {
-            from: b,
-            next: None,
-            twin: None,
-            face: None,
-        });
-
-        // set twin pointers
-        self.edges.get_mut(from_a)?.twin = Some(from_b);
-        self.edges.get_mut(from_b)?.twin = Some(from_a);
-
+        };
         self.add_edge_to_vertex(from_a, a_normal);
         self.add_edge_to_vertex(from_b, b_normal);
 
         Some(())
     }
 
-    fn delete_edge(&mut self, edge: EdgePtr) {
-        // remove references to this edge
-
-        self.edges.delete(edge)
+    // build the edge twins themselves
+    // initialize them fully correct, but only pointing to each other
+    // does not fire when this edge already exists
+    fn add_dangling_twins(&mut self, a: VertPtr, b: VertPtr) -> Option<(EdgePtr, EdgePtr)> {
+        
+        // TODO add cases were one of the two does already exist
+        // for now, quit if any one exist
+        if self.has_half_edge(a, b) || self.has_half_edge(b, a) {
+            return None;
+        }
+        
+        // we only know the 'from_b array' after adding both, so start as 0
+        let from_a: EdgePtr = self.edges.push(HalfEdge {
+            from: a,
+            next: 0, 
+            twin: 0,
+            face: None,
+        });
+        let from_b = self.edges.push(HalfEdge {
+            from: b,
+            next: from_a,
+            twin: from_a,
+            face: None,
+        });
+        let a = self.mut_edge(from_a);
+        a.twin = from_b;
+        a.next = from_b;
+        
+        Some((from_a, from_b))
     }
 
-    /// TODO make the signature (vp: VertPtr, incoming vec, normal)
-    /// To show that we really dont do anything with the incoming edge pointer other than query things
-    fn get_disk_neighbors(&self, ep: EdgePtr, normal: &Vec3) -> Option<(EdgePtr, EdgePtr)> {
-        let edge = self.edges.get(ep)?;
-        let vert = self.verts.get(edge.from)?;
-        let disk_edges = self.get_disk(edge.from)?;
-
-        // TODO incoming vert
-
+    fn get_disk_neighbors(&self, vp: VertPtr, incoming: &Vec3, normal: &Vec3) -> (EdgePtr, EdgePtr) {
+        let vert = self.vert(vp);
+        let disk_edges = self.get_disk(vp);
         let incoming_edges = disk_edges
             .iter()
             .skip(1)
             .step_by(2)
-            .map(|ep| self.edges.get(*ep).unwrap().twin.unwrap());
+            .map(|ep| self.edge(*ep).twin);
 
-        let neighbors = incoming_edges.map(|vp| self.verts.get(vp).unwrap().pos);
-
+        let neighbors = incoming_edges.map(|vp| self.vert(vp).pos);
         let nb_vecs = neighbors.map(|nb| nb - vert.pos);
 
         // TODO do the actual ordering steps
@@ -219,22 +239,25 @@ impl Polyhedron {
 
     /// get the edges, lined as a disk around a vertex.
     /// starts with the outgoing edge the vertex points to
-    fn get_disk(&self, vp: VertPtr) -> Option<Vec<EdgePtr>> {
-        let start = self.verts.get(vp)?.edge?;
+    fn get_disk(&self, vp: VertPtr) -> Vec<EdgePtr> {
+        let Some(start) = self.vert(vp).edge else {
+            return Vec::new();
+        };
         let mut disk = Vec::new();
         let mut cursor = start;
         loop {
-            let outc = self.edges.get(cursor)?;
-            let inc = self.edges.get(outc.twin?)?;
+            let outc = self.edge(cursor);
+            let inc = self.edge(outc.twin);
             disk.push(cursor);
-            disk.push(outc.twin?);
-            cursor = inc.next?;
+            disk.push(outc.twin);
+            cursor = inc.next;
             if cursor == start {
                 break;
             }
         }
-        Some(disk)
+        disk
     }
+
 
     /// set the `next` property of a given edge by adding the edge to the conceptual 'disk' of a vertex
     /// set the `vert` property of a vertex to the first added edge
@@ -242,17 +265,21 @@ impl Polyhedron {
         // pointer business
         let ep_outwards = ep;
         let vp = self.edge(ep).from;
-        let ep_inwards = self.edge(ep).twin.expect("should have twin");
-        let v = self.vert(vp);
+        let ep_inwards = self.edge(ep).twin;
+        let v = self.mut_vert(vp);
         if v.edge.is_none() {
             // we are the first edge to be added to this vertex
             v.edge = Some(ep);
-            self.edge(ep_inwards).next = Some(ep);
+            self.mut_edge(ep_inwards).next = ep;
         } else if let Some(disk_start) = v.edge {
-            let (ep_nb_inwards, ep_nb_outwards) = self.get_disk_neighbors(ep_outwards, normal).unwrap();
+
+            // ep_outwards
+            let (from, to) = self.get_edge_verts(ep);
+            let incoming = to - from;
+            let (ep_nb_inwards, ep_nb_outwards) = self.get_disk_neighbors(vp, &incoming, normal);
             
-            self.edge(ep_inwards).next = Some(ep_nb_outwards);
-            self.edge(ep_nb_inwards).next = Some(ep_outwards);
+            self.mut_edge(ep_inwards).next = ep_nb_outwards;
+            self.mut_edge(ep_nb_inwards).next = ep_outwards;
         }
     }
 
