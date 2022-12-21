@@ -226,13 +226,13 @@ impl Polyhedron {
             .skip(1)
             .step_by(2);
 
-        let neighbors = incoming_edges.map(|vp| self.vert(vp).pos);
+        let neighbors = incoming_edges.map(|vp| self.vert(*vp).pos);
         let nb_vecs = neighbors.map(|nb| nb - vert.pos);
 
         // TODO do the actual ordering steps
         // TODO we must do it like we did before, I have thought about it and there really is no other option
         // define a sphere using the normal and the first incoming edge, and caclulate angles
-        // this really is an angles issue. we need a 'signed dot product '
+        // this really is an angles issue. we need a 'signed dot product'
 
         // based on ordering, figure out which two edges need to be retuned (incoming and its neighbors)
 
