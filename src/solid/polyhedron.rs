@@ -19,14 +19,17 @@ pub struct Vert {
 // THEN the face and next edge of this face is on the left side (leading to counter clockwise faces)
 // AND THEN the edge twin is on the right side:
 // ```
-//       (TO)
+// <===== ()
+//     
 // [next] /\     |
 //       /||\    |
 //        ||     |
-//        || - [twin]
-// [face] ||     |
+// [face] || - [twin]
+//        ||     |
 //        ||    \|/
 //        ||     V
+// 
+//       (TO)
 // ```
 #[derive(Default, Debug)]
 pub struct HalfEdge {
@@ -98,7 +101,7 @@ impl Polyhedron {
 
             // add half edges in accordance with this normal
             for [from, to] in vec![[ia, ib], [ib, ic], [ic, ia]] {
-                hedron.add_edge_twins(from, to, &face_normal);
+                hedron.add_edge_twins(from, to, &face_normal, &face_normal);
             }
         }
 
@@ -116,9 +119,22 @@ impl Polyhedron {
         self.verts.iter().map(|v| v.pos).collect()
     }
 
-    pub fn get_all_debug_lines(&self) -> Vec<Vec3> {}
+    pub fn get_all_debug_lines(&self) -> Vec<Vec3> {
+        todo!()
+    }
 
     /////////////////////////////////////////////////////////////// Transactions
+    
+    // this is not a very rusty way of doing things, but come on, I need some progress :)
+
+    fn edge(&mut self, ep: EdgePtr) -> &mut HalfEdge {
+        self.edges.get_mut(ep).expect("edge ptr not found!")
+    }
+    
+    fn vert(&mut self, vp: VertPtr) -> &mut Vert {
+        self.verts.get_mut(vp).expect("vert ptr not found!")
+    }
+
 
     fn add_vert(&mut self, pos: Vec3) -> VertPtr {
         self.verts.push(Vert { pos, edge: None }) as VertPtr
@@ -225,25 +241,18 @@ impl Polyhedron {
     fn add_edge_to_vertex(&mut self, ep: EdgePtr, normal: &Vec3) {
         // pointer business
         let ep_outwards = ep;
-        let e_outwards = self.edges.get_mut(ep).expect("ptr");
-        let vp = e_outwards.from;
-        let v = self.verts.get_mut(vp).expect("ptr");
-        let ep_inwards = e_outwards
-            .twin
-            .expect("we should always have a twin at this point.");
-        let e_inwards = self.edges.get_mut(ep_inwards).expect("ptr");
-
+        let vp = self.edge(ep).from;
+        let ep_inwards = self.edge(ep).twin.expect("should have twin");
+        let v = self.vert(vp);
         if v.edge.is_none() {
             // we are the first edge to be added to this vertex
             v.edge = Some(ep);
-            e_inwards.next = Some(ep);
+            self.edge(ep_inwards).next = Some(ep);
         } else if let Some(disk_start) = v.edge {
-            let (ep_nb_inwards, ep_nb_outwards) = self.get_disk_neighbors(ep_outwards, normal);
-            let e_nb_inwards = self.edges.get_mut(ep_nb_inwards).expect("ptr");
-
-            // e_nb_inwards
-            e_inwards.next = Some(ep_nb_outwards);
-            e_nb_inwards.next = Some(ep_outwards);
+            let (ep_nb_inwards, ep_nb_outwards) = self.get_disk_neighbors(ep_outwards, normal).unwrap();
+            
+            self.edge(ep_inwards).next = Some(ep_nb_outwards);
+            self.edge(ep_nb_inwards).next = Some(ep_outwards);
         }
     }
 
@@ -271,9 +280,9 @@ mod tests {
         assert_eq!(c, 2);
 
         const UP: Vec3 = Vec3::Z;
-        let p = ph.add_edge_twins(a, b, &UP);
-        let p = ph.add_edge_twins(b, c, &UP);
-        let p = ph.add_edge_twins(c, a, &UP);
+        let p = ph.add_edge_twins(a, b, &UP, &UP);
+        let p = ph.add_edge_twins(b, c, &UP, &UP);
+        let p = ph.add_edge_twins(c, a, &UP, &UP);
 
         println!("{:?}", ph);
     }
