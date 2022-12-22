@@ -1,5 +1,5 @@
 use super::Mesh;
-use crate::data::{Pool, Ptr};
+use crate::{data::{Pool, Ptr}, math};
 use anyhow::Result;
 use bevy_inspector_egui::egui::plot::Polygon;
 use glam::{vec3, Vec3};
@@ -66,10 +66,10 @@ impl Polyhedron {
         let d: VertPtr = hedron.add_vert(vec3(0., 1., 0.));
 
         const UP: Vec3 = Vec3::Z;
-        hedron.add_edge_twins(a, b, &UP, &UP);
-        hedron.add_edge_twins(b, c, &UP, &UP);
-        hedron.add_edge_twins(c, d, &UP, &UP);
-        hedron.add_edge_twins(d, a, &UP, &UP);
+        hedron.add_edge_twins(a, b, UP, UP);
+        hedron.add_edge_twins(b, c, UP, UP);
+        hedron.add_edge_twins(c, d, UP, UP);
+        hedron.add_edge_twins(d, a, UP, UP);
 
         hedron
     }
@@ -101,7 +101,7 @@ impl Polyhedron {
 
             // add half edges in accordance with this normal
             for [from, to] in vec![[ia, ib], [ib, ic], [ic, ia]] {
-                hedron.add_edge_twins(from, to, &face_normal, &face_normal);
+                hedron.add_edge_twins(from, to, face_normal, face_normal);
             }
         }
 
@@ -175,8 +175,8 @@ impl Polyhedron {
         &mut self,
         a: VertPtr,
         b: VertPtr,
-        a_normal: &Vec3,
-        b_normal: &Vec3,
+        a_normal: Vec3,
+        b_normal: Vec3,
     ) -> Option<()> {
         let Some((from_a, from_b)) = self.add_dangling_twins(a, b) else {
             return None;
@@ -218,7 +218,7 @@ impl Polyhedron {
         Some((from_a, from_b))
     }
 
-    fn get_disk_neighbors(&self, vp: VertPtr, incoming: &Vec3, normal: &Vec3) -> (EdgePtr, EdgePtr) {
+    fn get_disk_neighbors(&self, vp: VertPtr, incoming: Vec3, normal: Vec3) -> (EdgePtr, EdgePtr) {
         let vert = self.vert(vp);
         let disk_edges: Vec<EdgePtr> = self.get_disk(vp);
         let incoming_edges = disk_edges
@@ -227,7 +227,9 @@ impl Polyhedron {
             .step_by(2);
 
         let neighbors = incoming_edges.map(|vp| self.vert(*vp).pos);
-        let nb_vecs = neighbors.map(|nb| nb - vert.pos);
+        let nb_vecs: Vec<Vec3> = neighbors.map(|nb| nb - vert.pos).collect();
+
+        let between = math::get_vectors_between(vert.pos, normal, nb_vecs, incoming);
 
         // TODO do the actual ordering steps
         // TODO we must do it like we did before, I have thought about it and there really is no other option
@@ -263,7 +265,7 @@ impl Polyhedron {
 
     /// set the `next` property of a given edge by adding the edge to the conceptual 'disk' of a vertex
     /// set the `vert` property of a vertex to the first added edge
-    fn add_edge_to_vertex(&mut self, ep: EdgePtr, normal: &Vec3) {
+    fn add_edge_to_vertex(&mut self, ep: EdgePtr, normal: Vec3) {
         // pointer business
         let ep_outwards = ep;
         let vp = self.edge(ep).from;
@@ -278,7 +280,7 @@ impl Polyhedron {
             // ep_outwards
             let (from, to) = self.get_edge_verts(ep);
             let incoming = to - from;
-            let (ep_nb_inwards, ep_nb_outwards) = self.get_disk_neighbors(vp, &incoming, normal);
+            let (ep_nb_inwards, ep_nb_outwards) = self.get_disk_neighbors(vp, incoming, normal);
             
             self.mut_edge(ep_inwards).next = ep_nb_outwards;
             self.mut_edge(ep_nb_inwards).next = ep_outwards;
@@ -309,9 +311,9 @@ mod tests {
         assert_eq!(c, 2);
 
         const UP: Vec3 = Vec3::Z;
-        let p = ph.add_edge_twins(a, b, &UP, &UP);
-        let p = ph.add_edge_twins(b, c, &UP, &UP);
-        let p = ph.add_edge_twins(c, a, &UP, &UP);
+        let p = ph.add_edge_twins(a, b, UP, UP);
+        let p = ph.add_edge_twins(b, c, UP, UP);
+        let p = ph.add_edge_twins(c, a, UP, UP);
 
         println!("{:?}", ph);
     }
