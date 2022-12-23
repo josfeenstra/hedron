@@ -1,6 +1,6 @@
 // some vector math, I don't know where else to put it
 // Anytime a function askes for a normal, you MUST provide an actually normalized vector!
-use glam::{Vec3, Vec2};
+use glam::{Vec3};
 use std::f32::consts::TAU;
 
 /// A simple but awesome operation to cheaply 'flatten' a point onto a plane.

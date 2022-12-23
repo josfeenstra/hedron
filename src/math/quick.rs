@@ -178,10 +178,18 @@ pub fn smooth(t: f32) -> f32 {
     t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
 }
 
+#[inline]
 pub fn normalize(t: f32, range: &Range<f32>) -> f32 {
     (t - range.start) / (range.end - range.start)
 }
 
+/// same as lerp, but using a Range
+#[inline]
+pub fn interpolate(t: f32, range: &Range<f32>) -> f32 {
+    range.start + t * (range.end - range.start)
+}
+
+#[inline]
 pub fn remap(t: f32, from: &Range<f32>, to: &Range<f32>, clamped: bool) -> f32 {
     let mut norm = normalize(t, from);
     if clamped {
