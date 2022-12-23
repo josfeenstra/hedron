@@ -1,6 +1,7 @@
-use bevy::{prelude::*, render::render_resource::PrimitiveTopology};
+use bevy::{prelude::*, render::{render_resource::PrimitiveTopology, mesh::Indices}};
 
 use crate::{
+    solid::{Mesh as HMesh, Polyhedron},
     core::Pose,
     lines::{Bezier, LineList, LineStrip},
     planar::Polygon,
@@ -8,6 +9,20 @@ use crate::{
 };
 
 // make sure we can easily translate hedron types to bevy types
+
+impl From<HMesh> for Mesh {
+    fn from(hmesh: HMesh) -> Self {
+        let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
+        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, 
+            Points::new(hmesh.verts).to_vec_of_arrays());
+        mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, 
+            hmesh.uvs.iter().map(|v| v.to_array()).collect::<Vec<[f32; 2]>>());
+        mesh.set_indices(Some(Indices::U32(
+            hmesh.tri.iter().map(|v| *v as u32).collect())));
+        mesh
+    }
+}
+
 impl From<Points> for Mesh {
     fn from(points: Points) -> Self {
         let mut mesh = Mesh::new(PrimitiveTopology::PointList);
@@ -85,6 +100,12 @@ impl From<LineStrip> for Mesh {
 
 impl From<Polygon> for Mesh {
     fn from(p: Polygon) -> Self {
-        Mesh::from(LineStrip::from(p))
+        HMesh::from(p).into()
+    }
+}
+
+impl From<Polyhedron> for Mesh {
+    fn from(p: Polyhedron) -> Self {
+        HMesh::from_join(p.polygon_faces().iter().map(|p|).collect()).into()
     }
 }

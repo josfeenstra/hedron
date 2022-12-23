@@ -164,7 +164,8 @@ impl Polyhedron {
 
     /////////////////////////////////////////////////////////////// Getting Geometry
 
-    pub fn get_loops_as_faces(&self) -> Vec<Polygon> {
+    /// convert to polygon faces
+    pub fn polygon_faces(&self) -> Vec<Polygon> {
         // traverse all faces, construct polygon faces from them
 
         // TODO this is what we need now!!!
