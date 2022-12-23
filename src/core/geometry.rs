@@ -4,7 +4,49 @@ use super::Pose;
 
 // the core of a 'transformable thing',
 // impl Geometry to give an object access to quick methods of transformation
+
+/// If some geometry is ultimately defined in terms of points, 
+/// A whole set of common functionalities can be used to transform said geometry:
+/// TODO smooth
+//  scramble 
+//  scale from
+
+/// If a Geometry is NOT purely defined by points, 
+/// reimplement the mv, rot, scale, and scale_u operators.
 pub trait Geometry: Sized {
+
+    // fn mutate_points<'a>(&'a mut self) -> &'a mut Vec<Vec3>;
+
+    // fn mv(mut self, mv: &Vec3) -> Self {
+    //     for v in self.mutate_points() {
+    //         *v = *v + *mv;
+    //     }
+    //     self
+    // }
+
+    // fn rot(mut self, rot: &glam::Quat) -> Self {
+    //     for v in self.mutate_points() {
+    //         *v = *rot * *v;
+    //     }
+    //     self
+    // }
+
+    // fn scale(mut self, scale: &Vec3) -> Self {
+    //     for v in self.mutate_points() {
+    //         *v = *scale * *v;
+    //     }
+    //     self
+    // }
+
+    // fn scale_u(mut self, scale: f32) -> Self {
+    //     for v in self.mutate_points() {
+    //         v.x *= scale;
+    //         v.y *= scale;
+    //         v.z *= scale;
+    //     }
+    //     self
+    // }
+
     fn mv(self, mv: &Vec3) -> Self;
 
     fn rot(self, rot: &Quat) -> Self;

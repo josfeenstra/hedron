@@ -2,7 +2,7 @@ use std::io::Write;
 
 use glam::{vec2, vec3, Vec2, Vec3};
 
-use crate::data::Grid2;
+use crate::{data::Grid2, core::{PointBased}};
 
 #[derive(Default, Debug)]
 pub struct Mesh {
@@ -257,27 +257,46 @@ impl Mesh {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+impl PointBased for Mesh {
+    fn mutate_points<'a>(&'a mut self) -> Vec<&'a mut Vec3> {
+        self.verts.iter_mut().collect()
+    }
+}
+
+
 #[cfg(test)]
 mod test {
     use super::Mesh;
     use glam::vec3;
     use std::io::Write;
+    use crate::core::Geometry;
 
     #[test]
     fn write_some_obj() {
         let mesh = Mesh::new_diamond(vec3(0.5, 0.5, 0.5), 1.333);
-
+        
         mesh.write_obj_mtl("../data-results/", "some.obj", "some.mtl", "some.png")
-            .expect("something went wrong!");
+        .expect("something went wrong!");
     }
-
+    
     #[test]
     fn write_file() {
         let mut buffer = Vec::new();
         writeln!(&mut buffer, "test").unwrap();
         writeln!(&mut buffer, "formatted {}", "arguments").unwrap();
-
+        
         let mut file = std::fs::File::create("data.txt").expect("create failed");
         file.write_all(&buffer).expect("write failed");
     }
+    
+    #[test]
+    fn transform_mesh() {
+        let mut mesh = Mesh::new_diamond(vec3(0.5, 0.5, 0.5), 0.5);
+        mesh = mesh.mv(&-vec3(0.5, 0.5, 0.5));
+        mesh = mesh.scale_u(2.0);
+        assert_eq!(mesh.verts, vec![vec3(1.0, 0.0, 0.0), vec3(-1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), 
+            vec3(0.0, -1.0, 0.0), vec3(0.0, 0.0, 1.0), vec3(0.0, 0.0, -1.0)]);
+    }
+
+
 }

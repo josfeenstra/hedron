@@ -106,6 +106,6 @@ impl From<Polygon> for Mesh {
 
 impl From<Polyhedron> for Mesh {
     fn from(p: Polyhedron) -> Self {
-        HMesh::from_join(p.polygon_faces().iter().map(|p|).collect()).into()
+        HMesh::from_join(p.polygon_faces().iter().map(|p| p.triangulate_naive()).collect()).into()
     }
 }

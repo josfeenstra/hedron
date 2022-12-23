@@ -2,7 +2,7 @@ use super::Mesh;
 use crate::{
     data::{Pool, Ptr},
     math,
-    planar::Polygon,
+    planar::Polygon, core::PointBased,
 };
 use glam::{vec3, Vec3};
 use std::collections::HashSet;
@@ -455,6 +455,13 @@ impl Polyhedron {
         todo!()
     }
 }
+
+impl PointBased for Polyhedron {
+    fn mutate_points<'a>(&'a mut self) -> Vec<&'a mut Vec3> {
+        self.verts.iter_mut().map(|v| &mut v.pos).collect()
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
