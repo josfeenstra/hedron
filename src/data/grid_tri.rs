@@ -2,18 +2,18 @@ use glam::IVec2;
 
 use crate::math::stack_sum;
 
-/// A triangular grid.
-/// Pattern utilized:
-///  ```
-///          column x
-///       0  1  2  3  4
-///      +--------------
-///  r 0 |0  1  3  6  10
-///  o 1 |   2  4  7  11
-///  w 2 |      5  8  12
-///    3 |         9  13
-///  y 4 |            14
-/// ```
+// A triangular grid.
+// Pattern utilized
+//
+//          column x
+//       0  1  2  3  4
+//      +--------------
+//  r 0 |0  1  3  6  10
+//  o 1 |   2  4  7  11
+//  w 2 |      5  8  12
+//    3 |         9  13
+//  y 4 |            14
+//
 pub struct GridTri<T> {
     pub total_size: usize, // total size
     pub edge_size: usize,

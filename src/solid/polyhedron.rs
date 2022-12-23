@@ -1,7 +1,5 @@
 use super::Mesh;
-use crate::{data::{Pool, Ptr}, math};
-use anyhow::Result;
-use bevy_inspector_egui::egui::plot::Polygon;
+use crate::{data::{Pool, Ptr}, math, planar::Polygon};
 use glam::{vec3, Vec3};
 
 pub type VertPtr = Ptr;

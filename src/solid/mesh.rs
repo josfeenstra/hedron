@@ -4,7 +4,7 @@ use glam::{vec2, vec3, Vec2, Vec3};
 
 use crate::data::Grid2;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Mesh {
     pub verts: Vec<Vec3>,
     pub uvs: Vec<Vec2>,
