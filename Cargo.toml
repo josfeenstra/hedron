@@ -2,7 +2,7 @@
 name = "hedron"
 version = "0.1.0"
 edition = "2021"
-author = "feenster"
+authors = ["feenster"]
 description = "An all-in-one 3D modelling library"
 license = "MIT"
 

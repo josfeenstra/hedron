@@ -191,7 +191,7 @@ impl Polyhedron {
     }
 
     pub fn iter_verts_mut(&self) -> Vec<Vec3> {
-        
+        todo!();
     }
 
     fn get_edge_verts(&self, ep: EdgePtr) -> (Vec3, Vec3) {
