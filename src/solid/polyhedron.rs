@@ -178,13 +178,16 @@ impl Polyhedron {
         // [ ] HEDRON -> POLYGONS -> MESHES
 
         // sorry for this insane statement :)
-        self.get_loops().iter().map(|lp| {
-            Polygon::new(
-                lp.iter()
-                    .map(|ep| self.vert(self.edge(*ep).from).pos)
-                    .collect(),
-            )
-        }).collect()
+        self.get_loops()
+            .iter()
+            .map(|lp| {
+                Polygon::new(
+                    lp.iter()
+                        .map(|ep| self.vert(self.edge(*ep).from).pos)
+                        .collect(),
+                )
+            })
+            .collect()
     }
 
     pub fn claim_all_verts(&self) -> Vec<Vec3> {
@@ -225,7 +228,7 @@ impl Polyhedron {
         self.verts.get_mut(vp).expect("vert ptr not found!")
     }
 
-    fn add_vert(&mut self, pos: Vec3) -> VertPtr {
+    pub fn add_vert(&mut self, pos: Vec3) -> VertPtr {
         self.verts.push(Vert { pos, edge: None }) as VertPtr
     }
 
@@ -434,17 +437,16 @@ impl Polyhedron {
     fn divide_face(&mut self, ep: FacePtr, t: f32) {
         todo!()
     }
-    
-    fn subdivide(&mut self) {
 
-        // halfway_pt = subdivide every edge by creating a new point halfway 
+    fn subdivide(&mut self) {
+        // halfway_pt = subdivide every edge by creating a new point halfway
         // - subdivide, store faceptr on the left and right
 
         // face_pt = add a point at the center of every face / loop
         // - add pts, store with the faceptr
 
         // edge = create new edges between every halfway point, and the two adjacent face points
-        // - draw lines between 
+        // - draw lines between
         todo!()
     }
 
