@@ -1,7 +1,7 @@
 use glam::Vec3;
 use std::f32::consts;
 
-use crate::{lines::LineStrip, solid::Mesh};
+use crate::{lines::LineStrip, math, solid::Mesh, util};
 
 pub struct Polygon {
     verts: Vec<Vec3>,
@@ -13,8 +13,6 @@ impl Polygon {
     }
 
     pub fn new_regular(radius: f32, sides: usize) -> Self {
-        debug_assert!(sides > 2, "RegularPolygon requires at least 3 sides.");
-
         let mut verts: Vec<Vec3> = Vec::with_capacity(sides);
 
         let step = consts::TAU / sides as f32;
@@ -27,6 +25,22 @@ impl Polygon {
 
         Self::new(verts)
     }
+
+    /// Simple triangulate using a fan of triangles, and the center of the vertex
+    /// This will work for convex polygons. concave polygons may become weird
+    pub fn triangulate_naive(&self) -> Mesh {
+        let mut mesh = Mesh::default();
+
+        let count = self.verts.len(); // the center will end up at this vert id
+        for (a, b) in util::iter_pair_ids(count) {
+            mesh.verts.push(self.verts[a]);
+            mesh.tri.append(&mut vec![a, b, count]);
+        }
+        let center = math::average(&self.verts);
+        mesh.verts.push(center);
+
+        mesh
+    }
 }
 
 impl From<Polygon> for LineStrip {
@@ -37,7 +51,6 @@ impl From<Polygon> for LineStrip {
 
 impl From<Polygon> for Mesh {
     fn from(p: Polygon) -> Self {
-        // yay triangulate!
-        todo!()
+        p.triangulate_naive()
     }
 }
