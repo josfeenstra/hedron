@@ -186,8 +186,12 @@ impl Polyhedron {
         }).collect()
     }
 
-    pub fn get_all_verts(&self) -> Vec<Vec3> {
+    pub fn claim_all_verts(&self) -> Vec<Vec3> {
         self.verts.iter().map(|v| v.pos).collect()
+    }
+
+    pub fn iter_verts_mut(&self) -> Vec<Vec3> {
+        
     }
 
     fn get_edge_verts(&self, ep: EdgePtr) -> (Vec3, Vec3) {
@@ -422,8 +426,31 @@ impl Polyhedron {
 
     /////////////////////////////////////////////////////////////// Modelling
 
+    fn divide_edge(&mut self, ep: EdgePtr, t: f32) {
+        todo!()
+    }
+
+    fn divide_face(&mut self, ep: FacePtr, t: f32) {
+        todo!()
+    }
+    
+    fn subdivide(&mut self) {
+
+        // halfway_pt = subdivide every edge by creating a new point halfway 
+        // - subdivide, store faceptr on the left and right
+
+        // face_pt = add a point at the center of every face / loop
+        // - add pts, store with the faceptr
+
+        // edge = create new edges between every halfway point, and the two adjacent face points
+        // - draw lines between 
+        todo!()
+    }
+
     /// cap closed planar holes by creating faces at these holes.
-    fn cap(&mut self) {}
+    fn cap(&mut self) {
+        todo!()
+    }
 }
 
 #[cfg(test)]
