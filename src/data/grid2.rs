@@ -1,4 +1,5 @@
 use glam::IVec2;
+use crate::util;
 
 /**
 A grid data structure
@@ -139,8 +140,8 @@ impl<T: Clone + Copy + Default> Grid2<T> {
         v
     }
 
-    pub fn iter_xy<'a>(&'a self) -> impl Iterator<Item = (usize, usize)> + 'a {
-        (0..self.height).flat_map(|y| (0..self.width).map(move |x| (x, y)))
+    pub fn iter_wh<'a>(&'a self) -> impl Iterator<Item = (usize, usize)> + 'a {
+        util::iter_xy((self.width, self.height))
     }
 
     // fn to_coord(&self, i: usize) -> (i32, i32) {

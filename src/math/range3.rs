@@ -1,5 +1,5 @@
-use crate::math::quick;
-use glam::Vec3;
+use crate::{math::quick, util};
+use glam::{Vec3, UVec3};
 use std::ops::Range;
 
 /// A two dimentional range.
@@ -25,6 +25,13 @@ impl Range3 {
     #[inline]
     pub const fn from_vecs(from: Vec3, to: Vec3) -> Self {
         Self::new(from.x..to.x, from.y..to.y, from.z..to.z)
+    }
+
+    /// iterate through this space
+    pub fn iter<'a>(&'a self, count: UVec3) -> impl Iterator<Item = Vec3> + 'a {
+        let fcount = count.as_vec3();
+        util::iter_xyz_u(count)
+        .map(move | u | self.lerp(u.as_vec3() / fcount))
     }
 
     /// normalize
