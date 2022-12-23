@@ -148,7 +148,6 @@ impl Polyhedron {
         self.verts.get_mut(vp).expect("vert ptr not found!")
     }
 
-
     fn add_vert(&mut self, pos: Vec3) -> VertPtr {
         self.verts.push(Vert { pos, edge: None }) as VertPtr
     }
@@ -216,31 +215,40 @@ impl Polyhedron {
         Some((from_a, from_b))
     }
 
-    fn get_disk_neighbors(&self, vp: VertPtr, incoming: Vec3, normal: Vec3) -> (EdgePtr, EdgePtr) {
+    // from the disk of edges surrounding `vp`, get the two 'neighboring edges', based on some sample vector 
+    fn get_disk_neighbors(&self, vp: VertPtr, sample: Vec3, normal: Vec3) -> Option<(EdgePtr, EdgePtr)> {
         let vert = self.vert(vp);
         let disk_edges: Vec<EdgePtr> = self.get_disk(vp);
-        let incoming_edges = disk_edges
+        let inc_disk_edges: Vec<EdgePtr> = disk_edges
             .iter()
             .skip(1)
-            .step_by(2);
-
-        let neighbors = incoming_edges.map(|vp| self.vert(*vp).pos);
+            .step_by(2)
+            .map(|u| u.clone())
+            .collect();
+        let neighbors = inc_disk_edges.iter().map(|ep| self.vert(self.edge(*ep).from).pos);
         let nb_vecs: Vec<Vec3> = neighbors.map(|nb| nb - vert.pos).collect();
 
-        let between = math::get_vectors_between(vert.pos, normal, nb_vecs, incoming);
+        // based on disk ordering, figure out which two incoming edges are in between the addition
+        let between_ids: (usize, usize) = math::get_vectors_between(vert.pos, normal, nb_vecs, sample)?;
+        let between = (inc_disk_edges[between_ids.0], inc_disk_edges[between_ids.1]);  
 
-        // TODO do the actual ordering steps
-        // TODO we must do it like we did before, I have thought about it and there really is no other option
-        // define a sphere using the normal and the first incoming edge, and caclulate angles
-        // this really is an angles issue. we need a 'signed dot product'
-
-        // based on ordering, figure out which two edges need to be retuned (incoming and its neighbors)
-
-        todo!();
+        // we want to return the incoming and connected outgoing edge based 
+        if self.edge(self.edge(between.0).next).twin == between.1 {
+            // normal 
+            Some((between.0, self.edge(between.0).next))
+        } else if self.edge(self.edge(between.1).next).twin == between.0 {
+            // reversed
+            println!("WARN: technically not correct! this means 'get vectors in between' needs to be flipped");
+            Some((between.1, self.edge(between.1).next))
+        } else {
+            println!("WARN: something went wrong in halfedge disk ordering...");
+            None
+        }
     }
 
     /// get the edges, lined as a disk around a vertex.
     /// starts with the outgoing edge the vertex points to
+    /// With the half-edge loops being counter clockwise, disk ordering is always clockwise
     fn get_disk(&self, vp: VertPtr) -> Vec<EdgePtr> {
         let Some(start) = self.vert(vp).edge else {
             return Vec::new();
@@ -278,7 +286,9 @@ impl Polyhedron {
             // ep_outwards
             let (from, to) = self.get_edge_verts(ep);
             let incoming = to - from;
-            let (ep_nb_inwards, ep_nb_outwards) = self.get_disk_neighbors(vp, incoming, normal);
+            let Some((ep_nb_inwards, ep_nb_outwards)) = self.get_disk_neighbors(vp, incoming, normal) else {
+                return;
+            };
             
             self.mut_edge(ep_inwards).next = ep_nb_outwards;
             self.mut_edge(ep_nb_inwards).next = ep_outwards;
@@ -295,11 +305,11 @@ impl Polyhedron {
 
 #[cfg(test)]
 mod tests {
-    use crate::solid::Polyhedron;
+    use crate::solid::{Polyhedron, VertPtr};
     use glam::{vec3, Vec3};
 
     #[test]
-    fn hedron() {
+    fn polyhedron() {
         let mut ph = Polyhedron::new();
         let a = ph.add_vert(vec3(1.0, 0.0, 0.0));
         let b = ph.add_vert(vec3(1.0, 1.0, 0.0));
@@ -314,5 +324,21 @@ mod tests {
         let p = ph.add_edge_twins(c, a, UP, UP);
 
         println!("{:?}", ph);
+        
+        
+        let mut hedron = Polyhedron::new();
+        
+        let a: VertPtr = hedron.add_vert(vec3(0., 0., 0.));
+        let b: VertPtr = hedron.add_vert(vec3(1., 0., 0.));
+        let c: VertPtr = hedron.add_vert(vec3(1., 1., 0.));
+        let d: VertPtr = hedron.add_vert(vec3(0., 1., 0.));
+        
+        hedron.add_edge_twins(a, b, UP, UP);
+        hedron.add_edge_twins(b, c, UP, UP);
+        hedron.add_edge_twins(c, d, UP, UP);
+        hedron.add_edge_twins(d, a, UP, UP);
+        
+        println!("{:?}", hedron);
+        
     }
 }
