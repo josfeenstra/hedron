@@ -25,11 +25,12 @@ pub fn iter_xyz<'a>(
         .flat_map(move |z| (0..count.1).flat_map(move |y| (0..count.0).map(move |x| (x, y, z))))
 }
 
-// given 3, this gives: (0, 1), (1, 2), and (2, 0).
+/// NOTE: this wraps around: given 3, this gives: (0, 1), (1, 2), and (2, 0)
 pub fn iter_pair_ids<'a>(count: usize) -> impl Iterator<Item = (usize, usize)> + 'a {
     (0..count).map(move |i| (i, (i + 1) % count))
 }
 
+/// NOTE: this wraps around: given 3, this gives: (0, 1), (1, 2), and (2, 0)
 pub fn iter_pairs<'a, T>(items: &'a Vec<T>) -> impl Iterator<Item = (&T, &T)> + 'a {
     iter_pair_ids(items.len()).map(|(a, b)| (items.get(a).unwrap(), items.get(b).unwrap()))
 }
