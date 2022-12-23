@@ -94,6 +94,13 @@ impl<T> Pool<T> {
         self.data.iter()
             .filter(|i| i.is_some())
             .map(|i| i.as_ref().unwrap())
+        }
+        
+        pub fn iter_enum<'a>(&'a self) -> impl Iterator<Item=(usize, &T)> + 'a {
+            self.data.iter()
+            .enumerate()
+            .filter(|(i, item)| item.is_some())
+            .map(|(i, item)| (i, item.as_ref().unwrap()))
     }
 
     pub fn all(&self) -> Vec<&T> {

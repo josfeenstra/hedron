@@ -1,6 +1,11 @@
 use super::Mesh;
-use crate::{data::{Pool, Ptr}, math, planar::Polygon};
+use crate::{
+    data::{Pool, Ptr},
+    math,
+    planar::Polygon,
+};
 use glam::{vec3, Vec3};
+use std::collections::HashSet;
 
 pub type VertPtr = Ptr;
 pub type EdgePtr = Ptr;
@@ -18,7 +23,7 @@ pub struct Vert {
 // AND THEN the edge twin is on the right side:
 // ```
 // <===== ()
-//     
+//
 // [next] /\     |
 //       /||\    |
 //        ||     |
@@ -26,13 +31,13 @@ pub struct Vert {
 //        ||     |
 //        ||    \|/
 //        ||     V
-// 
+//
 //       (TO)
 // ```
 #[derive(Default, Debug)]
 pub struct HalfEdge {
     pub from: VertPtr,
-    pub next: EdgePtr, // edge always has a next
+    pub next: EdgePtr,         // edge always has a next
     pub twin: EdgePtr, // in our case, edge always has a twin. optional twins comes later TODO
     pub face: Option<FacePtr>, // not every loop is filled
 }
@@ -43,6 +48,7 @@ pub struct Face {
 }
 
 /// A polyhedron model.
+/// Implemented as a half edge mesh.  
 /// Despite the name, the model can also be used as a planar partition.
 /// It all depends on the normals used to determine the edge ordering around a vertex
 #[derive(Default, Debug)]
@@ -64,10 +70,10 @@ impl Polyhedron {
         let d: VertPtr = hedron.add_vert(vec3(0., 1., 0.));
 
         const UP: Vec3 = Vec3::Z;
-        hedron.add_edge_twins(a, b, UP, UP);
-        hedron.add_edge_twins(b, c, UP, UP);
-        hedron.add_edge_twins(c, d, UP, UP);
-        hedron.add_edge_twins(d, a, UP, UP);
+        hedron.add_edge(a, b, UP, UP);
+        hedron.add_edge(b, c, UP, UP);
+        hedron.add_edge(c, d, UP, UP);
+        hedron.add_edge(d, a, UP, UP);
 
         hedron
     }
@@ -99,25 +105,91 @@ impl Polyhedron {
 
             // add half edges in accordance with this normal
             for [from, to] in vec![[ia, ib], [ib, ic], [ic, ia]] {
-                hedron.add_edge_twins(from, to, face_normal, face_normal);
+                hedron.add_edge(from, to, face_normal, face_normal);
             }
         }
 
         hedron
     }
 
+    /////////////////////////////////////////////////////////////// Debugging
+
+    pub fn print_structure(&self) {
+        fn fmt<T: std::fmt::Display>(v: Option<T>) -> String {
+            v.map_or(".".to_owned(), |v| v.to_string())
+        }
+
+        println!("POLYHEDRON: ");
+        println!("   ----------- VERTS ------------");
+        println!("      vp | edge | pos   ");
+        for (vp, vert) in self.verts.iter_enum() {
+            println!(
+                "  [{:w$}] | {:w$} | {:w$}",
+                vp,
+                fmt(vert.edge),
+                vert.pos,
+                w = 4
+            );
+        }
+
+        println!("   ----------- EDGES ------------");
+        println!("      ep | from | twin | next | face ");
+        for (ep, edge) in self.edges.iter_enum() {
+            println!(
+                "  [{:w$}] | {:w$} | {:w$} | {:w$} | {:w$} ",
+                ep,
+                edge.from,
+                edge.twin,
+                edge.next,
+                fmt(edge.face),
+                w = 4
+            );
+        }
+
+        println!("   ----------- FACES ------------");
+        println!("      fp | edge |");
+        for (fp, face) in self.faces.iter_enum() {
+            println!("  ({}) | {}", fp, face.edge);
+        }
+
+        println!("   ----------- loops ------------");
+        for (i, my_loop) in self.get_loops().iter().enumerate() {
+            print!("loop: ");
+            for edge in my_loop {
+                print!(" {} ,", edge)
+            }
+            print!("\n")
+        }
+    }
+
     /////////////////////////////////////////////////////////////// Getting Geometry
 
     pub fn get_loops_as_faces(&self) -> Vec<Polygon> {
         // traverse all faces, construct polygon faces from them
-        Vec::new()
+
+        // TODO this is what we need now!!!
+        // THE DATA STRUCTURE APPEARS CORRECT.
+        // NOW WE NEED TO CREATE A HEDRON FROM A MESH, THEN CONVERT THE HEDRON TO POLYGONS,
+        // AND THEN SCALE THE POLYGONS SO SEE IF WE ARE DOING THE RIGHT KIND OF THINGS!
+        // [x] BUILD POLYGON MODEL
+        // [ ] TRIANGULATE POLYGON / SIMPLE TRIANGULATE POLYGON
+        // [ ] MESH -> HEDRON
+        // [ ] HEDRON -> POLYGONS -> MESHES
+
+        // sorry for this insane statement :)
+        self.get_loops().iter().map(|lp| {
+            Polygon::new(
+                lp.iter()
+                    .map(|ep| self.vert(self.edge(*ep).from).pos)
+                    .collect(),
+            )
+        }).collect()
     }
 
     pub fn get_all_verts(&self) -> Vec<Vec3> {
         self.verts.iter().map(|v| v.pos).collect()
     }
 
-    
     fn get_edge_verts(&self, ep: EdgePtr) -> (Vec3, Vec3) {
         let e = self.edge(ep);
         let t = self.edge(e.twin);
@@ -129,13 +201,13 @@ impl Polyhedron {
     }
 
     /////////////////////////////////////////////////////////////// Transactions
-    
+
     // this is not a very rusty way of doing things, but come on, I need some progress :)
 
     fn edge(&self, ep: EdgePtr) -> &HalfEdge {
         self.edges.get(ep).expect("edge ptr not found!")
     }
-    
+
     fn vert(&self, vp: VertPtr) -> &Vert {
         self.verts.get(vp).expect("vert ptr not found!")
     }
@@ -143,7 +215,7 @@ impl Polyhedron {
     fn mut_edge(&mut self, ep: EdgePtr) -> &mut HalfEdge {
         self.edges.get_mut(ep).expect("edge ptr not found!")
     }
-    
+
     fn mut_vert(&mut self, vp: VertPtr) -> &mut Vert {
         self.verts.get_mut(vp).expect("vert ptr not found!")
     }
@@ -163,12 +235,53 @@ impl Polyhedron {
         self.edges.delete(edge)
     }
 
-    /////////////////////////////////////////////////////////////// Complex Transactions 
+    /////////////////////////////////////////////////////////////// Complex Transactions & Traversals
+
+    /// get all loops in the half-edge structure
+    pub fn get_loops(&self) -> Vec<Vec<EdgePtr>> {
+        let mut loops = Vec::new();
+
+        let mut passed = HashSet::<usize>::new();
+        for (ep, edge) in self.edges.iter_enum() {
+            if passed.contains(&ep) {
+                continue;
+            }
+            let my_loop = self.get_loop(ep);
+
+            // store the loop so we dont do it again
+            for ep in my_loop.iter() {
+                if !passed.insert(*ep) {
+                    println!("WARN: loops appear to have overlapped...")
+                }
+            }
+            loops.push(my_loop);
+        }
+
+        loops
+    }
+
+    /// get the loop asociated with a certain half-edge, by continuously following 'next'
+    /// this half-edge will appear as the first edge
+    pub fn get_loop(&self, ep: EdgePtr) -> Vec<EdgePtr> {
+        let mut my_loop = Vec::new();
+        let mut cursor = ep;
+        my_loop.push(cursor);
+        for _ in 0..self.edges.len() {
+            // loops will never be longer than the number of half edges
+            cursor = self.edge(cursor).next;
+            if cursor == ep {
+                return my_loop;
+            }
+            my_loop.push(cursor);
+        }
+        println!("WARN: prevented an infinite loop in 'get_loop'...");
+        my_loop
+    }
 
     /// add two half edges between a and b, order doesnt matter.
     /// We need a normal to determine disk ordering, when inserting
     /// these half edges in the network of existing half edges
-    pub fn add_edge_twins(
+    pub fn add_edge(
         &mut self,
         a: VertPtr,
         b: VertPtr,
@@ -184,21 +297,25 @@ impl Polyhedron {
         Some(())
     }
 
+    /// Add an edge using the positive z axis
+    pub fn add_planar_edge(&mut self, a: VertPtr, b: VertPtr) -> Option<()> {
+        self.add_edge(a, b, Vec3::Z, Vec3::Z)
+    }
+
     // build the edge twins themselves
     // initialize them fully correct, but only pointing to each other
     // does not fire when this edge already exists
     fn add_dangling_twins(&mut self, a: VertPtr, b: VertPtr) -> Option<(EdgePtr, EdgePtr)> {
-        
         // TODO add cases were one of the two does already exist
         // for now, quit if any one exist
         if self.has_half_edge(a, b) || self.has_half_edge(b, a) {
             return None;
         }
-        
+
         // we only know the 'from_b array' after adding both, so start as 0
         let from_a: EdgePtr = self.edges.push(HalfEdge {
             from: a,
-            next: 0, 
+            next: 0,
             twin: 0,
             face: None,
         });
@@ -211,12 +328,17 @@ impl Polyhedron {
         let a = self.mut_edge(from_a);
         a.twin = from_b;
         a.next = from_b;
-        
+
         Some((from_a, from_b))
     }
 
-    // from the disk of edges surrounding `vp`, get the two 'neighboring edges', based on some sample vector 
-    fn get_disk_neighbors(&self, vp: VertPtr, sample: Vec3, normal: Vec3) -> Option<(EdgePtr, EdgePtr)> {
+    // from the disk of edges surrounding `vp`, get the two 'neighboring edges', based on some sample vector
+    fn get_disk_neighbors(
+        &self,
+        vp: VertPtr,
+        sample: Vec3,
+        normal: Vec3,
+    ) -> Option<(EdgePtr, EdgePtr)> {
         let vert = self.vert(vp);
         let disk_edges: Vec<EdgePtr> = self.get_disk(vp);
         let inc_disk_edges: Vec<EdgePtr> = disk_edges
@@ -225,23 +347,26 @@ impl Polyhedron {
             .step_by(2)
             .map(|u| u.clone())
             .collect();
-        let neighbors = inc_disk_edges.iter().map(|ep| self.vert(self.edge(*ep).from).pos);
+        let neighbors = inc_disk_edges
+            .iter()
+            .map(|ep| self.vert(self.edge(*ep).from).pos);
         let nb_vecs: Vec<Vec3> = neighbors.map(|nb| nb - vert.pos).collect();
 
         // based on disk ordering, figure out which two incoming edges are in between the addition
-        let between_ids: (usize, usize) = math::get_vectors_between(vert.pos, normal, nb_vecs, sample)?;
-        let between = (inc_disk_edges[between_ids.0], inc_disk_edges[between_ids.1]);  
+        let between_ids: (usize, usize) =
+            math::get_vectors_between(vert.pos, normal, nb_vecs, sample)?;
+        let between = (inc_disk_edges[between_ids.0], inc_disk_edges[between_ids.1]);
 
-        // we want to return the incoming and connected outgoing edge based 
+        // we want to return the incoming and connected outgoing edge based
         if self.edge(self.edge(between.0).next).twin == between.1 {
-            // normal 
+            // normal
             Some((between.0, self.edge(between.0).next))
         } else if self.edge(self.edge(between.1).next).twin == between.0 {
             // reversed
             println!("WARN: technically not correct! this means 'get vectors in between' needs to be flipped");
             Some((between.1, self.edge(between.1).next))
         } else {
-            println!("WARN: something went wrong in halfedge disk ordering...");
+            println!("ERR: something went wrong in halfedge disk ordering...");
             None
         }
     }
@@ -268,7 +393,6 @@ impl Polyhedron {
         disk
     }
 
-
     /// set the `next` property of a given edge by adding the edge to the conceptual 'disk' of a vertex
     /// set the `vert` property of a vertex to the first added edge
     fn add_edge_to_vertex(&mut self, ep: EdgePtr, normal: Vec3) {
@@ -282,14 +406,13 @@ impl Polyhedron {
             v.edge = Some(ep);
             self.mut_edge(ep_inwards).next = ep;
         } else if let Some(disk_start) = v.edge {
-
             // ep_outwards
             let (from, to) = self.get_edge_verts(ep);
             let incoming = to - from;
             let Some((ep_nb_inwards, ep_nb_outwards)) = self.get_disk_neighbors(vp, incoming, normal) else {
                 return;
             };
-            
+
             self.mut_edge(ep_inwards).next = ep_nb_outwards;
             self.mut_edge(ep_nb_inwards).next = ep_outwards;
         }
@@ -319,26 +442,25 @@ mod tests {
         assert_eq!(c, 2);
 
         const UP: Vec3 = Vec3::Z;
-        let p = ph.add_edge_twins(a, b, UP, UP);
-        let p = ph.add_edge_twins(b, c, UP, UP);
-        let p = ph.add_edge_twins(c, a, UP, UP);
+        let p = ph.add_planar_edge(a, b);
+        let p = ph.add_planar_edge(b, c);
+        let p = ph.add_planar_edge(c, a);
 
-        println!("{:?}", ph);
-        
-        
+        ph.print_structure();
+
         let mut hedron = Polyhedron::new();
-        
+
         let a: VertPtr = hedron.add_vert(vec3(0., 0., 0.));
         let b: VertPtr = hedron.add_vert(vec3(1., 0., 0.));
         let c: VertPtr = hedron.add_vert(vec3(1., 1., 0.));
         let d: VertPtr = hedron.add_vert(vec3(0., 1., 0.));
-        
-        hedron.add_edge_twins(a, b, UP, UP);
-        hedron.add_edge_twins(b, c, UP, UP);
-        hedron.add_edge_twins(c, d, UP, UP);
-        hedron.add_edge_twins(d, a, UP, UP);
-        
-        println!("{:?}", hedron);
-        
+
+        hedron.add_planar_edge(a, b);
+        hedron.add_planar_edge(b, c);
+        hedron.add_planar_edge(c, d);
+        hedron.add_planar_edge(d, a);
+        hedron.add_planar_edge(a, c);
+
+        hedron.print_structure();
     }
 }
