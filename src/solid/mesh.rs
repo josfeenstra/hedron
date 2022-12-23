@@ -258,6 +258,8 @@ impl Mesh {
 ///////////////////////////////////////////////////////////////////////////////
 
 impl PointBased for Mesh {
+
+    // TODO how to IntoIterator
     fn mutate_points<'a>(&'a mut self) -> Vec<&'a mut Vec3> {
         self.verts.iter_mut().collect() // its a bit sad we have to do this.
     }
