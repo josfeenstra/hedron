@@ -16,7 +16,7 @@ pub fn get_vectors_between(
     center: Vec3,
     normal: Vec3,
     points: Vec<Vec3>,
-    sample: Vec3,
+    sample_point: Vec3,
 ) -> Option<(usize, usize)> {
     match points.len() {
         0 => return None,
@@ -24,7 +24,8 @@ pub fn get_vectors_between(
         _ => {}
     };
 
-    let sample = project_point_to_plane(center, normal, sample);
+    let sample = project_point_to_plane(center, normal, sample_point);
+    let to_sample = sample - center;
 
     let mut left_way_hit = TAU;
     let mut left_id = 0;
@@ -34,17 +35,23 @@ pub fn get_vectors_between(
     // this only makes sense using an image
     for (i, point) in points.iter().enumerate() {
         let point = project_point_to_plane(center, normal, *point);
+        let to_point = point - center;
 
         // one angle takes the short route, the other the long route.
-        let mut left_angle = (sample - center).angle_between(point - center);
-        let mut right_angle = TAU - left_angle;
+        let mut right_angle = to_sample.angle_between(to_point);
+        let mut left_angle = TAU - right_angle;
 
         // TODO check which sign is which
         // based on this choice, (1,4) or (4,1) will be returned
-        let sign = sample.cross(point).dot(normal) > 0.0;
+        // - FOR THE EDGE CASE angle == PI, this does not matter
+        // 
+        let sign = to_sample.cross(normal).dot(to_point) > 0.0;
         if sign {
+            // println!("FLIPPERINO!");
             (left_angle, right_angle) = (right_angle, left_angle);
         }
+
+        // println!("{i}, right: {right_angle}, left: {left_angle}");
 
         if left_angle < left_way_hit {
             left_way_hit = left_angle;
@@ -55,7 +62,7 @@ pub fn get_vectors_between(
             right_id = i;
         }
     }
-
+    // println!("best right, {right_id}, best left {left_id}");
     Some((right_id, left_id))
 }
 

@@ -1,7 +1,7 @@
 use glam::Vec3;
 use std::f32::consts;
 
-use crate::{lines::LineStrip, math, solid::Mesh, util};
+use crate::{lines::LineStrip, math, solid::Mesh, util, core::PointBased};
 
 pub struct Polygon {
     verts: Vec<Vec3>,
@@ -40,6 +40,12 @@ impl Polygon {
         mesh.verts.push(center);
 
         mesh
+    }
+}
+
+impl PointBased for Polygon {
+    fn mutate_points<'a>(&'a mut self) -> Vec<&'a mut Vec3> {
+        self.verts.iter_mut().collect()
     }
 }
 

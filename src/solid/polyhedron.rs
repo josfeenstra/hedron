@@ -190,7 +190,7 @@ impl Polyhedron {
             .collect()
     }
 
-    pub fn claim_all_verts(&self) -> Vec<Vec3> {
+    pub fn all_verts(&self) -> Vec<Vec3> {
         self.verts.iter().map(|v| v.pos).collect()
     }
 
@@ -198,7 +198,7 @@ impl Polyhedron {
         todo!();
     }
 
-    fn get_edge_verts(&self, ep: EdgePtr) -> (Vec3, Vec3) {
+    pub fn get_edge_verts(&self, ep: EdgePtr) -> (Vec3, Vec3) {
         let e = self.edge(ep);
         let t = self.edge(e.twin);
         (self.vert(e.from).pos, self.vert(t.from).pos)
@@ -297,6 +297,7 @@ impl Polyhedron {
         b_normal: Vec3,
     ) -> Option<()> {
         let Some((from_a, from_b)) = self.add_dangling_twins(a, b) else {
+            println!("WARN: edge is already here here!");
             return None;
         };
         self.add_edge_to_vertex(from_a, a_normal);
@@ -357,24 +358,25 @@ impl Polyhedron {
             .collect();
         let neighbors = inc_disk_edges
             .iter()
-            .map(|ep| self.vert(self.edge(*ep).from).pos);
-        let nb_vecs: Vec<Vec3> = neighbors.map(|nb| nb - vert.pos).collect();
+            .map(|ep| self.vert(self.edge(*ep).from).pos).collect();
+        // let nb_vecs: Vec<Vec3> = neighbors.map(|nb| nb - vert.pos).collect();
+
+        println!("disk v{vp}: edges: {inc_disk_edges:?} vecs: {neighbors:?} sample: {sample}");
 
         // based on disk ordering, figure out which two incoming edges are in between the addition
+        // NOTE: (1, 4) is not the same as (4, 1)
         let between_ids: (usize, usize) =
-            math::get_vectors_between(vert.pos, normal, nb_vecs, sample)?;
+            math::get_vectors_between(vert.pos, normal, neighbors, sample)?;
         let between = (inc_disk_edges[between_ids.0], inc_disk_edges[between_ids.1]);
+
+        println!("between: {between:?}");
 
         // we want to return the incoming and connected outgoing edge based
         if self.edge(self.edge(between.0).next).twin == between.1 {
             // normal
             Some((between.0, self.edge(between.0).next))
-        } else if self.edge(self.edge(between.1).next).twin == between.0 {
-            // reversed
-            println!("WARN: technically not correct! this means 'get vectors in between' needs to be flipped");
-            Some((between.1, self.edge(between.1).next))
         } else {
-            println!("ERR: something went wrong in halfedge disk ordering...");
+            println!("ERR: something went wrong in halfedge disk ordering: between: {between:?} is incorrect");
             None
         }
     }
@@ -414,12 +416,11 @@ impl Polyhedron {
             v.edge = Some(ep);
             self.mut_edge(ep_inwards).next = ep;
         } else if let Some(disk_start) = v.edge {
-            // ep_outwards
-            let (from, to) = self.get_edge_verts(ep);
-            let incoming = to - from;
-            let Some((ep_nb_inwards, ep_nb_outwards)) = self.get_disk_neighbors(vp, incoming, normal) else {
+            let (_, to) = self.get_edge_verts(ep);
+            let Some((ep_nb_inwards, ep_nb_outwards)) = self.get_disk_neighbors(vp, to, normal) else {
                 return;
             };
+            println!("in: {ep_nb_inwards} out: {ep_nb_outwards}");
 
             self.mut_edge(ep_inwards).next = ep_nb_outwards;
             self.mut_edge(ep_nb_inwards).next = ep_outwards;

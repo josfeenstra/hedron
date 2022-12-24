@@ -2,7 +2,7 @@ use bevy::{prelude::*, render::{render_resource::PrimitiveTopology, mesh::Indice
 
 use crate::{
     solid::{Mesh as HMesh, Polyhedron},
-    core::Pose,
+    core::{Pose},
     lines::{Bezier, LineList, LineStrip},
     planar::Polygon,
     pts::Points,
@@ -15,8 +15,11 @@ impl From<HMesh> for Mesh {
         let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, 
             Points::new(hmesh.verts).to_vec_of_arrays());
-        mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, 
-            hmesh.uvs.iter().map(|v| v.to_array()).collect::<Vec<[f32; 2]>>());
+        
+        if !hmesh.uvs.is_empty() {
+            mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, 
+                hmesh.uvs.iter().map(|v| v.to_array()).collect::<Vec<[f32; 2]>>());
+        }
         mesh.set_indices(Some(Indices::U32(
             hmesh.tri.iter().map(|v| *v as u32).collect())));
         mesh
