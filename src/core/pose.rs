@@ -284,6 +284,17 @@ impl Pose {
         point += self.pos;
         point
     }
+
+    // inversly transform a point to the 'space' of this pose
+    // This does not work if pose.scale contains zeroes. 
+    // After all, if 5 * 0 = 0, 0 * ? = 5 is impossible 
+    #[inline]
+    pub fn transform_point_inv(&self, mut point: Vec3) -> Vec3 {
+        point -= self.pos;
+        point = self.rot.inverse() * point;
+        point = point / self.scale;
+        point
+    }
 }
 
 impl Default for Pose {
