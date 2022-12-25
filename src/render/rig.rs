@@ -128,7 +128,7 @@ impl Rig {
         mouse_motion_events: &mut EventReader<MouseMotion>,
         mouse_wheel_events: &mut EventReader<MouseWheel>,
     ) -> bool {
-        if mouse_input.any_pressed([MouseButton::Middle]) {
+        if mouse_input.any_pressed([MouseButton::Middle, MouseButton::Right]) {
             let mut delta = Vec2::ZERO;
             for event in mouse_motion_events.iter() {
                 delta += event.delta;
