@@ -38,7 +38,7 @@ An all-in-one 3D modelling crate, written in Rust!
 
 
 # Design 
-Hedron is designed to strike a balance between usability and expressiveness. It is not as expressive as something like CGAL, but it is more simple and straight- forward to use. 
+Hedron is designed to strike a balance between usability and expressiveness. It sacrifices A CGAL-level of expressivenes, in favor of a more simple and predictable API. 
 
 
 # Stage: Pre Alpha
