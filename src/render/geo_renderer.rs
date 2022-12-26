@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use super::{
-    extract_vertices, InstanceData, InstanceMaterialData, InstanceMaterialPlugin, LineMaterial,
+    extract_vertices, FaceMaterial, InstanceData, InstanceMaterialData, InstanceMaterialPlugin,
+    LineMaterial,
 };
 use bevy::{prelude::*, render::view::NoFrustumCulling};
 
@@ -48,6 +49,7 @@ impl GeoRenderer {
         mut gr: ResMut<GeoRenderer>,
         mut meshes: ResMut<Assets<Mesh>>,
         mut l_materials: ResMut<Assets<LineMaterial>>,
+        mut f_materials: ResMut<Assets<FaceMaterial>>,
     ) {
         // REMOVE
         while let Some(entity) = gr.to_remove.pop() {
@@ -109,20 +111,20 @@ impl GeoRenderer {
                     .spawn((
                         MaterialMeshBundle {
                             mesh: meshes.add(mesh),
-                            material: l_materials.add(LineMaterial { color }),
+                            material: f_materials.add(FaceMaterial { color }),
                             ..default()
                         },
-                        Name::new("Line Strip"),
+                        Name::new("Triangle List"),
                     ))
                     .id(),
                 bevy::render::render_resource::PrimitiveTopology::TriangleStrip => c
                     .spawn((
                         MaterialMeshBundle {
                             mesh: meshes.add(mesh),
-                            material: l_materials.add(LineMaterial { color }),
+                            material: f_materials.add(FaceMaterial { color }),
                             ..default()
                         },
-                        Name::new("Line Strip"),
+                        Name::new("Triangle Strip"),
                     ))
                     .id(),
             };

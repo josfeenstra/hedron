@@ -1,8 +1,9 @@
 use super::Mesh;
 use crate::{
+    core::PointBased,
     data::{Pool, Ptr},
     math,
-    planar::Polygon, core::PointBased,
+    planar::Polygon,
 };
 use glam::{vec3, Vec3};
 use std::collections::HashSet;
@@ -198,7 +199,7 @@ impl Polyhedron {
         todo!();
     }
 
-    pub fn get_edge_verts(&self, ep: EdgePtr) -> (Vec3, Vec3) {
+    pub fn edge_verts(&self, ep: EdgePtr) -> (Vec3, Vec3) {
         let e = self.edge(ep);
         let t = self.edge(e.twin);
         (self.vert(e.from).pos, self.vert(t.from).pos)
@@ -358,7 +359,8 @@ impl Polyhedron {
             .collect();
         let neighbors = inc_disk_edges
             .iter()
-            .map(|ep| self.vert(self.edge(*ep).from).pos).collect();
+            .map(|ep| self.vert(self.edge(*ep).from).pos)
+            .collect();
         // let nb_vecs: Vec<Vec3> = neighbors.map(|nb| nb - vert.pos).collect();
 
         println!("disk v{vp}: edges: {inc_disk_edges:?} vecs: {neighbors:?} sample: {sample}");
@@ -416,7 +418,7 @@ impl Polyhedron {
             v.edge = Some(ep);
             self.mut_edge(ep_inwards).next = ep;
         } else if let Some(disk_start) = v.edge {
-            let (_, to) = self.get_edge_verts(ep);
+            let (_, to) = self.edge_verts(ep);
             let Some((ep_nb_inwards, ep_nb_outwards)) = self.get_disk_neighbors(vp, to, normal) else {
                 return;
             };
@@ -462,7 +464,6 @@ impl PointBased for Polyhedron {
         self.verts.iter_mut().map(|v| &mut v.pos).collect()
     }
 }
-
 
 #[cfg(test)]
 mod tests {
