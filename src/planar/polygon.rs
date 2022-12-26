@@ -1,7 +1,7 @@
 use glam::Vec3;
 use std::f32::consts;
 
-use crate::{lines::LineStrip, math, solid::Mesh, util, core::PointBased};
+use crate::{core::PointBased, lines::LineStrip, math, pts::Vectors, solid::Mesh, util};
 
 pub struct Polygon {
     verts: Vec<Vec3>,
@@ -36,7 +36,7 @@ impl Polygon {
             mesh.verts.push(self.verts[a]);
             mesh.tri.append(&mut vec![a, b, count]);
         }
-        let center = math::average(&self.verts);
+        let center = Vectors::average(&self.verts);
         mesh.verts.push(center);
 
         mesh

@@ -4,6 +4,7 @@ use crate::{
     data::{Pool, Ptr},
     math,
     planar::Polygon,
+    pts::Vectors,
 };
 use glam::{vec3, Vec3};
 use std::collections::HashSet;
@@ -368,7 +369,7 @@ impl Polyhedron {
         // based on disk ordering, figure out which two incoming edges are in between the addition
         // NOTE: (1, 4) is not the same as (4, 1)
         let between_ids: (usize, usize) =
-            math::get_vectors_between(vert.pos, normal, neighbors, sample)?;
+            Vectors::get_between(vert.pos, normal, neighbors, sample)?;
         let between = (inc_disk_edges[between_ids.0], inc_disk_edges[between_ids.1]);
 
         println!("between: {between:?}");

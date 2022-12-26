@@ -1,18 +1,18 @@
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 
-use crate::pts::Points;
+use crate::pts::Vectors;
 
 // this removes and returns vertices from a mesh
-pub fn extract_vertices(mesh: &mut Mesh) -> Option<Points> {
+pub fn extract_vertices(mesh: &mut Mesh) -> Option<Vec<Vec3>> {
     let data = mesh.remove_attribute(Mesh::ATTRIBUTE_POSITION)?;
     if let VertexAttributeValues::Float32x3(point_data) = data {
-        Some(Points::from_vec_of_arrays(point_data))
+        Some(Vectors::from_vec_of_arrays(point_data))
     } else {
         None
     }
 }
 
-pub fn set_vertices(mesh: &mut Mesh, pts: Points) {
+pub fn set_vertices(mesh: &mut Mesh, pts: Vectors) {
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, Into::<Vec<[f32; 3]>>::into(pts))
 }
 

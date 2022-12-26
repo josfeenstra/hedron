@@ -1,11 +1,14 @@
-use bevy::{prelude::*, render::{render_resource::PrimitiveTopology, mesh::Indices}};
+use bevy::{
+    prelude::*,
+    render::{mesh::Indices, render_resource::PrimitiveTopology},
+};
 
 use crate::{
-    solid::{Mesh as HMesh, Polyhedron},
-    core::{Pose},
+    core::{PointBased, Pose},
     lines::{Bezier, LineList, LineStrip},
     planar::Polygon,
-    pts::Points,
+    pts::Vectors,
+    solid::{Mesh as HMesh, Polyhedron},
 };
 
 // make sure we can easily translate hedron types to bevy types
@@ -13,21 +16,30 @@ use crate::{
 impl From<HMesh> for Mesh {
     fn from(hmesh: HMesh) -> Self {
         let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
-        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, 
-            Points::new(hmesh.verts).to_vec_of_arrays());
-        
+        mesh.insert_attribute(
+            Mesh::ATTRIBUTE_POSITION,
+            Vectors::new(hmesh.verts).to_vec_of_arrays(),
+        );
+
         if !hmesh.uvs.is_empty() {
-            mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, 
-                hmesh.uvs.iter().map(|v| v.to_array()).collect::<Vec<[f32; 2]>>());
+            mesh.insert_attribute(
+                Mesh::ATTRIBUTE_UV_0,
+                hmesh
+                    .uvs
+                    .iter()
+                    .map(|v| v.to_array())
+                    .collect::<Vec<[f32; 2]>>(),
+            );
         }
         mesh.set_indices(Some(Indices::U32(
-            hmesh.tri.iter().map(|v| *v as u32).collect())));
+            hmesh.tri.iter().map(|v| *v as u32).collect(),
+        )));
         mesh
     }
 }
 
-impl From<Points> for Mesh {
-    fn from(points: Points) -> Self {
+impl From<Vectors> for Mesh {
+    fn from(points: Vectors) -> Self {
         let mut mesh = Mesh::new(PrimitiveTopology::PointList);
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, points.to_vec_of_arrays());
         mesh
@@ -109,6 +121,12 @@ impl From<Polygon> for Mesh {
 
 impl From<Polyhedron> for Mesh {
     fn from(p: Polyhedron) -> Self {
-        HMesh::from_join(p.polygon_faces().iter().map(|p| p.triangulate_naive()).collect()).into()
+        HMesh::from_join(
+            p.polygon_faces()
+                .iter()
+                .map(|p| p.triangulate_naive())
+                .collect(),
+        )
+        .into()
     }
 }

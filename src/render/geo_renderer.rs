@@ -73,7 +73,6 @@ impl GeoRenderer {
                         SpatialBundle::VISIBLE_IDENTITY,
                         InstanceMaterialData(
                             points
-                                .data
                                 .iter()
                                 .map(|v| InstanceData {
                                     position: *v,
