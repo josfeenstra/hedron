@@ -123,8 +123,8 @@ impl From<Polyhedron> for Mesh {
     fn from(p: Polyhedron) -> Self {
         HMesh::from_join(
             p.polygon_faces()
-                .iter()
-                .map(|p| p.triangulate_naive())
+                .into_iter()
+                .map(|pg| pg.offset(Vec3::Z, 0.1).triangulate_naive())
                 .collect(),
         )
         .into()
