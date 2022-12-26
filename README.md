@@ -3,16 +3,16 @@ An all-in-one 3D modelling crate, written in Rust!
 
 ## What it contains (or will contain)
 - A full set of **geometry** models:
-  - planar: `Lines`, `Circles`, `Triangles`, ...
-  - curves: `Polylines`, `Bezier`, `Spline`, ...
-  - surfaces: `BezierSrf` (TODO), ...
+  - planar: `Line`, `Circle`, `Triangle`, ...
+  - curves: `Polyline`, `Bezier`, `BSpline`, ...
+  - surfaces: `BezierSrf` (TODO), BSplineSrf (TODO/), ...
   - solids: `Mesh`, `Polyhedron` (WIP), `Solid`, ... 
+  - graphs: `HalfEdgeGraph` (WIP)
 
 - **operators** on those models: 
   - Point / Vector tools (Closest point) (TODO)
   - Transformations between the various models  
   - Modelling operations (`loft`, `inset`, `extrude`, `split`, `subdivide`) (TODO) 
-  - Interpolation / Extrapolation
   - Intersections (intersect mesh with line) (TODO)
   - Boolean operators (join two solids) (TODO)
 
@@ -20,7 +20,7 @@ An all-in-one 3D modelling crate, written in Rust!
   - Direct [bevy](https://bevyengine.org/) integration: `--features bevy` 
   - Obj / Mtl exporting 
   - Svg exporting (TODO)
-  - Various mathematical tools to support the operations mentioned above
+  - Various mathematical tools to support the operations mentioned above.
 
 
 ## Use cases
@@ -29,6 +29,7 @@ An all-in-one 3D modelling crate, written in Rust!
 - **Procedural Geometry / 'Parametric Design'**: Hedron is intended for parametric modelling, akin to what can be done with Rhino & Grasshopper. 
 
 - **Web Geometry Processing**: The crate can be complied to WebAssembly, allowing these operations to be used on the web.
+
 
 ## What it is not 
 - **No GIS support** : The crate offers no tooling to load and process large geographical datasets. 
