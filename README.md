@@ -9,10 +9,10 @@ An all-in-one 3D modelling crate, written in Rust!
   - solids: `Mesh`, `Polyhedron` (WIP), `Solid`, ... 
 
 - **operators** on those models: 
+  - Point / Vector tools (Closest point) (TODO)
   - Transformations between the various models  
   - Modelling operations (`loft`, `inset`, `extrude`, `split`, `subdivide`) (TODO) 
   - Interpolation / Extrapolation
-  - Closest point (TODO)
   - Intersections (intersect mesh with line) (TODO)
   - Boolean operators (join two solids) (TODO)
 
@@ -24,12 +24,11 @@ An all-in-one 3D modelling crate, written in Rust!
 
 
 ## Use cases
-- **Procedural Geometry / 'Parametric Design'**: Hedron is intended for parametric modelling.
-
 - **Basic Modelling**: Hedron could be used to develop a 3D modelling tool, a very basic `blender` clone.
 
-- **Web Geometry Processing**: The crate can be complied to WebAssembly, allowing these operations to be used on the web
+- **Procedural Geometry / 'Parametric Design'**: Hedron is intended for parametric modelling, akin to what can be done with Rhino & Grasshopper. 
 
+- **Web Geometry Processing**: The crate can be complied to WebAssembly, allowing these operations to be used on the web.
 
 ## What it is not 
 - **No GIS support** : The crate offers no tooling to load and process large geographical datasets. 
