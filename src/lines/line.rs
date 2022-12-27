@@ -17,7 +17,7 @@ impl Line {
         Self { from, to }
     }
 
-    pub fn intersect_2D(&self, other: &Self) -> Vec3 {
+    pub fn intersect_2d(&self, other: &Self) -> Vec3 {
         let (x, y) = line_line_2d(
             self.from.x,
             self.from.y,

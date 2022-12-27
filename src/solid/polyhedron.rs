@@ -2,7 +2,6 @@ use super::Mesh;
 use crate::{
     core::PointBased,
     data::{Pool, Ptr},
-    math,
     planar::Polygon,
     pts::Vectors,
 };
