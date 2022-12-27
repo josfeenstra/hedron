@@ -16,7 +16,7 @@ pub type FacePtr = Ptr;
 #[derive(Default, Debug)]
 pub struct Vert {
     pub pos: Vec3,
-    pub edge: Option<EdgePtr>,
+    pub edge: Option<EdgePtr>, // I believe this Edge is always incoming
 }
 
 // IF looking from ABOVE (using the normals provided during addition)
@@ -485,6 +485,11 @@ impl Polyhedron {
         e_bottom.next = ep_bottom_extended;
         e_bottom.twin = ep_top_extended;
 
+        // make sure the vertex points to one of its two incoming edges
+        // TODO sketchy, for some reason, this has to point to an outgoing edge.
+        // TODO formalize this, check if this is the case everywhere
+        self.mut_vert(vp_new).edge = Some(ep_top_extended);
+
         // return new material
         (vp_new, ep_top_extended, ep_bottom_extended)
     }
@@ -494,16 +499,37 @@ impl Polyhedron {
     }
 
     /// subdivide by creating quads from all polyhedrons
-    fn quad_divide(&mut self) {
-        // halfway_pt = subdivide every edge by creating a new point halfway
-        // - subdivide, store faceptr on the left and right
+    pub fn quad_divide(&mut self) {
+        // get center points, normal, and original start edges for all loops
+        // TODO FILTER OUT THE BACK SIDE!
+        let faces_data: Vec<(Vec3, Vec3, usize)> = self
+            .get_loops()
+            .iter()
+            .map(|eps| {
+                let e = self.edge(eps[0]);
+                let verts: Vec<Vec3> = eps
+                    .into_iter()
+                    .map(|ep| self.vert(self.edge(*ep).from).pos)
+                    .collect();
+                let center = Vectors::average(&verts);
+                let normal = Vec3::Z; // TODO CREATE A GOOD NORMAL!
+                (center, normal, e.from)
+            })
+            .collect();
 
-        // face_pt = add a point at the center of every face / loop
-        // - add pts, store with the faceptr
+        // subdivide all edges
+        for edge in self.all_unique_edges() {
+            self.split_edge(edge, 0.5);
+        }
 
-        // edge = create new edges between every halfway point, and the two adjacent face points
-        // - draw lines between
-        todo!()
+        // then build new faces
+        for (i, (center, normal, first_edge)) in faces_data.into_iter().enumerate() {
+            let vp = self.add_vert(center);
+            for edge in self.get_loop(first_edge).iter().skip(1).step_by(2) {
+                self.add_edge(vp, self.edge(*edge).from, normal, normal); // TODO FIX EDGE ORDERING MISTAKES :)
+            }
+            break;
+        }
     }
 
     /// cap closed planar holes by creating faces at these holes.
