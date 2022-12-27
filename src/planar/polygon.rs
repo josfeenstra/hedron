@@ -89,7 +89,12 @@ impl Polygon {
             // let l_two = Line::new(vert + two, vert + two + two.cross(normal));
 
             // TODO INTERSECT IN THE NORMAL PLANE BY PLANARIZING THE 3D LINES THEN DOING THIS PROPERLY
-            let intersection = one.intersect_2d(&two);
+            let intersection =
+                if (one.to - one.from).angle_between(two.to - two.from) < f32::EPSILON {
+                    one.from
+                } else {
+                    one.intersect_2d(&two)
+                };
 
             self.verts[i_vert].x = intersection.x;
             self.verts[i_vert].y = intersection.y;
