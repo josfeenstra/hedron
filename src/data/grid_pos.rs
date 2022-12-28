@@ -1,10 +1,9 @@
 // /**
 // A unsigned integer coordinate, useful for griddy games
 //  */
-
 // use std::{ops::{Add, Sub}, fmt::{Display, Formatter, self}, convert::TryInto};
 
-// use glam::{Component, UVec2, IVec2};
+// use crate::math::{Component, UVec2, IVec2};
 
 // use crate::math::D8;
 
@@ -23,7 +22,7 @@
 //     }
 
 //     pub fn from_ivec(ivec: IVec2) -> Self {
-//         Self { 
+//         Self {
 //             x: ivec.x.try_into().unwrap(),
 //             y: ivec.y.try_into().unwrap()
 //         }
@@ -39,7 +38,7 @@
 //             .copied()
 //             .map(move |dir| coord + dir.xy());
 //         something
-//     }  
+//     }
 
 //     pub fn to_ivec(&self) -> IVec2 {
 //         IVec2::new(self.x as i32, self.y as i32)
@@ -61,7 +60,7 @@
 // impl Sub for GridPos {
 
 //     type Output = Self;
-    
+
 //     fn sub(self, rhs: Self) -> Self::Output {
 //         Self {
 //             x: self.x - rhs.x,

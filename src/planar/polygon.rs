@@ -1,5 +1,4 @@
-use glam::Vec3;
-use std::f32::consts;
+use crate::kernel::{fxx, Vec3, FRAC_PI_2, TAU};
 
 use crate::{
     core::PointBased,
@@ -20,12 +19,12 @@ impl Polygon {
         Self { verts }
     }
 
-    pub fn new_regular(radius: f32, sides: usize) -> Self {
+    pub fn new_regular(radius: fxx, sides: usize) -> Self {
         let mut verts: Vec<Vec3> = Vec::with_capacity(sides);
 
-        let step = consts::TAU / sides as f32;
+        let step = TAU / sides as fxx;
         for i in 0..sides {
-            let theta = consts::FRAC_PI_2 - i as f32 * step;
+            let theta = FRAC_PI_2 - i as fxx * step;
             let (sin, cos) = theta.sin_cos();
 
             verts.push(Vec3::new(cos * radius, sin * radius, 0.0));
@@ -50,7 +49,7 @@ impl Polygon {
         mesh
     }
 
-    pub fn simple_shrink(mut self, distance: f32) -> Self {
+    pub fn simple_shrink(mut self, distance: fxx) -> Self {
         let center = Vectors::average(&self.verts);
         for v in self.verts.iter_mut() {
             *v = *v - (*v - center).normalize() * distance;
@@ -60,7 +59,7 @@ impl Polygon {
 
     /// offset the polygon by pretending its 2D, offsetting all line segments,
     /// and calculating the intersection points in an inefficient manner :)
-    pub fn offset(mut self, normal: Vec3, distance: f32) -> Self {
+    pub fn offset(mut self, normal: Vec3, distance: fxx) -> Self {
         let center = Vectors::average(&self.verts);
 
         let count = self.verts.len();
@@ -119,7 +118,7 @@ impl From<Polygon> for Mesh {
 
 #[cfg(test)]
 mod tests {
-    use glam::Vec3;
+    use crate::kernel::Vec3;
 
     use super::Polygon;
 

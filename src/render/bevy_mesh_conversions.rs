@@ -28,7 +28,7 @@ impl From<HMesh> for Mesh {
                     .uvs
                     .iter()
                     .map(|v| v.to_array())
-                    .collect::<Vec<[f32; 2]>>(),
+                    .collect::<Vec<[fxx; 2]>>(),
             );
         }
         mesh.set_indices(Some(Indices::U32(

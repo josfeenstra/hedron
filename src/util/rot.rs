@@ -1,10 +1,9 @@
-use std::{f32::consts::PI};
+use crate::kernel::{fxx, PI};
 use glam::IVec3;
 
 // just a basic representation of orthogonal rotations
 #[derive(Clone, Copy, PartialEq, Default)]
 pub enum Rot {
-
     #[default]
     Rot0,
     Rot90,
@@ -13,8 +12,7 @@ pub enum Rot {
 }
 
 impl Rot {
-    
-    pub fn rad(&self) -> f32 {
+    pub fn rad(&self) -> fxx {
         match self {
             Rot::Rot0 => 0.0,
             Rot::Rot90 => PI * 0.5,
@@ -25,8 +23,8 @@ impl Rot {
 
     pub fn next(self) -> Self {
         match self {
-            Rot::Rot0   => Rot::Rot90,
-            Rot::Rot90  => Rot::Rot180, 
+            Rot::Rot0 => Rot::Rot90,
+            Rot::Rot90 => Rot::Rot180,
             Rot::Rot180 => Rot::Rot270,
             Rot::Rot270 => Rot::Rot0,
         }
@@ -34,8 +32,8 @@ impl Rot {
 
     pub fn prev(self) -> Self {
         match self {
-            Rot::Rot0   => Rot::Rot270,
-            Rot::Rot90  => Rot::Rot0, 
+            Rot::Rot0 => Rot::Rot270,
+            Rot::Rot90 => Rot::Rot0,
             Rot::Rot180 => Rot::Rot90,
             Rot::Rot270 => Rot::Rot180,
         }
@@ -43,8 +41,8 @@ impl Rot {
 
     pub fn flip(self) -> Self {
         match self {
-            Rot::Rot0   => Rot::Rot0,
-            Rot::Rot90  => Rot::Rot270, 
+            Rot::Rot0 => Rot::Rot0,
+            Rot::Rot90 => Rot::Rot270,
             Rot::Rot180 => Rot::Rot180,
             Rot::Rot270 => Rot::Rot90,
         }

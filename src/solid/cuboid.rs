@@ -1,4 +1,4 @@
-use crate::{core::Pose, math::Range3};
+use crate::{core::Pose, kernel::fxx, math::Range3};
 
 // represents a cuboid in 3D space
 pub struct Cuboid {
@@ -11,7 +11,7 @@ impl Cuboid {
         Self { pose, size }
     }
 
-    pub fn new_cube(pose: Pose, radius: f32) -> Self {
+    pub fn new_cube(pose: Pose, radius: fxx) -> Self {
         Self::new(pose, Range3::from_radius(radius))
     }
 }

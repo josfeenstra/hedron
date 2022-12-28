@@ -1,4 +1,4 @@
-use glam::Vec3;
+use crate::kernel::{fxx, Vec3};
 
 /// A sequence line segments, each with a explicit start and end position
 #[derive(Debug, Clone)]
@@ -35,8 +35,8 @@ impl LineList {
     pub fn new_cube(center: Vec3, size: Vec3) -> Self {
         const CORNERS_CUBE: usize = 8;
         const EDGES_CUBE: usize = 12;
-        const POS: f32 = 1.0;
-        const NEG: f32 = -1.0;
+        const POS: fxx = 1.0;
+        const NEG: fxx = -1.0;
         let mut corners = Vec::with_capacity(CORNERS_CUBE);
         for x in vec![NEG, POS] {
             for y in vec![NEG, POS] {
@@ -59,13 +59,13 @@ impl LineList {
         Self::new(verts)
     }
 
-    pub fn new_grid(count: u32, scale: f32) -> Self {
-        let half_total_size = ((count as f32 - 1.0) * scale) / 2.0;
+    pub fn new_grid(count: u32, scale: fxx) -> Self {
+        let half_total_size = ((count as fxx - 1.0) * scale) / 2.0;
 
         let mut verts: Vec<Vec3> = Vec::with_capacity((count * 4) as usize);
 
         for i in 0..count {
-            let t = -half_total_size + scale * i as f32;
+            let t = -half_total_size + scale * i as fxx;
             verts.push(Vec3::new(t, -half_total_size, 0.0));
             verts.push(Vec3::new(t, half_total_size, 0.0));
             verts.push(Vec3::new(-half_total_size, t, 0.0));

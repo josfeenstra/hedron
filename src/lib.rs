@@ -3,6 +3,7 @@
 pub mod algos;
 pub mod core;
 pub mod data;
+pub mod kernel;
 pub mod math;
 pub mod util;
 
@@ -21,12 +22,12 @@ pub mod smoothing;
 
 #[cfg(test)]
 mod tests {
-    use crate::math::elastic_out;
+    use crate::{kernel::fxx, math::elastic_out};
 
     #[test]
     fn elastics() {
         for i in 0..101 {
-            let t = (i as f32) / 100.0;
+            let t = (i as fxx) / 100.0;
             println!("{}: {}", t, elastic_out(t));
         }
     }

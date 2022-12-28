@@ -5,30 +5,30 @@ use bevy::{
     prelude::*,
 };
 use bevy_inspector_egui::Inspectable;
-use std::{f32::consts::FRAC_PI_2, f32::consts::PI};
+use std::{fxx::consts::FRAC_PI_2, fxx::consts::PI};
 
 use crate::{math::spherical_to_cartesian, smoothing::Dropoff};
 
-const SPEED: f32 = 10.0;
-const EPSILON: f32 = 0.0001;
+const SPEED: fxx = 10.0;
+const EPSILON: fxx = 0.0001;
 
-const LERP_TOLERANCE: f32 = 0.001;
-// const ROT_DELTA_DROPOFF:  f32 = 0.89;
+const LERP_TOLERANCE: fxx = 0.001;
+// const ROT_DELTA_DROPOFF:  fxx = 0.89;
 
-const MOUSE_ROTATE_POWER: f32 = 0.0015;
-const MOUSE_SCROLL_POWER: f32 = 0.04;
+const MOUSE_ROTATE_POWER: fxx = 0.0015;
+const MOUSE_SCROLL_POWER: fxx = 0.04;
 
 #[derive(Component, Inspectable, Debug)]
 pub struct Rig {
     pub pos: Vec3,
-    pub dis: Dropoff<f32>,
-    pub rot_x: Dropoff<f32>, // incl, azi
-    pub rot_y: Dropoff<f32>, // incl, azi
+    pub dis: Dropoff<fxx>,
+    pub rot_x: Dropoff<fxx>, // incl, azi
+    pub rot_y: Dropoff<fxx>, // incl, azi
     pub has_updated: bool,
     pub controls_active: bool,
 
-    mouse_x: f32,
-    mouse_y: f32,
+    mouse_x: fxx,
+    mouse_y: fxx,
 }
 
 impl Default for Rig {
@@ -51,12 +51,12 @@ impl Default for Rig {
 impl Rig {
     pub fn get_rot_x() {}
 
-    pub fn set_rot_delta(&mut self, delta_x: f32, delta_y: f32) {
+    pub fn set_rot_delta(&mut self, delta_x: fxx, delta_y: fxx) {
         self.rot_x.set_delta(delta_x);
         self.rot_y.set_delta(delta_y);
     }
 
-    // fn set_rot_clamped(&mut self, azi: f32, incl: f32) {
+    // fn set_rot_clamped(&mut self, azi: fxx, incl: fxx) {
     //     self.rot = Vec2::new(
     //         azi,
     //         incl.clamp(EPSILON, PI - EPSILON)
@@ -73,7 +73,7 @@ impl Rig {
         Vec3::new(sin_a, cos_a, 0.0)
     }
 
-    fn update_key_controls(&mut self, key_input: &Input<KeyCode>, dt: f32) -> bool {
+    fn update_key_controls(&mut self, key_input: &Input<KeyCode>, dt: fxx) -> bool {
         // movement
         let mut changed = false;
         if key_input.pressed(KeyCode::A) {
@@ -156,11 +156,11 @@ impl Rig {
     }
 
     /// for smoothening the movement,, we delay certain values.
-    fn update_smooths(&mut self, dt: f32) {
+    fn update_smooths(&mut self, dt: fxx) {
         let fps = 1.0 / dt; // = fps
         let smooth_frames = fps * 0.5; // represent the number of frames of a smoothening
         let tolerance_state = 0.0001; // represents the 'more or less zero' state of a smoothening
-        let factor = f32::powf(tolerance_state, 1.0 / smooth_frames);
+        let factor = fxx::powf(tolerance_state, 1.0 / smooth_frames);
 
         self.rot_x.tick(factor);
         self.rot_y.tick_clamped(factor);

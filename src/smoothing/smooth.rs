@@ -6,13 +6,13 @@ pub struct Smooth<T> {
     // from: T,
     b: T,
     t: T,
-    delta: f32,
-    tol: f32,
+    delta: fxx,
+    tol: fxx,
     state: State,
 }
 
 impl<T: Smoothable + Copy> Smooth<T> {
-    pub fn new_finished(v: T, delta: f32, tol: f32) -> Self {
+    pub fn new_finished(v: T, delta: fxx, tol: fxx) -> Self {
         Self {
             // from: v,
             t: v,
@@ -23,7 +23,7 @@ impl<T: Smoothable + Copy> Smooth<T> {
         }
     }
 
-    pub fn new_running(from: T, to: T, delta: f32, tol: f32) -> Self {
+    pub fn new_running(from: T, to: T, delta: fxx, tol: fxx) -> Self {
         Self {
             // from,
             t: from,

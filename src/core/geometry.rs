@@ -1,20 +1,18 @@
-use glam::{Quat, Vec3};
-
 use super::Pose;
+use crate::kernel::{fxx, Quat, Vec3};
 
 // the core of a 'transformable thing',
 // impl Geometry to give an object access to quick methods of transformation
 
-/// If some geometry is ultimately defined in terms of points, 
+/// If some geometry is ultimately defined in terms of points,
 /// A whole set of common functionalities can be used to transform said geometry:
 /// TODO smooth
-//  scramble 
+//  scramble
 //  scale from
 
-/// If a Geometry is NOT purely defined by points, 
+/// If a Geometry is NOT purely defined by points,
 /// reimplement the mv, rot, scale, and scale_u operators.
 pub trait Geometry: Sized {
-
     // fn mutate_points<'a>(&'a mut self) -> &'a mut Vec<Vec3>;
 
     // fn mv(mut self, mv: &Vec3) -> Self {
@@ -24,7 +22,7 @@ pub trait Geometry: Sized {
     //     self
     // }
 
-    // fn rot(mut self, rot: &glam::Quat) -> Self {
+    // fn rot(mut self, rot: &crate::math::Quat) -> Self {
     //     for v in self.mutate_points() {
     //         *v = *rot * *v;
     //     }
@@ -38,7 +36,7 @@ pub trait Geometry: Sized {
     //     self
     // }
 
-    // fn scale_u(mut self, scale: f32) -> Self {
+    // fn scale_u(mut self, scale: fxx) -> Self {
     //     for v in self.mutate_points() {
     //         v.x *= scale;
     //         v.y *= scale;
@@ -53,23 +51,23 @@ pub trait Geometry: Sized {
 
     fn scale(self, scale: &Vec3) -> Self;
 
-    fn scale_u(self, scale: f32) -> Self;
+    fn scale_u(self, scale: fxx) -> Self;
 
     #[inline]
     #[must_use]
-    fn rot_x(self, angle: f32) -> Self {
+    fn rot_x(self, angle: fxx) -> Self {
         self.rot(&Quat::from_rotation_x(angle))
     }
 
     #[inline]
     #[must_use]
-    fn rot_y(self, angle: f32) -> Self {
+    fn rot_y(self, angle: fxx) -> Self {
         self.rot(&Quat::from_rotation_y(angle))
     }
 
     #[inline]
     #[must_use]
-    fn rot_z(self, angle: f32) -> Self {
+    fn rot_z(self, angle: fxx) -> Self {
         self.rot(&Quat::from_rotation_z(angle))
     }
 
@@ -151,22 +149,22 @@ pub fn transform_point_inverse(tf: &Pose, mut point: Vec3) -> Vec3 {
 
 //     ///////////////////////////////////////////////////////////
 
-//     fn rotate_x(&self, radians: f32) -> bool {
+//     fn rotate_x(&self, radians: fxx) -> bool {
 //         let rotater = Mat4::from_rotation_x(radians);
 //         self.transform(rotater)
 //     }
 
-//     fn rotate_y(&self, radians: f32) -> bool {
+//     fn rotate_y(&self, radians: fxx) -> bool {
 //         let rotater = Mat4::from_rotation_y(radians);
 //         self.transform(rotater)
 //     }
 
-//     fn rotate_z(&self, radians: f32) -> bool {
+//     fn rotate_z(&self, radians: fxx) -> bool {
 //         let rotater = Mat4::from_rotation_z(radians);
 //         self.transform(rotater)
 //     }
 
-//     fn rotate(&self, radians: f32, axis: Vec3) -> bool {
+//     fn rotate(&self, radians: fxx, axis: Vec3) -> bool {
 //         let rotater = Mat4::from_axis_angle(axis, radians);
 //         self.transform(rotater)
 //     }
@@ -183,22 +181,22 @@ pub fn transform_point_inverse(tf: &Pose, mut point: Vec3) -> Vec3 {
 
 //     ///////////////////////////////////////////////////////////
 
-//     fn rotated_x(&self, radians: f32) -> bool {
+//     fn rotated_x(&self, radians: fxx) -> bool {
 //         let rotater = Mat4::from_rotation_x(radians);
 //         self.transform(rotater)
 //     }
 
-//     fn rotated_y(&self, radians: f32) -> bool {
+//     fn rotated_y(&self, radians: fxx) -> bool {
 //         let rotater = Mat4::from_rotation_y(radians);
 //         self.transform(rotater)
 //     }
 
-//     fn rotated_z(&self, radians: f32) -> bool {
+//     fn rotated_z(&self, radians: fxx) -> bool {
 //         let rotater = Mat4::from_rotation_z(radians);
 //         self.transform(rotater)
 //     }
 
-//     fn rotated(&self, radians: f32, axis: Vec3) -> bool {
+//     fn rotated(&self, radians: fxx, axis: Vec3) -> bool {
 //         let rotater = Mat4::from_axis_angle(axis, radians);
 //         self.transform(rotater)
 //     }

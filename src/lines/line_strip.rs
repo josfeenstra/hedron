@@ -1,4 +1,4 @@
-use glam::Vec3;
+use crate::kernel::Vec3;
 
 /// A list of points that will have a line drawn between each consecutive points
 #[derive(Debug, Clone)]

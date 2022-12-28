@@ -1,6 +1,6 @@
-use glam::Vec2;
+use crate::kernel::{fxx, Vec2};
 
 pub struct Circle {
     center: Vec2,
-    radius: f32,
+    radius: fxx,
 }

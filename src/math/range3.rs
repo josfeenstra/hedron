@@ -1,24 +1,26 @@
+use glam::UVec3;
+
+use crate::kernel::{fxx, Vec3};
 use crate::{math::quick, util};
-use glam::{Vec3, UVec3};
 use std::ops::Range;
 
 /// A two dimentional range.
 /// Can also be interpreted as an axis-aligned rectangle
 pub struct Range3 {
-    pub x: Range<f32>,
-    pub y: Range<f32>,
-    pub z: Range<f32>,
+    pub x: Range<fxx>,
+    pub y: Range<fxx>,
+    pub z: Range<fxx>,
 }
 
 impl Range3 {
     pub const UNIT: Self = Self::from_vecs(Vec3::ZERO, Vec3::ONE);
 
     #[inline]
-    pub const fn new(x: Range<f32>, y: Range<f32>, z: Range<f32>) -> Self {
+    pub const fn new(x: Range<fxx>, y: Range<fxx>, z: Range<fxx>) -> Self {
         Self { x, y, z }
     }
 
-    pub fn from_radius(r: f32) -> Self {
+    pub fn from_radius(r: fxx) -> Self {
         Self::new(-r..r, -r..r, -r..r)
     }
 
@@ -29,9 +31,8 @@ impl Range3 {
 
     /// iterate through this space
     pub fn iter<'a>(&'a self, count: UVec3) -> impl Iterator<Item = Vec3> + 'a {
-        let fcount = count.as_vec3();
-        util::iter_xyz_u(count)
-        .map(move | u | self.lerp(u.as_vec3() / fcount))
+        let fcount = count.as_dvec3();
+        util::iter_xyz_u(count).map(move |u| self.lerp(u.as_dvec3() / fcount))
     }
 
     /// normalize

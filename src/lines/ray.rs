@@ -1,5 +1,7 @@
-use crate::core::Plane;
-use glam::*;
+use crate::{
+    core::Plane,
+    kernel::{fxx, Vec3},
+};
 
 pub struct Ray {
     pub origin: Vec3,
@@ -20,13 +22,13 @@ impl Ray {
         }
     }
 
-    pub fn at(&self, t: f32) -> Vec3 {
+    pub fn at(&self, t: fxx) -> Vec3 {
         self.origin + self.normal * t
     }
 
     /// intersect with a plane
     /// returns the t parameter on this ray
-    pub fn x_plane(&self, plane: &Plane) -> f32 {
+    pub fn x_plane(&self, plane: &Plane) -> fxx {
         // let t = plane.
         let pn = plane.normal().truncate();
         return -(self.origin.dot(pn) + plane.d()) / self.normal.dot(pn);

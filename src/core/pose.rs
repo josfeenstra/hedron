@@ -1,7 +1,9 @@
-use glam::{Affine3A, Mat3, Mat4, Quat, Vec3};
 use std::ops::Mul;
 
+use crate::kernel::{fxx, Affine3, Mat3, Mat4, Quat, Vec3};
+
 /// TODO: Merge Pose with Plane
+#[derive(Debug)]
 pub struct Pose {
     pub pos: Vec3,
     pub rot: Quat,
@@ -34,7 +36,7 @@ impl Pose {
     /// is used for z-ordering elements: higher `z`-value will be in front of lower
     /// `z`-value.
     #[inline]
-    pub const fn from_xyz(x: f32, y: f32, z: f32) -> Self {
+    pub const fn from_xyz(x: fxx, y: fxx, z: fxx) -> Self {
         Self::from_pos(Vec3::new(x, y, z))
     }
 
@@ -120,8 +122,8 @@ impl Pose {
     /// Returns the 3d affine transformation matrix from this transforms translation,
     /// rotation, and scale.
     #[inline]
-    pub fn compute_affine(&self) -> Affine3A {
-        Affine3A::from_scale_rotation_translation(self.scale, self.rot, self.pos)
+    pub fn compute_affine(&self) -> Affine3 {
+        Affine3::from_scale_rotation_translation(self.scale, self.rot, self.pos)
     }
 
     /// Get the unit vector in the local `X` direction.
@@ -186,25 +188,25 @@ impl Pose {
 
     /// Rotates this [`Pose`] around the given `axis` by `angle` (in radians).
     #[inline]
-    pub fn rotate_axis(&mut self, axis: Vec3, angle: f32) {
+    pub fn rotate_axis(&mut self, axis: Vec3, angle: fxx) {
         self.rotate(Quat::from_axis_angle(axis, angle));
     }
 
     /// Rotates this [`Pose`] around the `X` axis by `angle` (in radians).
     #[inline]
-    pub fn rotate_x(&mut self, angle: f32) {
+    pub fn rotate_x(&mut self, angle: fxx) {
         self.rotate(Quat::from_rotation_x(angle));
     }
 
     /// Rotates this [`Pose`] around the `Y` axis by `angle` (in radians).
     #[inline]
-    pub fn rotate_y(&mut self, angle: f32) {
+    pub fn rotate_y(&mut self, angle: fxx) {
         self.rotate(Quat::from_rotation_y(angle));
     }
 
     /// Rotates this [`Pose`] around the `Z` axis by `angle` (in radians).
     #[inline]
-    pub fn rotate_z(&mut self, angle: f32) {
+    pub fn rotate_z(&mut self, angle: fxx) {
         self.rotate(Quat::from_rotation_z(angle));
     }
 
@@ -216,25 +218,25 @@ impl Pose {
 
     /// Rotates this [`Pose`] around its local `axis` by `angle` (in radians).
     #[inline]
-    pub fn rotate_local_axis(&mut self, axis: Vec3, angle: f32) {
+    pub fn rotate_local_axis(&mut self, axis: Vec3, angle: fxx) {
         self.rotate_local(Quat::from_axis_angle(axis, angle));
     }
 
     /// Rotates this [`Pose`] around its local `X` axis by `angle` (in radians).
     #[inline]
-    pub fn rotate_local_x(&mut self, angle: f32) {
+    pub fn rotate_local_x(&mut self, angle: fxx) {
         self.rotate_local(Quat::from_rotation_x(angle));
     }
 
     /// Rotates this [`Pose`] around its local `Y` axis by `angle` (in radians).
     #[inline]
-    pub fn rotate_local_y(&mut self, angle: f32) {
+    pub fn rotate_local_y(&mut self, angle: fxx) {
         self.rotate_local(Quat::from_rotation_y(angle));
     }
 
     /// Rotates this [`Pose`] around its local `Z` axis by `angle` (in radians).
     #[inline]
-    pub fn rotate_local_z(&mut self, angle: f32) {
+    pub fn rotate_local_z(&mut self, angle: fxx) {
         self.rotate_local(Quat::from_rotation_z(angle));
     }
 
@@ -286,8 +288,8 @@ impl Pose {
     }
 
     // inversly transform a point to the 'space' of this pose
-    // This does not work if pose.scale contains zeroes. 
-    // After all, if 5 * 0 = 0, 0 * ? = 5 is impossible 
+    // This does not work if pose.scale contains zeroes.
+    // After all, if 5 * 0 = 0, 0 * ? = 5 is impossible
     #[inline]
     pub fn transform_point_inv(&self, mut point: Vec3) -> Vec3 {
         point -= self.pos;

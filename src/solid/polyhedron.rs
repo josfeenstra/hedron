@@ -1,11 +1,11 @@
 use super::Mesh;
+use crate::kernel::{fxx, vec3, Vec3};
 use crate::{
     core::PointBased,
     data::{Pool, Ptr},
     planar::Polygon,
     pts::Vectors,
 };
-use glam::{vec3, Vec3};
 use std::collections::HashSet;
 
 pub type VertPtr = Ptr;
@@ -433,11 +433,11 @@ impl Polyhedron {
 
     /////////////////////////////////////////////////////////////// Modelling
 
-    fn divide_edge(&mut self, ep: EdgePtr, t: f32) {
+    fn divide_edge(&mut self, ep: EdgePtr, t: fxx) {
         todo!()
     }
 
-    fn divide_face(&mut self, ep: FacePtr, t: f32) {
+    fn divide_face(&mut self, ep: FacePtr, t: fxx) {
         todo!()
     }
 
@@ -467,8 +467,8 @@ impl PointBased for Polyhedron {
 
 #[cfg(test)]
 mod tests {
+    use crate::kernel::{vec3, Vec3};
     use crate::solid::{Polyhedron, VertPtr};
-    use glam::{vec3, Vec3};
 
     #[test]
     fn polyhedron() {

@@ -8,8 +8,8 @@ use bevy::{prelude::*, render::view::NoFrustumCulling};
 
 #[derive(Resource, Default)]
 pub struct GeoRenderer {
-    to_add: Vec<(String, Mesh, Color, f32)>,
-    // to_update: Vec<(String, Mesh, Color, f32)>,
+    to_add: Vec<(String, Mesh, Color, fxx)>,
+    // to_update: Vec<(String, Mesh, Color, fxx)>,
     to_remove: Vec<Entity>,
 
     rendered: HashMap<String, Entity>,
@@ -22,7 +22,7 @@ impl GeoRenderer {
     }
 
     // TODO add with key, to make it replaceable
-    pub fn set<M: Into<Mesh>>(&mut self, key: &str, renderable: M, color: Color, width: f32) {
+    pub fn set<M: Into<Mesh>>(&mut self, key: &str, renderable: M, color: Color, width: fxx) {
         if let Some(_) = self.rendered.get(key) {
             self.delete(key);
         }
@@ -77,7 +77,7 @@ impl GeoRenderer {
                                 .map(|v| InstanceData {
                                     position: *v,
                                     scale: width,
-                                    color: color.as_rgba_f32(),
+                                    color: color.as_rgba_fxx(),
                                 })
                                 .collect(),
                         ),

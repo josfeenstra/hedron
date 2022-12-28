@@ -1,7 +1,6 @@
-use bevy::prelude::{GlobalTransform, Camera};
-use glam::{Vec2, Mat4, Vec3};
 use crate::lines::Ray;
-
+use crate::math::{Mat4, Vec2, Vec3};
+use bevy::prelude::{Camera, GlobalTransform};
 
 // taken from https://github.com/aevyrie/bevy_mod_raycast/blob/main/src/primitives.rs
 pub fn ray_from_screen(

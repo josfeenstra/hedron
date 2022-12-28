@@ -1,4 +1,4 @@
-use glam::Vec3;
+use crate::kernel::{fxx, Vec3};
 
 use crate::algos::line_line_2d;
 
@@ -33,7 +33,7 @@ impl Line {
 }
 
 impl Curve for Line {
-    fn eval(&self, t: f32) -> Vec3 {
+    fn eval(&self, t: fxx) -> Vec3 {
         self.from.lerp(self.to, t)
     }
 }
