@@ -16,9 +16,9 @@ keywords = [
     "brep",
 ]
 categories = [
+    "game-development",
     "game-engines",
-    "computer-graphics",
-    "3d-modelling",
+    "graphics",
 ]
 
 [dependencies]
