@@ -6,6 +6,7 @@ use crate::{
     planar::Polygon,
     pts::Vectors,
 };
+use std::collections::HashSet;
 
 pub type VertPtr = Ptr;
 pub type EdgePtr = Ptr;
