@@ -1,4 +1,4 @@
-use glam::{Mat4, Quat, Vec3, Vec4};
+use crate::kernel::{fxx, Mat4, Quat, Vec3, Vec4};
 
 use crate::math::TOLERANCE;
 
@@ -29,7 +29,7 @@ impl Geometry for Plane {
         self
     }
 
-    fn scale_u(mut self, scalar: f32) -> Self {
+    fn scale_u(mut self, scalar: fxx) -> Self {
         self.mat.x_axis.x *= scalar;
         self.mat.y_axis.y *= scalar;
         self.mat.z_axis.z *= scalar;
@@ -124,28 +124,28 @@ impl Plane {
         self.mat.transform_point3(point)
     }
 
-    pub fn distance_to_point(&self, point: Vec3) -> f32 {
+    pub fn distance_to_point(&self, point: Vec3) -> fxx {
         self.point_to_plane(point).z
     }
 
     // #[inline]
-    // fn a(&self) -> f32 {
+    // fn a(&self) -> fxx {
     //     self.mat.z_axis.x
     // }
     // #[inline]
-    // fn b(&self) -> f32 {
+    // fn b(&self) -> fxx {
     //     self.mat.z_axis.y
     // }
     // #[inline]
-    // fn c(&self) -> f32 {
+    // fn c(&self) -> fxx {
     //     self.mat.z_axis.z
     // }
     #[inline]
-    pub fn d(&self) -> f32 {
+    pub fn d(&self) -> fxx {
         self.normal().dot(self.origin()) * -1.0
     }
 
-    // fn abcd(&self) -> (f32, f32, f32, f32) {
+    // fn abcd(&self) -> (fxx, fxx, fxx, fxx) {
     //     (self.a(), self.b(), self.c(), self.d())
     // }
 }

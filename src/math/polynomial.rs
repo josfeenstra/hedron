@@ -5,11 +5,9 @@
 ///
 /// TODO: precalculate pascals triangle
 ///  
-use super::{fact};
-use crate::{
-    data::{Grid2},
-};
-use glam::Vec3;
+use super::fact;
+use crate::data::Grid2;
+use crate::kernel::{fxx, Vec3};
 use lazy_static::lazy_static;
 
 const MAX_DEGREE: usize = 15;
@@ -22,8 +20,8 @@ lazy_static! {
 /// (n over i) t^i * (1-t)^(n - i).
 /// precalculated Pascal's triangle for a bit more efficiency
 #[inline]
-pub fn bernstein(t: f32, i: usize, n: usize) -> f32 {
-    return (get_bicoef(n, i) as f32) * t.powi(i as i32) * (1.0 - t).powi((n - i) as i32);
+pub fn bernstein(t: fxx, i: usize, n: usize) -> fxx {
+    return (get_bicoef(n, i) as fxx) * t.powi(i as i32) * (1.0 - t).powi((n - i) as i32);
 }
 
 /// Binomial Coefficient
@@ -54,7 +52,7 @@ fn pascal_triangle(size: usize) -> Vec<Vec<usize>> {
 ///  Hovever, this is slower than the PointAt() method.
 ///  useful for:
 ///  Subdividing bezier curves, debugging, and splines
-fn decastejau(verts: Vec<Vec3>, t: f32) -> Grid2<Vec3> {
+fn decastejau(verts: Vec<Vec3>, t: fxx) -> Grid2<Vec3> {
     let count = verts.len();
     let mut tri = Grid2::new(count, count);
 
@@ -77,7 +75,7 @@ fn decastejau(verts: Vec<Vec3>, t: f32) -> Grid2<Vec3> {
 }
 
 // calculate the decastejau piramid based on extrapolation
-fn decastejau_extrapolate_end(verts: Vec<Vec3>, t: f32) -> Grid2<Vec3> {
+fn decastejau_extrapolate_end(verts: Vec<Vec3>, t: fxx) -> Grid2<Vec3> {
     let count = verts.len();
 
     let tri = Grid2::new(count, count);
@@ -103,7 +101,7 @@ fn decastejau_extrapolate_end(verts: Vec<Vec3>, t: f32) -> Grid2<Vec3> {
 ///////////////////////////////////////////////////////////////////////////////
 
 /// TODO: do the coxdeboor things needed for spline curves
-fn coxdeboor() -> f32 {
+fn coxdeboor() -> fxx {
     1.0
 }
 

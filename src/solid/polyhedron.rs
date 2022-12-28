@@ -1,13 +1,11 @@
 use super::Mesh;
+use crate::kernel::{fxx, vec3, Vec3};
 use crate::{
     core::PointBased,
     data::{Pool, Ptr},
     planar::Polygon,
     pts::Vectors,
 };
-use bevy::render::render_graph::Edge;
-use glam::{vec3, Vec3};
-use std::collections::HashSet;
 
 pub type VertPtr = Ptr;
 pub type EdgePtr = Ptr;
@@ -451,7 +449,7 @@ impl Polyhedron {
     /////////////////////////////////////////////////////////////// Modelling
 
     /// split an edge at normalized parameter t, starting from the starting vert of the given edge.
-    pub fn split_edge(&mut self, ep: EdgePtr, t: f32) -> (VertPtr, EdgePtr, EdgePtr) {
+    pub fn split_edge(&mut self, ep: EdgePtr, t: fxx) -> (VertPtr, EdgePtr, EdgePtr) {
         let ep_top = ep;
         let ep_top_next = self.edge(ep_top).next;
         let ep_top_face = self.edge(ep_top).face;
@@ -494,7 +492,7 @@ impl Polyhedron {
         (vp_new, ep_top_extended, ep_bottom_extended)
     }
 
-    pub fn split_face(&mut self, ep: FacePtr, t: f32) {
+    pub fn split_face(&mut self, ep: FacePtr, t: fxx) {
         todo!()
     }
 
@@ -546,8 +544,8 @@ impl PointBased for Polyhedron {
 
 #[cfg(test)]
 mod tests {
+    use crate::kernel::{vec3, Vec3};
     use crate::solid::{Polyhedron, VertPtr};
-    use glam::{vec3, Vec3};
 
     #[test]
     fn polyhedron() {

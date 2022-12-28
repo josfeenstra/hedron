@@ -1,1 +1,3 @@
-pub const TOLERANCE: f32 = 1e-6;
+use crate::kernel::fxx;
+
+pub const TOLERANCE: fxx = 1e-6;

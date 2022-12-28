@@ -37,11 +37,11 @@ use bytemuck::{Pod, Zeroable};
 ///         SpatialBundle::VISIBLE_IDENTITY,
 ///         InstanceMaterialData(
 ///             (1..=10)
-///                 .flat_map(|x| (1..=10).map(move |y| (x as f32 / 10.0, y as f32 / 10.0)))
+///                 .flat_map(|x| (1..=10).map(move |y| (x as fxx / 10.0, y as fxx / 10.0)))
 ///                 .map(|(x, y)| InstanceData {
 ///                     position: Vec3::new(x * 10.0 - 5.0, y * 10.0 - 5.0, 0.0),
 ///                     scale: 1.0,
-///                     color: Color::hsla(x * 360., y, 0.5, 1.0).as_rgba_f32(),
+///                     color: Color::hsla(x * 360., y, 0.5, 1.0).as_rgba_fxx(),
 ///                 })
 ///                 .collect(),
 ///         ),
@@ -78,8 +78,8 @@ impl Plugin for InstanceMaterialPlugin {
 #[repr(C)]
 pub struct InstanceData {
     pub position: Vec3,
-    pub scale: f32,
-    pub color: [f32; 4],
+    pub scale: fxx,
+    pub color: [fxx; 4],
 }
 
 #[derive(Component, Deref)]

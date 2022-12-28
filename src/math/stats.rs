@@ -1,18 +1,18 @@
 // UNTESTED
-use crate::data::Matrix;
+use crate::{data::Matrix, kernel::fxx};
 
 pub struct Stat {}
 
 impl Stat {
-    pub fn sum(x: &Vec<f32>) -> f32 {
+    pub fn sum(x: &Vec<fxx>) -> fxx {
         x.iter().sum()
     }
 
-    pub fn mean(x: &Vec<f32>) -> f32 {
-        Stat::sum(x) / (x.len() as f32)
+    pub fn mean(x: &Vec<fxx>) -> fxx {
+        Stat::sum(x) / (x.len() as fxx)
     }
 
-    pub fn mean_weighted(x: &Vec<f32>, y: &Vec<f32>) -> Result<f32, &'static str> {
+    pub fn mean_weighted(x: &Vec<fxx>, y: &Vec<fxx>) -> Result<fxx, &'static str> {
         if x.len() != y.len() {
             return Err("values & weights need same length");
         }
@@ -28,7 +28,7 @@ impl Stat {
         Ok(sum / sumweight)
     }
 
-    pub fn variance(x: &Vec<f32>) -> f32 {
+    pub fn variance(x: &Vec<fxx>) -> fxx {
         let n = x.len();
         let avr = Stat::mean(x);
 
@@ -37,14 +37,14 @@ impl Stat {
             sum += (x[i] - avr).powi(2);
         }
 
-        sum / ((n - 1) as f32) // losing one degree of freedom
+        sum / ((n - 1) as fxx) // losing one degree of freedom
     }
 
-    pub fn deviation(arr: &Vec<f32>) -> f32 {
+    pub fn deviation(arr: &Vec<fxx>) -> fxx {
         Stat::variance(&arr).powf(0.5)
     }
 
-    pub fn covariance(x: &Vec<f32>, y: &Vec<f32>) -> Result<f32, &'static str> {
+    pub fn covariance(x: &Vec<fxx>, y: &Vec<fxx>) -> Result<fxx, &'static str> {
         if x.len() != y.len() {
             return Err("values & weights need same length");
         }
@@ -57,7 +57,7 @@ impl Stat {
         for i in 0..n {
             sum += (x[i] - x_avr) * (y[i] - y_avr);
         }
-        Ok(sum / ((n - 1) as f32)) // losing one degree of freedom
+        Ok(sum / ((n - 1) as fxx)) // losing one degree of freedom
     }
 
     // variance / covariance matrix

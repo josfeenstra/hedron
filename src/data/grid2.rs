@@ -1,5 +1,5 @@
+use crate::{kernel::fxx, util};
 use glam::IVec2;
-use crate::util;
 
 /**
 A grid data structure
@@ -10,7 +10,21 @@ pub struct Grid2<T> {
     pub items: Vec<T>,
 }
 
-pub type Matrix = Grid2<f32>;
+pub type Matrix = Grid2<fxx>;
+
+// for some reason, nalgebras print thing fails to print the full matrix correctly...
+#[cfg(feature = "nalgebra")]
+pub fn print_mat<T: std::fmt::Display>(mat: &nalgebra::DMatrix<T>) {
+    println!("┌       ┐");
+    for row in 0..mat.nrows() {
+        print!("| ");
+        for col in 0..mat.ncols() {
+            print!(" {} ", mat[(row, col)]);
+        }
+        println!(" |");
+    }
+    println!("└       ┘");
+}
 
 // basic data methods
 impl<T: Clone + Copy + Default> Grid2<T> {
@@ -151,11 +165,13 @@ impl<T: Clone + Copy + Default> Grid2<T> {
 
 #[cfg(test)]
 mod tests {
+    use crate::kernel::fxx;
+
     use super::Grid2;
 
     #[test]
     fn test_grid() {
-        let grid = Grid2::<f32>::new(4, 5);
+        let grid = Grid2::<fxx>::new(4, 5);
 
         assert_eq!(grid.to_xy(0), (0, 0));
         assert_eq!(grid.to_xy(1), (1, 0));

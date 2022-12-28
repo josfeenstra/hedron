@@ -2,7 +2,7 @@
 // it just needs to expose a Iter<&mut Vec3>
 
 use super::{Geometry, Pose};
-use glam::Vec3;
+use crate::kernel::{fxx, Quat, Vec3};
 
 /// If some geometry is ultimately defined in terms of points,
 /// A whole set of common functionalities can be used to transform said geometry.
@@ -16,7 +16,7 @@ pub trait PointBased: Sized + Geometry {
     fn mutate_points<'a>(&'a mut self) -> Vec<&'a mut Vec3>;
 
     /// scale from a certain position.
-    fn scale_from(mut self, pos: Vec3, factor: f32) -> Self {
+    fn scale_from(mut self, pos: Vec3, factor: fxx) -> Self {
         for v in self.mutate_points() {
             *v = Vec3::lerp(pos, *v, factor);
         }
@@ -44,7 +44,7 @@ impl<T: PointBased> Geometry for T {
         self
     }
 
-    fn rot(mut self, rot: &glam::Quat) -> Self {
+    fn rot(mut self, rot: &Quat) -> Self {
         for v in self.mutate_points() {
             *v = *rot * *v;
         }
@@ -58,7 +58,7 @@ impl<T: PointBased> Geometry for T {
         self
     }
 
-    fn scale_u(mut self, scale: f32) -> Self {
+    fn scale_u(mut self, scale: fxx) -> Self {
         for v in self.mutate_points() {
             v.x *= scale;
             v.y *= scale;

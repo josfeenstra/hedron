@@ -1,7 +1,10 @@
 // we need a different struct, since a bunch of vectors will need to be rendered as a bunch of arrows
 
-use glam::Vec3;
-use std::f32::consts::TAU;
+use crate::{
+    core::PointBased,
+    kernel::{fxx, Vec3, TAU},
+};
+use nalgebra::DMatrix;
 
 // abstraction around a list of vectors.
 // allows us to easily access function operating on lists of points, and to render them
@@ -9,7 +12,7 @@ use std::f32::consts::TAU;
 // TODO: specify points?
 // TODO create a cool macro wrapping Vectors::new(vec![Vec3::new(0,0,0)]) as vectors![(0,0,0)]
 pub struct Vectors {
-    data: Vec<Vec3>,
+    pub data: Vec<Vec3>,
 }
 
 // Anytime a function askes for a normal, you MUST provide an actually normalized vector!
@@ -18,11 +21,15 @@ impl Vectors {
         Self { data }
     }
 
-    pub fn from_vec_of_arrays(vec: Vec<[f32; 3]>) -> Vec<Vec3> {
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn from_vec_of_arrays(vec: Vec<[fxx; 3]>) -> Vec<Vec3> {
         vec.iter().map(|v| Vec3::from_array(*v)).collect()
     }
 
-    pub fn to_vec_of_arrays(self) -> Vec<[f32; 3]> {
+    pub fn to_vec_of_arrays(self) -> Vec<[fxx; 3]> {
         self.into()
     }
 
@@ -88,8 +95,15 @@ impl Vectors {
         // println!("best right, {right_id}, best left {left_id}");
         Some((right_id, left_id))
     }
+
     pub fn average(verts: &Vec<Vec3>) -> Vec3 {
-        verts.iter().fold(Vec3::ZERO, |sum, item| sum + *item) / verts.len() as f32
+        verts.iter().fold(Vec3::ZERO, |sum, item| sum + *item) / verts.len() as fxx
+    }
+}
+
+impl PointBased for Vectors {
+    fn mutate_points<'a>(&'a mut self) -> Vec<&'a mut Vec3> {
+        self.data.iter_mut().collect()
     }
 }
 
@@ -105,8 +119,24 @@ impl From<Vectors> for Vec<Vec3> {
     }
 }
 
-impl From<Vectors> for Vec<[f32; 3]> {
+impl From<Vectors> for Vec<[fxx; 3]> {
     fn from(points: Vectors) -> Self {
         points.data.iter().map(|v| v.to_array()).collect()
+    }
+}
+
+#[cfg(feature = "nalgebra")]
+impl From<Vectors> for DMatrix<fxx> {
+    fn from(val: Vectors) -> Self {
+        // println!("{}", val.data.len());
+        let mut matrix = DMatrix::zeros(val.data.len(), 3);
+        for (i, v) in val.data.iter().enumerate() {
+            // println!("{}: {}", i, v);
+            matrix[(i, 0)] = v.x;
+            matrix[(i, 1)] = v.y;
+            matrix[(i, 2)] = v.z;
+        }
+        // println!("{}, {}", matrix.nrows(), matrix.ncols());
+        matrix
     }
 }

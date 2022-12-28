@@ -1,9 +1,9 @@
 use crate::core::Geometry;
-use glam::{Quat, Vec3};
+use crate::math::{Quat, Vec3};
 
 pub struct Sphere {
     pub pos: Vec3,
-    pub rad: f32,
+    pub rad: fxx,
 }
 
 impl Geometry for Sphere {
@@ -22,7 +22,7 @@ impl Geometry for Sphere {
         self
     }
 
-    fn scale_u(mut self, scale: f32) -> Self {
+    fn scale_u(mut self, scale: fxx) -> Self {
         self.rad *= scale;
         self
     }

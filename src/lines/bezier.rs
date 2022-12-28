@@ -1,5 +1,6 @@
+use crate::kernel::{fxx, Quat, Vec3};
+
 use crate::{core::Geometry, math::bernstein};
-use glam::Vec3;
 
 pub struct Bezier {
     pub verts: Vec<Vec3>,
@@ -48,7 +49,7 @@ impl Bezier {
         for i in 1..n + 1 {
             let pa = self.verts.get(i - 1).unwrap();
             let pb = self.verts.get(i).unwrap();
-            let sa = i as f32 / (n + 1) as f32;
+            let sa = i as fxx / (n + 1) as fxx;
             let sb = 1.0 - sa;
             let q = *pa * sa + *pb * sb;
             verts.push(q);
@@ -60,18 +61,18 @@ impl Bezier {
         Bezier::new(verts)
     }
 
-    pub fn split(&self, t: f32) -> Bezier {
+    pub fn split(&self, t: fxx) -> Bezier {
         let size = self.degree() + 1;
         // let tri =
 
         Bezier::new(Vec::new())
     }
 
-    pub fn extend(&self, t: f32) -> Bezier {
+    pub fn extend(&self, t: fxx) -> Bezier {
         Bezier::new(Vec::new())
     }
 
-    pub fn point_at(&self, t: f32) -> Vec3 {
+    pub fn point_at(&self, t: fxx) -> Vec3 {
         let degree = self.degree();
         let mut p = Vec3::ZERO;
         for (i, vert) in self.verts.iter().enumerate() {
@@ -80,12 +81,12 @@ impl Bezier {
         p
     }
 
-    pub fn tangent_at(&self, t: f32) -> Vec3 {
+    pub fn tangent_at(&self, t: fxx) -> Vec3 {
         // NOTE: not extremely efficient
         self.hodograph().point_at(t)
     }
 
-    pub fn normal_at(&self, t: f32, up: Vec3) -> Vec3 {
+    pub fn normal_at(&self, t: fxx, up: Vec3) -> Vec3 {
         self.tangent_at(t).cross(up)
     }
 
@@ -93,7 +94,7 @@ impl Bezier {
         let count = segments + 1;
         let mut verts = Vec::with_capacity(count);
         for i in 0..count {
-            let t = i as f32 / count as f32;
+            let t = i as fxx / count as fxx;
             verts.push(self.point_at(t));
         }
         verts
@@ -101,7 +102,7 @@ impl Bezier {
 }
 
 // impl Curve for Bezier {
-//     fn eval(&self, t: f32) -> Vec3 {
+//     fn eval(&self, t: fxx) -> Vec3 {
 //         Vec3::ZERO
 //     }
 // }
@@ -114,7 +115,7 @@ impl Geometry for Bezier {
         self
     }
 
-    fn rot(mut self, rot: &glam::Quat) -> Self {
+    fn rot(mut self, rot: &Quat) -> Self {
         for v in self.verts.iter_mut() {
             *v = *rot * *v;
         }
@@ -128,7 +129,7 @@ impl Geometry for Bezier {
         self
     }
 
-    fn scale_u(mut self, scale: f32) -> Self {
+    fn scale_u(mut self, scale: fxx) -> Self {
         for v in self.verts.iter_mut() {
             v.x *= scale;
             v.y *= scale;

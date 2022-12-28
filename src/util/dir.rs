@@ -1,8 +1,9 @@
-use std::f32::consts::PI;
 use rand::{
     distributions::{Distribution, Standard},
     Rng,
 };
+
+use crate::kernel::{fxx, PI};
 
 pub enum D4 {
     Left,
@@ -27,7 +28,6 @@ pub enum D8 {
 }
 
 impl D8 {
-
     pub const ALL: [D8; 8] = [
         D8::Left,
         D8::DownLeft,
@@ -54,47 +54,47 @@ impl D8 {
     }
 
     /**
-     next direction, clockwise
-     */
+    next direction, clockwise
+    */
     pub fn next(&self) -> D8 {
         match self {
-            D8::Left       => D8::DownLeft,
-            D8::DownLeft   => D8::Down,
-            D8::Down       => D8::DownRight,
-            D8::DownRight  => D8::Right,
-            D8::Right      => D8::UpRight,
-            D8::UpRight    => D8::Up,
-            D8::Up         => D8::UpLeft,
-            D8::UpLeft     => D8::Left,
-        }    
+            D8::Left => D8::DownLeft,
+            D8::DownLeft => D8::Down,
+            D8::Down => D8::DownRight,
+            D8::DownRight => D8::Right,
+            D8::Right => D8::UpRight,
+            D8::UpRight => D8::Up,
+            D8::Up => D8::UpLeft,
+            D8::UpLeft => D8::Left,
+        }
     }
 
     /**
-     previous direction, clockwise
-     */
+    previous direction, clockwise
+    */
     pub fn prev(&self) -> D8 {
         match self {
-            D8::Left       => D8::UpLeft,
-            D8::DownLeft   => D8::Left,
-            D8::Down       => D8::DownLeft,
-            D8::DownRight  => D8::Down,
-            D8::Right      => D8::DownRight,
-            D8::UpRight    => D8::Right,
-            D8::Up         => D8::UpRight,
-            D8::UpLeft     => D8::Up,
-        }    
+            D8::Left => D8::UpLeft,
+            D8::DownLeft => D8::Left,
+            D8::Down => D8::DownLeft,
+            D8::DownRight => D8::Down,
+            D8::Right => D8::DownRight,
+            D8::UpRight => D8::Right,
+            D8::Up => D8::UpRight,
+            D8::UpLeft => D8::Up,
+        }
     }
 
     pub fn xy(&self) -> (i8, i8) {
         match self {
-            D8::Left =>  (-1, 0),
+            D8::Left => (-1, 0),
             D8::Right => (1, 0),
-            D8::Up =>    (0, -1),
-            D8::Down =>  (0, 1),
-            D8::DownLeft  => (-1, 1),
+            D8::Up => (0, -1),
+            D8::Down => (0, 1),
+            D8::DownLeft => (-1, 1),
             D8::DownRight => (1, 1),
-            D8::UpRight   => (1, -1),
-            D8::UpLeft    => (-1, -1),
+            D8::UpRight => (1, -1),
+            D8::UpLeft => (-1, -1),
         }
     }
 
@@ -122,7 +122,7 @@ impl D8 {
     }
 
     /// the angle in **radians** in respect to the positive X axis, going counter clockwise (as conventional within certain 3d engines)
-    pub fn rad(&self) -> f32 {
+    pub fn rad(&self) -> fxx {
         match self {
             D8::Left => 0.0,
             D8::UpLeft => PI * 0.25,
@@ -138,7 +138,6 @@ impl D8 {
 
 impl Distribution<D8> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> D8 {
-        
         match rng.gen_range(0..=7) {
             0 => D8::Left,
             1 => D8::UpLeft,
@@ -151,4 +150,3 @@ impl Distribution<D8> for Standard {
         }
     }
 }
-

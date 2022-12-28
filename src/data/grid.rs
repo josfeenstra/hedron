@@ -1,11 +1,11 @@
 use glam::IVec3;
 
 /**
- A discrete, protected 3D data structure
- Protected in the sense that it always checks bounds, even in production.
+A discrete, protected 3D data structure
+Protected in the sense that it always checks bounds, even in production.
 
- IDEAS: sparce matrix? chunked matrix? 
- */
+IDEAS: sparce matrix? chunked matrix?
+*/
 pub struct Grid<T> {
     pub x_size: usize,
     pub y_size: usize,
@@ -15,10 +15,14 @@ pub struct Grid<T> {
 
 // basic data methods
 impl<T: Clone + Copy> Grid<T> {
-
     pub fn new(x: usize, y: usize, z: usize, default_value: T) -> Self {
         let items = vec![default_value; x * y * z];
-        Self {x_size: x, y_size: y, z_size: z, items}
+        Self {
+            x_size: x,
+            y_size: y,
+            z_size: z,
+            items,
+        }
     }
 
     #[inline]
@@ -55,9 +59,12 @@ impl<T: Clone + Copy> Grid<T> {
     }
 
     pub fn is_on_grid(&self, x: i32, y: i32, z: i32) -> bool {
-        x < 0 || x >= self.x_size as i32 || 
-        y < 0 || y >= self.y_size as i32 ||
-        z < 0 || z >= self.z_size as i32 
+        x < 0
+            || x >= self.x_size as i32
+            || y < 0
+            || y >= self.y_size as i32
+            || z < 0
+            || z >= self.z_size as i32
     }
 
     #[inline]
