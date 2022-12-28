@@ -16,6 +16,9 @@ pub mod kernel {
     pub const PI: f32 = std::f32::consts::PI;
     pub const FRAC_PI_2: f32 = std::f32::consts::FRAC_PI_2;
 
+    pub use glam::vec2;
+    pub use glam::vec3;
+
     pub fn as_vec2(vec: glam::IVec2) -> Vec2 {
         vec.as_vec2()
     }
