@@ -6,9 +6,6 @@ use crate::{
 };
 use nalgebra::DMatrix;
 
-#[cfg(feature = "nalgebra")]
-use nalgebra::Matrix;
-
 // abstraction around a list of vectors.
 // allows us to easily access function operating on lists of points, and to render them
 // TODO, maybe add a more performant internal data structure, like a flat buffer? Would that even be more performant?
