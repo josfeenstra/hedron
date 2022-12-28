@@ -1,6 +1,6 @@
 [package]
 name = "hedron"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.66.0"
 authors = ["Jos Feenstra <me@josfeenstra.nl>"]
@@ -10,7 +10,6 @@ license = "MIT"
 readme = "README.md"
 keywords = [
     "3d",
-    "modelling",
     "mesh",
     "half-edge",
     "spline",
