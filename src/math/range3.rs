@@ -1,6 +1,6 @@
 use glam::UVec3;
 
-use crate::kernel::{fxx, Vec3};
+use crate::kernel::{fxx, Vec3, uvec3_to_vec3};
 use crate::{math::quick, util};
 use std::ops::Range;
 
@@ -31,8 +31,8 @@ impl Range3 {
 
     /// iterate through this space
     pub fn iter<'a>(&'a self, count: UVec3) -> impl Iterator<Item = Vec3> + 'a {
-        let fcount = count.as_dvec3();
-        util::iter_xyz_u(count).map(move |u| self.lerp(u.as_dvec3() / fcount))
+        let fcount: Vec3 = uvec3_to_vec3(count);
+        util::iter_xyz_u(count).map(move |u| self.lerp(uvec3_to_vec3(u) / fcount))
     }
 
     /// normalize

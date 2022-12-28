@@ -1,5 +1,5 @@
 use crate::lines::Ray;
-use crate::math::{Mat4, Vec2, Vec3};
+use crate::kernel::{Mat4, Vec2, Vec3, fxx};
 use bevy::prelude::{Camera, GlobalTransform};
 
 // taken from https://github.com/aevyrie/bevy_mod_raycast/blob/main/src/primitives.rs
@@ -12,7 +12,7 @@ pub fn ray_from_screen(
     let (viewport_min, viewport_max) = camera.logical_viewport_rect()?;
     let screen_size = camera.logical_target_size()?;
     let adj_cursor_pos =
-        cursor_pos_screen - Vec2::new(viewport_min.x, screen_size.y - viewport_max.y);
+        cursor_pos_screen - Vec2::new(viewport_min.x as fxx, (screen_size.y - viewport_max.y) as fxx);
 
     // get a whole bunch of camera properties
     let view = camera_transform.compute_matrix();

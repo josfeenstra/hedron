@@ -1,6 +1,6 @@
 use glam::IVec2;
 
-use crate::kernel::{as_vec2, fxx, Vec2, TAU};
+use crate::kernel::{fxx, Vec2, TAU, ivec2_to_vec2};
 
 /// represents a circle on the grid
 pub struct ICircle {
@@ -19,7 +19,7 @@ impl ICircle {
         let radius = self.radius;
         let center = &self.center;
 
-        let size_y = (radius * (0.5_f64).sqrt()).floor() as i32;
+        let size_y = (radius * (0.5 as fxx).sqrt()).floor() as i32;
 
         // TODO finish this!
         for dy in 0..=size_y {
@@ -42,7 +42,7 @@ impl ICircle {
         let radius = self.radius;
         let center = &self.center;
 
-        let size_y = (radius * (0.5_f64).sqrt()).floor() as i32;
+        let size_y = (radius * (0.5 as fxx).sqrt()).floor() as i32;
 
         for dy in 0..=size_y {
             let fdy = dy as fxx;
@@ -82,7 +82,7 @@ impl ICircle {
         let arc = circle
             .into_iter()
             .filter(|p| {
-                let angle = as_vec2(*p - self.center).angle_between(Vec2::X);
+                let angle = ivec2_to_vec2(*p - self.center).angle_between(Vec2::X);
                 from < angle && angle <= to
                     || from < angle + TAU && angle + TAU <= to
                     || from < angle - TAU && angle - TAU <= to

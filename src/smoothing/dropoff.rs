@@ -1,6 +1,7 @@
 use bevy_inspector_egui::Inspectable;
 
 use super::{Smoothable, State};
+use crate::kernel::fxx;
 
 // this is a smooth dropoff
 #[derive(Inspectable, Debug)]

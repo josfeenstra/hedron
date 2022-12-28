@@ -1,4 +1,4 @@
-use crate::kernel::{fxx, Vec3, FRAC_PI_2, TAU};
+use crate::kernel::{fxx, Vec3, FRAC_PI_2, TAU, EPSILON};
 
 use crate::{
     core::PointBased,
@@ -89,7 +89,7 @@ impl Polygon {
 
             // TODO INTERSECT IN THE NORMAL PLANE BY PLANARIZING THE 3D LINES THEN DOING THIS PROPERLY
             let intersection =
-                if (one.to - one.from).angle_between(two.to - two.from) < f32::EPSILON {
+                if (one.to - one.from).angle_between(two.to - two.from) < EPSILON {
                     one.from
                 } else {
                     one.intersect_2d(&two)
