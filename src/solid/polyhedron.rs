@@ -12,6 +12,8 @@ pub type VertPtr = Ptr;
 pub type EdgePtr = Ptr;
 pub type FacePtr = Ptr;
 
+
+/// A vertex of the graph
 #[derive(Default, Debug)]
 pub struct Vert {
     pub pos: Vec3,
@@ -37,7 +39,7 @@ pub struct Vert {
 // ```
 #[derive(Default, Debug)]
 pub struct HalfEdge {
-    pub from: VertPtr,
+    pub from: VertPtr,         /// the origin vertex 
     pub next: EdgePtr,         // edge always has a next
     pub twin: EdgePtr, // in our case, edge always has a twin. optional twins comes later TODO
     pub face: Option<FacePtr>, // not every loop is filled
@@ -500,21 +502,21 @@ impl Polyhedron {
     /// subdivide by creating quads from all polyhedrons
     pub fn quad_divide(&mut self) {
         // get center points, normal, and original start edges for all loops
-        // TODO FILTER OUT THE BACK SIDE!
         let faces_data: Vec<(Vec3, Vec3, usize)> = self
             .get_loops()
             .iter()
-            .filter_map(|edge_ptrs| {
-                let e = self.edge(edge_ptrs[0]);
-                let verts = self.edges_to_verts(&edge_ptrs);
+            .filter_map(|edges| {
+                let first_edge = edges[0];
+                let verts = self.edges_to_verts(&edges);
                 let center = Vectors::average(&verts);
                 let signed_area = Polygon::new(verts).signed_area();
                 if signed_area > 0.0 {
-                    None // DO NOT USE LOOPS IN THE WRONG ORIENTATION
+                    None 
                 } else {
                     let normal = Vec3::Z; // TODO CREATE A GOOD NORMAL!
                     // NOTE: WE ALSO NEED A GOOD NORMAL FOR THE SIGNED AREA TEST.
-                    Some((center, normal, e.from))
+                    // println!("{:?}", (center, normal, first_edge));
+                    Some((center, normal, first_edge))
                 }
             })
             .collect();
@@ -528,10 +530,10 @@ impl Polyhedron {
         for (i, (center, normal, first_edge)) in faces_data.into_iter().enumerate() {
             let vp = self.add_vert(center);
             for edge in self.get_loop(first_edge).iter().skip(1).step_by(2) {
+                // NOTE: we can do this faster and without disk thingies, if we just carefully edit pointers
                 self.add_edge(vp, self.edge(*edge).from, normal, normal); // TODO FIX EDGE ORDERING MISTAKES :)
                 // break;
             }
-            break;
         }
     }
 
