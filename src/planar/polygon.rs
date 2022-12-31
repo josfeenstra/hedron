@@ -7,6 +7,7 @@ use crate::{
     solid::Mesh,
     util::{self, iter_pair_ids},
 };
+use crate::util::iter_pairs;
 
 #[derive(Debug, Clone)]
 pub struct Polygon {
@@ -101,6 +102,12 @@ impl Polygon {
         }
         self
     }
+    
+    pub fn signed_area(&self) -> fxx {
+        let sum = iter_pairs(&self.verts).fold(0.0, |sum, (a, b)| sum + (b.x - a.x) * (b.y + a.y));
+        sum / 2.0
+    }
+
 }
 
 impl PointBased for Polygon {

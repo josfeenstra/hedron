@@ -166,7 +166,7 @@ impl Polyhedron {
     /////////////////////////////////////////////////////////////// Getting Geometry
 
     /// convert to polygon faces
-    pub fn polygon_faces(&self) -> Vec<Polygon> {
+    pub fn all_cww_loops_as_polygons(&self) -> Vec<Polygon> {
         // traverse all faces, construct polygon faces from them
 
         // TODO this is what we need now!!!
@@ -187,7 +187,7 @@ impl Polyhedron {
                         .map(|ep| self.vert(self.edge(*ep).from).pos)
                         .collect(),
                 )
-            })
+            }).filter(|p| p.signed_area() < 0.0)
             .collect()
     }
 
@@ -504,15 +504,18 @@ impl Polyhedron {
         let faces_data: Vec<(Vec3, Vec3, usize)> = self
             .get_loops()
             .iter()
-            .map(|eps| {
-                let e = self.edge(eps[0]);
-                let verts: Vec<Vec3> = eps
-                    .into_iter()
-                    .map(|ep| self.vert(self.edge(*ep).from).pos)
-                    .collect();
+            .filter_map(|edge_ptrs| {
+                let e = self.edge(edge_ptrs[0]);
+                let verts = self.edges_to_verts(&edge_ptrs);
                 let center = Vectors::average(&verts);
-                let normal = Vec3::Z; // TODO CREATE A GOOD NORMAL!
-                (center, normal, e.from)
+                let signed_area = Polygon::new(verts).signed_area();
+                if signed_area > 0.0 {
+                    None // DO NOT USE LOOPS IN THE WRONG ORIENTATION
+                } else {
+                    let normal = Vec3::Z; // TODO CREATE A GOOD NORMAL!
+                    // NOTE: WE ALSO NEED A GOOD NORMAL FOR THE SIGNED AREA TEST.
+                    Some((center, normal, e.from))
+                }
             })
             .collect();
 
@@ -526,15 +529,34 @@ impl Polyhedron {
             let vp = self.add_vert(center);
             for edge in self.get_loop(first_edge).iter().skip(1).step_by(2) {
                 self.add_edge(vp, self.edge(*edge).from, normal, normal); // TODO FIX EDGE ORDERING MISTAKES :)
+                // break;
             }
             break;
         }
     }
 
     /// cap closed planar holes by creating faces at these holes.
-    fn cap(&mut self) {
-        todo!()
+    pub fn cap_ccw_holes(&mut self) {
+        
+        let loops = self.get_loops();
+        for lp in loops {
+            let pts: Vec<Vec3> = self.edges_to_verts(&lp);
+            let area = Polygon::new(pts).signed_area();
+            if area > 0.0 {
+                continue;
+            }
+            todo!("add edges")
+        }
     }
+
+    pub fn edges_to_verts(&self, edges: &Vec<EdgePtr>) -> Vec<Vec3> {
+        edges.iter().map(|edgeptr| self.vert(self.edge(*edgeptr).from).pos).collect()
+    }
+    
+    pub fn all_face_loops() {
+        
+    }
+
 }
 
 impl PointBased for Polyhedron {

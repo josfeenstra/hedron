@@ -122,7 +122,7 @@ impl From<Polygon> for Mesh {
 impl From<Polyhedron> for Mesh {
     fn from(p: Polyhedron) -> Self {
         HMesh::from_join(
-            p.polygon_faces()
+            p.all_cww_loops_as_polygons()
                 .into_iter()
                 .map(|pg| pg.offset(Vec3::Z, 0.1).triangulate_naive())
                 .collect(),
