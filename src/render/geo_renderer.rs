@@ -4,8 +4,8 @@ use super::{
     extract_vertices, FaceMaterial, InstanceData, InstanceMaterialData, InstanceMaterialPlugin,
     LineMaterial,
 };
-use bevy::{prelude::*, render::view::NoFrustumCulling};
 use crate::kernel::fxx;
+use bevy::{prelude::*, render::view::NoFrustumCulling};
 
 #[derive(Resource, Default)]
 pub struct GeoRenderer {
@@ -165,7 +165,6 @@ pub struct GeoRendererPlugin;
 
 impl Plugin for GeoRendererPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(InstanceMaterialPlugin);
         app.insert_resource(GeoRenderer::default());
         app.add_system(GeoRenderer::update_system);
     }

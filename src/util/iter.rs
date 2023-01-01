@@ -30,7 +30,21 @@ pub fn iter_pair_ids<'a>(count: usize) -> impl Iterator<Item = (usize, usize)> +
     (0..count).map(move |i| (i, (i + 1) % count))
 }
 
+pub fn iter_triplet_ids<'a>(count: usize) -> impl Iterator<Item = (usize, usize, usize)> + 'a {
+    (0..count).map(move |i| (i, (i + 1) % count, (i + 2) % count))
+}
+
 /// NOTE: this wraps around: given 3, this gives: (0, 1), (1, 2), and (2, 0)
 pub fn iter_pairs<'a, T>(items: &'a Vec<T>) -> impl Iterator<Item = (&T, &T)> + 'a {
     iter_pair_ids(items.len()).map(|(a, b)| (items.get(a).unwrap(), items.get(b).unwrap()))
+}
+
+pub fn iter_triplets<'a, T>(items: &'a Vec<T>) -> impl Iterator<Item = (&T, &T, &T)> + 'a {
+    iter_triplet_ids(items.len()).map(|(a, b, c)| {
+        (
+            items.get(a).unwrap(),
+            items.get(b).unwrap(),
+            items.get(c).unwrap(),
+        )
+    })
 }

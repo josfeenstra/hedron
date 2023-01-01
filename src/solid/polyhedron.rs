@@ -1,5 +1,6 @@
 use super::Mesh;
 use crate::kernel::{fxx, vec3, Vec3};
+use crate::util::{iter_pairs, iter_triplets};
 use crate::{
     core::PointBased,
     data::{Pool, Ptr},
@@ -11,7 +12,6 @@ use std::collections::HashSet;
 pub type VertPtr = Ptr;
 pub type EdgePtr = Ptr;
 pub type FacePtr = Ptr;
-
 
 /// A vertex of the graph
 #[derive(Default, Debug)]
@@ -39,8 +39,9 @@ pub struct Vert {
 // ```
 #[derive(Default, Debug)]
 pub struct HalfEdge {
-    pub from: VertPtr,         /// the origin vertex 
-    pub next: EdgePtr,         // edge always has a next
+    pub from: VertPtr,
+    /// the origin vertex
+    pub next: EdgePtr, // edge always has a next
     pub twin: EdgePtr, // in our case, edge always has a twin. optional twins comes later TODO
     pub face: Option<FacePtr>, // not every loop is filled
 }
@@ -77,6 +78,60 @@ impl Polyhedron {
         hedron.add_edge(b, c, UP, UP);
         hedron.add_edge(c, d, UP, UP);
         hedron.add_edge(d, a, UP, UP);
+
+        hedron
+    }
+
+    /// read a string as an obj file format. If the string can't be interpreted, an empty Mesh will be returned
+    /// TODO test this!
+    pub fn from_obj_str(string: &str, flip_y_z: bool) -> Self {
+        let mut hedron = Self::default();
+
+        for line in string.lines().map(|l| l.trim()) {
+            let parts: Vec<_> = line.split_whitespace().collect();
+            if parts.len() == 0 {
+                continue;
+            }
+            match parts[0] {
+                "#" => continue,
+                "v" => {
+                    let num = parts
+                        .into_iter()
+                        .skip(1)
+                        .filter_map(|s| s.parse::<fxx>().ok())
+                        .collect::<Vec<_>>();
+                    // mesh.verts.push()
+                    if num.len() != 3 {
+                        println!("mistake in obj vertices...");
+                        continue;
+                    }
+                    if flip_y_z {
+                        hedron.add_vert(Vec3::new(num[0], num[2], num[1]));
+                    } else {
+                        hedron.add_vert(Vec3::new(num[0], num[1], num[2]));
+                    };
+                }
+                "f" => {
+                    let num = parts
+                        .into_iter()
+                        .skip(1)
+                        .filter_map(|s| s.parse::<usize>().ok())
+                        .collect::<Vec<_>>();
+                    for (a, b, c) in iter_triplets(&num) {
+                        // to insert the face properly, we need some normal. Luckely, we can extract that
+                        let va = hedron.vert(*a).pos;
+                        let vb = hedron.vert(*b).pos;
+                        let vc = hedron.vert(*c).pos;
+
+                        let normal = (vb - va).cross(vc - va);
+                        hedron.add_edge(*a, *b, normal, normal);
+                    }
+                    // mesh.tri.
+                    // mesh.verts.push(Vec3::new(num[0], num[1], num[2]));
+                }
+                _ => continue,
+            };
+        }
 
         hedron
     }
@@ -189,7 +244,8 @@ impl Polyhedron {
                         .map(|ep| self.vert(self.edge(*ep).from).pos)
                         .collect(),
                 )
-            }).filter(|p| p.signed_area() < 0.0)
+            })
+            .filter(|p| p.signed_area() < 0.0)
             .collect()
     }
 
@@ -224,22 +280,22 @@ impl Polyhedron {
     // this is not a very rusty way of doing things, but come on, I need some progress :)
 
     #[inline]
-    fn edge(&self, ep: EdgePtr) -> &HalfEdge {
+    pub fn edge(&self, ep: EdgePtr) -> &HalfEdge {
         self.edges.get(ep).expect("edge ptr not found!")
     }
 
     #[inline]
-    fn vert(&self, vp: VertPtr) -> &Vert {
+    pub fn vert(&self, vp: VertPtr) -> &Vert {
         self.verts.get(vp).expect("vert ptr not found!")
     }
 
     #[inline]
-    fn mut_edge(&mut self, ep: EdgePtr) -> &mut HalfEdge {
+    pub fn mut_edge(&mut self, ep: EdgePtr) -> &mut HalfEdge {
         self.edges.get_mut(ep).expect("edge ptr not found!")
     }
 
     #[inline]
-    fn mut_vert(&mut self, vp: VertPtr) -> &mut Vert {
+    pub fn mut_vert(&mut self, vp: VertPtr) -> &mut Vert {
         self.verts.get_mut(vp).expect("vert ptr not found!")
     }
 
@@ -511,11 +567,11 @@ impl Polyhedron {
                 let center = Vectors::average(&verts);
                 let signed_area = Polygon::new(verts).signed_area();
                 if signed_area > 0.0 {
-                    None 
+                    None
                 } else {
                     let normal = Vec3::Z; // TODO CREATE A GOOD NORMAL!
-                    // NOTE: WE ALSO NEED A GOOD NORMAL FOR THE SIGNED AREA TEST.
-                    // println!("{:?}", (center, normal, first_edge));
+                                          // NOTE: WE ALSO NEED A GOOD NORMAL FOR THE SIGNED AREA TEST.
+                                          // println!("{:?}", (center, normal, first_edge));
                     Some((center, normal, first_edge))
                 }
             })
@@ -532,14 +588,13 @@ impl Polyhedron {
             for edge in self.get_loop(first_edge).iter().skip(1).step_by(2) {
                 // NOTE: we can do this faster and without disk thingies, if we just carefully edit pointers
                 self.add_edge(vp, self.edge(*edge).from, normal, normal); // TODO FIX EDGE ORDERING MISTAKES :)
-                // break;
+                                                                          // break;
             }
         }
     }
 
     /// cap closed planar holes by creating faces at these holes.
     pub fn cap_ccw_holes(&mut self) {
-        
         let loops = self.get_loops();
         for lp in loops {
             let pts: Vec<Vec3> = self.edges_to_verts(&lp);
@@ -552,13 +607,13 @@ impl Polyhedron {
     }
 
     pub fn edges_to_verts(&self, edges: &Vec<EdgePtr>) -> Vec<Vec3> {
-        edges.iter().map(|edgeptr| self.vert(self.edge(*edgeptr).from).pos).collect()
-    }
-    
-    pub fn all_face_loops() {
-        
+        edges
+            .iter()
+            .map(|edgeptr| self.vert(self.edge(*edgeptr).from).pos)
+            .collect()
     }
 
+    pub fn all_face_loops() {}
 }
 
 impl PointBased for Polyhedron {
