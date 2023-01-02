@@ -13,21 +13,22 @@ pub struct Range3 {
 }
 
 impl Range3 {
-    pub const UNIT: Self = Self::from_vecs(Vec3::ZERO, Vec3::ONE);
+    pub const UNIT: Self = Self::new(Vec3::ZERO, Vec3::ONE);
 
     #[inline]
-    pub const fn new(x: Range<fxx>, y: Range<fxx>, z: Range<fxx>) -> Self {
+    pub const fn new(from: Vec3, to: Vec3) -> Self {
+        Self::from_ranges(from.x..to.x, from.y..to.y, from.z..to.z)
+    }
+
+    #[inline]
+    pub const fn from_ranges(x: Range<fxx>, y: Range<fxx>, z: Range<fxx>) -> Self {
         Self { x, y, z }
     }
 
     pub fn from_radius(r: fxx) -> Self {
-        Self::new(-r..r, -r..r, -r..r)
+        Self::from_ranges(-r..r, -r..r, -r..r)
     }
 
-    #[inline]
-    pub const fn from_vecs(from: Vec3, to: Vec3) -> Self {
-        Self::new(from.x..to.x, from.y..to.y, from.z..to.z)
-    }
 
     /// iterate through this space
     pub fn iter<'a>(&'a self, count: UVec3) -> impl Iterator<Item = Vec3> + 'a {

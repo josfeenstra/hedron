@@ -15,20 +15,20 @@ pub struct Range2 {
 }
 
 impl Range2 {
-    pub const UNIT: Self = Self::from_vecs(Vec2::ZERO, Vec2::ONE);
+    pub const UNIT: Self = Self::new(Vec2::ZERO, Vec2::ONE);
 
     #[inline]
-    pub const fn new(x: Range<fxx>, y: Range<fxx>) -> Self {
+    pub const fn new(start: Vec2, end: Vec2) -> Self {
+        Self::from_ranges(start.x..end.x, start.y..end.y)
+    }
+
+    #[inline]
+    pub const fn from_ranges(x: Range<fxx>, y: Range<fxx>) -> Self {
         Self { x, y }
     }
 
     pub fn from_radius(r: fxx) -> Self {
-        Self::new(-r..r, -r..r)
-    }
-
-    #[inline]
-    pub const fn from_vecs(from: Vec2, to: Vec2) -> Self {
-        Self::new(from.x..to.x, from.y..to.y)
+        Self::from_ranges(-r..r, -r..r)
     }
 
     pub fn normalize(&self, t: Vec2) -> Vec2 {
@@ -53,29 +53,48 @@ impl Range2 {
         )
     }
 
-    // this code works, but then we have to clone thread rng. not nice if we are dealing with a seeded random
-
-
-    pub fn spawn<'a>(&'a self, rng: &'a mut ThreadRng) -> impl Iterator<Item = Vec2> + 'a {
+    // Produces a continuous random generator.
+    // This code works, but we have to clone thread rng. not nice if we are dealing with a seeded random
+    // requires `with_chunks::2<>` to properly fix things 
+    pub fn gen<'a, RNG: Rng + Clone>(&'a self, rng: &'a mut RNG) -> impl Iterator<Item = Vec2> + 'a {
         // let vec = rng.gen::<Vec2>();
         let dist_x = rng.clone().sample_iter(Uniform::new(self.x.start, self.x.end));
         let dist_y = rng.sample_iter(Uniform::new(self.y.start, self.y.end));
         dist_x.zip(dist_y).map(|(x, y)| Vec2::new(x, y))
     }
+
+    pub fn spawn<RNG: Rng>(&self, rng: &mut RNG, count: usize) -> Vec<Vec2> {
+        let mut points = Vec::new();
+        let ux = Uniform::from(self.x.clone());
+        let uy = Uniform::from(self.y.clone());
+        for i in 0..count {
+            points.push(Vec2::new(rng.sample(ux), rng.sample(uy)));
+        }
+        points
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::kernel::vec2;
     use rand::prelude::*;
+    use rand_pcg::Pcg64;
     use rand_seeder::Seeder;
     use super::Range2;
 
     #[test]
     fn test_random_sampling() {
-        let rect = Range2::new(-0.5 .. 0.5,-0.5 .. 0.5);
-        let mut rng: SeedableRng = Seeder::from("stripy zebra").make_rng::<SeedableRng>();
-        // for v in rect.spawn(&mut rng).take(10) {
-        //     println!("{v}");
-        // }
+        let rect = Range2::new(vec2(0.5, -0.5), vec2(10.,15.));
+        let mut rng: Pcg64 = Seeder::from("stripy zebra").make_rng();
+        // let mut rng = rand::thread_rng();
+        println!("gen:");
+        for v in rect.gen(&mut rng).take(10) {
+            println!("{v}");
+        }
+
+        println!("spawn:");
+        for v in rect.spawn(&mut rng, 10) {
+            println!("{v}");
+        }
     }
 }
