@@ -1,3 +1,8 @@
+use rand::distributions::Uniform;
+use rand::prelude::Distribution;
+use rand::rngs::ThreadRng;
+use rand::Rng;
+
 use crate::kernel::{fxx, Vec2};
 use crate::math::quick;
 use std::ops::Range;
@@ -46,5 +51,31 @@ impl Range2 {
             quick::remap(t.x, &self.x, &other.x, clamp),
             quick::remap(t.y, &self.y, &other.y, clamp),
         )
+    }
+
+    // this code works, but then we have to clone thread rng. not nice if we are dealing with a seeded random
+
+
+    pub fn spawn<'a>(&'a self, rng: &'a mut ThreadRng) -> impl Iterator<Item = Vec2> + 'a {
+        // let vec = rng.gen::<Vec2>();
+        let dist_x = rng.clone().sample_iter(Uniform::new(self.x.start, self.x.end));
+        let dist_y = rng.sample_iter(Uniform::new(self.y.start, self.y.end));
+        dist_x.zip(dist_y).map(|(x, y)| Vec2::new(x, y))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rand::prelude::*;
+    use rand_seeder::Seeder;
+    use super::Range2;
+
+    #[test]
+    fn test_random_sampling() {
+        let rect = Range2::new(-0.5 .. 0.5,-0.5 .. 0.5);
+        let mut rng: SeedableRng = Seeder::from("stripy zebra").make_rng::<SeedableRng>();
+        // for v in rect.spawn(&mut rng).take(10) {
+        //     println!("{v}");
+        // }
     }
 }

@@ -22,10 +22,12 @@ categories = [
 ]
 
 [dependencies]
-glam = "0.22.0"
+glam = {version = "0.22.0", features = ["rand"] }
 bytemuck = "1.12.3"
 serde = "1.0.143"
 rand = "0.8.5"
+rand_seeder = "0.2.3"
+rand_pcg64 = "^"
 colored = "2.0"
 num-traits = "0.2.15"
 lazy_static = "1.4.0"
