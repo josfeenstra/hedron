@@ -1,13 +1,10 @@
 /// A rig to be used with the camera,
 /// Using two angles to deal with latitude (up/down) and longiture (left/right) rotations
 use bevy::{
-    input::mouse::{MouseMotion, MouseWheel},
-    prelude::*,
+    input::mouse::{MouseMotion, MouseWheel}, prelude::{Component, Input, EventReader, MouseButton, KeyCode, Res, Query, Transform, Camera, With, default}, time::Time, window::CursorMoved,
 };
 use bevy_inspector_egui::Inspectable;
-use std::{fxx::consts::FRAC_PI_2, fxx::consts::PI};
-
-use crate::{math::spherical_to_cartesian, smoothing::Dropoff};
+use crate::{math::spherical_to_cartesian, smoothing::Dropoff, kernel::{fxx, PI, FRAC_PI_2, Vec3, Vec2}};
 
 const SPEED: fxx = 10.0;
 const EPSILON: fxx = 0.0001;
@@ -176,7 +173,7 @@ impl Rig {
         time: Res<Time>,
         mut query: Query<(&mut Transform, &mut Rig), With<Camera>>,
     ) {
-        let dt = time.delta_seconds();
+        let dt = time.delta_seconds().into();
 
         for (mut tf, mut rig) in &mut query {
             // first, update x and y
@@ -197,7 +194,7 @@ impl Rig {
             // if changes have occurred, recalculate the transform of the camera
             let mut vec = spherical_to_cartesian(*rig.rot_y.get(), *rig.rot_x.get());
             vec = rig.pos + (vec * *rig.dis.get());
-            tf.translation = vec;
+            tf.translation = vec.into();
             tf.look_at(rig.pos, Vec3::Z);
             rig.update_smooths(dt);
         }

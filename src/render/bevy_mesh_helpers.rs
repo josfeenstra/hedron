@@ -1,6 +1,6 @@
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 
-use crate::pts::Vectors;
+use crate::{pts::Vectors, kernel::fxx};
 
 // this removes and returns vertices from a mesh
 pub fn extract_vertices(mesh: &mut Mesh) -> Option<Vec<Vec3>> {
@@ -13,7 +13,7 @@ pub fn extract_vertices(mesh: &mut Mesh) -> Option<Vec<Vec3>> {
 }
 
 pub fn set_vertices(mesh: &mut Mesh, pts: Vectors) {
-    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, Into::<Vec<[fxx; 3]>>::into(pts))
+    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, Into::<Vec<[f32; 3]>>::into(pts))
 }
 
 // flip mesh normals by changing triangle orders

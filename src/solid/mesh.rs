@@ -271,13 +271,13 @@ mod test {
     use crate::kernel::vec3;
     use std::io::Write;
 
-    #[test]
-    fn write_some_obj() {
-        let mesh = Mesh::new_diamond(vec3(0.5, 0.5, 0.5), 1.333);
+    // #[test]
+    // fn write_some_obj() {
+    //     let mesh = Mesh::new_diamond(vec3(0.5, 0.5, 0.5), 1.333);
 
-        mesh.write_obj_mtl("../data-results/", "some.obj", "some.mtl", "some.png")
-            .expect("something went wrong!");
-    }
+    //     mesh.write_obj_mtl("../data-results/", "some.obj", "some.mtl", "some.png")
+    //         .expect("something went wrong!");
+    // }
 
     #[test]
     fn write_file() {

@@ -4,7 +4,6 @@ use crate::{
     core::PointBased,
     kernel::{fxx, Vec3, TAU},
 };
-use nalgebra::DMatrix;
 
 // abstraction around a list of vectors.
 // allows us to easily access function operating on lists of points, and to render them
@@ -124,6 +123,9 @@ impl From<Vectors> for Vec<[fxx; 3]> {
         points.data.iter().map(|v| v.to_array()).collect()
     }
 }
+
+#[cfg(feature = "nalgebra")]
+use nalgebra::DMatrix;
 
 #[cfg(feature = "nalgebra")]
 impl From<Vectors> for DMatrix<fxx> {

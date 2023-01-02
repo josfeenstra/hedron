@@ -15,7 +15,7 @@ pub type FacePtr = Ptr;
 #[derive(Default, Debug)]
 pub struct Vert {
     pub pos: Vec3,
-    pub edge: Option<EdgePtr>,
+    pub edge: Option<EdgePtr>, // I believe this Edge is always incoming
 }
 
 // IF looking from ABOVE (using the normals provided during addition)
@@ -191,6 +191,14 @@ impl Polyhedron {
             .collect()
     }
 
+    ///
+    pub fn all_unique_edges(&self) -> Vec<EdgePtr> {
+        self.edges
+            .iter_enum()
+            .filter_map(|(i, e)| if e.twin < i { Some(i) } else { None })
+            .collect()
+    }
+
     pub fn all_verts(&self) -> Vec<Vec3> {
         self.verts.iter().map(|v| v.pos).collect()
     }
@@ -213,18 +221,22 @@ impl Polyhedron {
 
     // this is not a very rusty way of doing things, but come on, I need some progress :)
 
+    #[inline]
     fn edge(&self, ep: EdgePtr) -> &HalfEdge {
         self.edges.get(ep).expect("edge ptr not found!")
     }
 
+    #[inline]
     fn vert(&self, vp: VertPtr) -> &Vert {
         self.verts.get(vp).expect("vert ptr not found!")
     }
 
+    #[inline]
     fn mut_edge(&mut self, ep: EdgePtr) -> &mut HalfEdge {
         self.edges.get_mut(ep).expect("edge ptr not found!")
     }
 
+    #[inline]
     fn mut_vert(&mut self, vp: VertPtr) -> &mut Vert {
         self.verts.get_mut(vp).expect("vert ptr not found!")
     }
@@ -234,8 +246,12 @@ impl Polyhedron {
     }
 
     /// NOTE: A - B is a different half edge than B - A.
-    fn has_half_edge(&self, from: VertPtr, to: VertPtr) -> bool {
-        false
+    fn has_half_edge(&self, start: VertPtr, end: VertPtr) -> bool {
+        if let Some(edge) = self.vert(end).edge {
+            self.get_disk(start).contains(&edge) // these are checked twice as many times as needed
+        } else {
+            false
+        }
     }
 
     fn delete_edge(&mut self, edge: EdgePtr) {
@@ -363,7 +379,7 @@ impl Polyhedron {
             .collect();
         // let nb_vecs: Vec<Vec3> = neighbors.map(|nb| nb - vert.pos).collect();
 
-        println!("disk v{vp}: edges: {inc_disk_edges:?} vecs: {neighbors:?} sample: {sample}");
+        // println!("disk v{vp}: edges: {inc_disk_edges:?} vecs: {neighbors:?} sample: {sample}");
 
         // based on disk ordering, figure out which two incoming edges are in between the addition
         // NOTE: (1, 4) is not the same as (4, 1)
@@ -371,7 +387,7 @@ impl Polyhedron {
             Vectors::get_between(vert.pos, normal, neighbors, sample)?;
         let between = (inc_disk_edges[between_ids.0], inc_disk_edges[between_ids.1]);
 
-        println!("between: {between:?}");
+        // println!("between: {between:?}");
 
         // we want to return the incoming and connected outgoing edge based
         if self.edge(self.edge(between.0).next).twin == between.1 {
@@ -422,7 +438,7 @@ impl Polyhedron {
             let Some((ep_nb_inwards, ep_nb_outwards)) = self.get_disk_neighbors(vp, to, normal) else {
                 return;
             };
-            println!("in: {ep_nb_inwards} out: {ep_nb_outwards}");
+            // println!("in: {ep_nb_inwards} out: {ep_nb_outwards}");
 
             self.mut_edge(ep_inwards).next = ep_nb_outwards;
             self.mut_edge(ep_nb_inwards).next = ep_outwards;
@@ -433,24 +449,86 @@ impl Polyhedron {
 
     /////////////////////////////////////////////////////////////// Modelling
 
-    fn divide_edge(&mut self, ep: EdgePtr, t: fxx) {
+    /// split an edge at normalized parameter t, starting from the starting vert of the given edge.
+    pub fn split_edge(&mut self, ep: EdgePtr, t: fxx) -> (VertPtr, EdgePtr, EdgePtr) {
+        let ep_top = ep;
+        let ep_top_next = self.edge(ep_top).next;
+        let ep_top_face = self.edge(ep_top).face;
+        let ep_bottom = self.edge(ep_top).twin;
+        let ep_bottom_next = self.edge(ep_bottom).next;
+        let ep_bottom_face = self.edge(ep_bottom).face;
+
+        let vp_start = self.edge(ep).from;
+        let vp_end = self.edge(self.edge(ep).next).from;
+
+        // create the new material
+        let vp_new = self.add_vert(self.vert(vp_start).pos.lerp(self.vert(vp_end).pos, t));
+        let ep_top_extended = self.edges.push(HalfEdge {
+            from: vp_new,
+            next: ep_top_next,
+            twin: ep_bottom,
+            face: ep_top_face,
+        });
+        let ep_bottom_extended = self.edges.push(HalfEdge {
+            from: vp_new,
+            next: ep_bottom_next,
+            twin: ep_top,
+            face: ep_bottom_face,
+        });
+
+        // set correct next and twin edge
+        let e_top = self.mut_edge(ep_top);
+        e_top.next = ep_top_extended;
+        e_top.twin = ep_bottom_extended;
+        let e_bottom = self.mut_edge(ep_bottom);
+        e_bottom.next = ep_bottom_extended;
+        e_bottom.twin = ep_top_extended;
+
+        // make sure the vertex points to one of its two incoming edges
+        // TODO sketchy, for some reason, this has to point to an outgoing edge.
+        // TODO formalize this, check if this is the case everywhere
+        self.mut_vert(vp_new).edge = Some(ep_top_extended);
+
+        // return new material
+        (vp_new, ep_top_extended, ep_bottom_extended)
+    }
+
+    pub fn split_face(&mut self, ep: FacePtr, t: fxx) {
         todo!()
     }
 
-    fn divide_face(&mut self, ep: FacePtr, t: fxx) {
-        todo!()
-    }
+    /// subdivide by creating quads from all polyhedrons
+    pub fn quad_divide(&mut self) {
+        // get center points, normal, and original start edges for all loops
+        // TODO FILTER OUT THE BACK SIDE!
+        let faces_data: Vec<(Vec3, Vec3, usize)> = self
+            .get_loops()
+            .iter()
+            .map(|eps| {
+                let e = self.edge(eps[0]);
+                let verts: Vec<Vec3> = eps
+                    .into_iter()
+                    .map(|ep| self.vert(self.edge(*ep).from).pos)
+                    .collect();
+                let center = Vectors::average(&verts);
+                let normal = Vec3::Z; // TODO CREATE A GOOD NORMAL!
+                (center, normal, e.from)
+            })
+            .collect();
 
-    fn subdivide(&mut self) {
-        // halfway_pt = subdivide every edge by creating a new point halfway
-        // - subdivide, store faceptr on the left and right
+        // subdivide all edges
+        for edge in self.all_unique_edges() {
+            self.split_edge(edge, 0.5);
+        }
 
-        // face_pt = add a point at the center of every face / loop
-        // - add pts, store with the faceptr
-
-        // edge = create new edges between every halfway point, and the two adjacent face points
-        // - draw lines between
-        todo!()
+        // then build new faces
+        for (i, (center, normal, first_edge)) in faces_data.into_iter().enumerate() {
+            let vp = self.add_vert(center);
+            for edge in self.get_loop(first_edge).iter().skip(1).step_by(2) {
+                self.add_edge(vp, self.edge(*edge).from, normal, normal); // TODO FIX EDGE ORDERING MISTAKES :)
+            }
+            break;
+        }
     }
 
     /// cap closed planar holes by creating faces at these holes.

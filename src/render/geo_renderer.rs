@@ -5,6 +5,7 @@ use super::{
     LineMaterial,
 };
 use bevy::{prelude::*, render::view::NoFrustumCulling};
+use crate::kernel::fxx;
 
 #[derive(Resource, Default)]
 pub struct GeoRenderer {
@@ -77,7 +78,7 @@ impl GeoRenderer {
                                 .map(|v| InstanceData {
                                     position: *v,
                                     scale: width,
-                                    color: color.as_rgba_fxx(),
+                                    color: color.as_rgba_f32(),
                                 })
                                 .collect(),
                         ),

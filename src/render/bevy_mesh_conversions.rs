@@ -8,7 +8,7 @@ use crate::{
     lines::{Bezier, LineList, LineStrip},
     planar::Polygon,
     pts::Vectors,
-    solid::{Mesh as HMesh, Polyhedron},
+    solid::{Mesh as HMesh, Polyhedron}, kernel::fxx,
 };
 
 // make sure we can easily translate hedron types to bevy types
@@ -28,7 +28,7 @@ impl From<HMesh> for Mesh {
                     .uvs
                     .iter()
                     .map(|v| v.to_array())
-                    .collect::<Vec<[fxx; 2]>>(),
+                    .collect::<Vec<[f32; 2]>>(),
             );
         }
         mesh.set_indices(Some(Indices::U32(

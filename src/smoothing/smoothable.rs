@@ -1,5 +1,6 @@
 // a lerp abstraction
 use bevy_inspector_egui::Inspectable;
+use crate::kernel::fxx;
 
 #[derive(Inspectable, Debug, Copy, Clone, PartialEq)]
 pub enum State {
