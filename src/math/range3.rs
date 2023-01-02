@@ -1,4 +1,6 @@
 use glam::UVec3;
+use rand::Rng;
+use rand::distributions::Uniform;
 
 use crate::kernel::{fxx, Vec3, uvec3_to_vec3};
 use crate::{math::quick, util};
@@ -61,5 +63,16 @@ impl Range3 {
             quick::remap(t.y, &self.y, &other.y, clamp),
             quick::remap(t.z, &self.z, &other.z, clamp),
         )
+    }
+
+    pub fn spawn<RNG: Rng>(&self, rng: &mut RNG, count: usize) -> Vec<Vec3> {
+        let mut points = Vec::new();
+        let ux = Uniform::from(self.x.clone());
+        let uy = Uniform::from(self.y.clone());
+        let uz = Uniform::from(self.z.clone());
+        for i in 0..count {
+            points.push(Vec3::new(rng.sample(ux), rng.sample(uy), rng.sample(uz)));
+        }
+        points
     }
 }
