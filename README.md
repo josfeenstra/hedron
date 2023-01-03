@@ -39,6 +39,7 @@ An all-in-one 3D modelling crate, written in Rust!
 
 # Design 
 Hedron is designed to strike a balance between usability and expressiveness. It sacrifices A CGAL-level of expressivenes, in favor of a more simple and predictable API. 
+Hedron strifes to be a unified modelling library, having support for many different types, which can elegantly translate into each other. 
 
 
 # Stage: Pre Alpha
