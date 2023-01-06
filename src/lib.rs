@@ -6,6 +6,7 @@ pub mod data;
 pub mod kernel;
 pub mod math;
 pub mod util;
+pub mod various;
 
 pub mod lines;
 pub mod planar;

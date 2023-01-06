@@ -104,6 +104,19 @@ impl<T> Pool<T> {
             .map(|(i, item)| (i, item.as_ref().unwrap()))
     }
 
+    pub fn iter_mut<'a>(&'a mut self) -> impl Iterator<Item=&mut T> + 'a {
+        self.data.iter_mut()
+            .filter(|i| i.is_some())
+            .map(|i| i.as_mut().unwrap())
+    }
+
+    pub fn iter_enum_mut<'a>(&'a mut self) -> impl Iterator<Item=(usize, &T)> + 'a {
+        self.data.iter_mut()
+            .enumerate()
+            .filter(|(i, item)| item.is_some())
+            .map(|(i, item)| (i, item.as_ref().unwrap()))
+    }
+
     pub fn all(&self) -> Vec<&T> {
         self.iter().collect()
     }
@@ -112,11 +125,6 @@ impl<T> Pool<T> {
         self.iter_enum().map(|(ptr, _)| ptr).collect()
     }
 
-    pub fn iter_mut<'a>(&'a mut self) -> impl Iterator<Item=&mut T> + 'a {
-        self.data.iter_mut()
-            .filter(|i| i.is_some())
-            .map(|i| i.as_mut().unwrap())
-    }
 }
 
 

@@ -103,6 +103,7 @@ impl Polygon {
         self
     }
     
+    // pretend the polygon is 2d
     pub fn signed_area(&self) -> fxx {
         let sum = iter_pairs(&self.verts).fold(0.0, |sum, (a, b)| sum + (b.x - a.x) * (b.y + a.y));
         sum / 2.0

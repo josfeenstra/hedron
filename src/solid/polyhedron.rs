@@ -3,6 +3,7 @@ use rand::seq::SliceRandom;
 use super::Mesh;
 use crate::kernel::{fxx, vec3, Vec3};
 use crate::util::{iter_pairs, iter_triplets};
+use crate::various::{get_smoothers_quad_to_square, get_smoothers_quad_to_square_at_length};
 use crate::{
     core::PointBased,
     data::{Pool, Ptr},
@@ -473,8 +474,21 @@ impl Polyhedron {
         Some((from_a, from_b))
     }
 
+    fn get_vert_neighbors(&self, vp: VertPtr) -> Vec<VertPtr> {
+        let vert = self.vert(vp);
+        let disk_edges: Vec<EdgePtr> = self.get_disk(vp);
+        let neighbors: Vec<VertPtr> = disk_edges
+            .iter()
+            .skip(1)
+            .step_by(2)
+            // .map(|u| u.clone())
+            .map(|ep| self.edge(*ep).from)
+            .collect();
+        neighbors
+    }
+
     // from the disk of edges surrounding `vp`, get the two 'neighboring edges', based on some sample vector
-    fn get_disk_neighbors(
+    fn get_disk_neighbors_edges(
         &self,
         vp: VertPtr,
         sample: Vec3,
@@ -550,7 +564,7 @@ impl Polyhedron {
             self.mut_edge(ep_inwards).next = ep;
         } else if let Some(disk_start) = v.edge {
             let (_, to) = self.edge_verts(ep);
-            let Some((ep_nb_inwards, ep_nb_outwards)) = self.get_disk_neighbors(vp, to, normal) else {
+            let Some((ep_nb_inwards, ep_nb_outwards)) = self.get_disk_neighbors_edges(vp, to, normal) else {
                 return;
             };
             // println!("in: {ep_nb_inwards} out: {ep_nb_outwards}");
@@ -692,12 +706,42 @@ impl Polyhedron {
                 // `ep < twin` to filter out half the half edges
                 *ep < twin && self.get_loop(*ep).len() == 3 && self.get_loop(twin).len() == 3    
             }).collect();
+
             let Some(ep) = edges_between_triangles.choose(&mut rng) else {
                 return Some(i);
             };
             self.delete_edge(*ep);
         }
         None
+    }
+
+    pub fn quad_smooth_planar_partition(&mut self, normal: Vec3, length: fxx) {
+        
+        let loops = self.get_loops();
+        let polygons = loops.iter().map(|lp| 
+            Polygon::new(lp.iter()
+                .map(|ep| self.vert(self.edge(*ep).from).pos)
+                .collect()
+            )).collect::<Vec<_>>();
+        let bad_apples = polygons.iter().map(|p| p.signed_area() > 0.0);
+
+        for vp in self.verts.all_ids() {
+            let nbs_pos = self.get_vert_neighbors(vp).iter().map(|nb| self.vert(*nb).pos).collect();
+            let avg = Vectors::average(&nbs_pos);
+            self.mut_vert(vp).pos = avg;
+        }
+
+        // for ((lp, polygon), bad_apple) in loops.iter().zip(polygons.iter()).zip(bad_apples) {
+        //     if bad_apple { continue; }
+        //     let quad: [Vec3; 4] = polygon.verts.clone().try_into().expect("not a quad!");
+
+        //     let smoothers = get_smoothers_quad_to_square(&quad, normal);
+        //     // let smoothers = get_smoothers_quad_to_square_at_length(&quad, normal, length);
+        //     for (edge, smoother) in lp.iter().zip(smoothers) {
+        //         self.mut_vert(self.edge(*edge).from).pos += smoother;
+        //     } 
+        // }
+        
     }
 }
 

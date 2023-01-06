@@ -2,7 +2,7 @@
 
 use crate::{
     core::PointBased,
-    kernel::{fxx, Vec3, TAU},
+    kernel::{fxx, Vec3, TAU, Quat},
 };
 
 // abstraction around a list of vectors.
@@ -97,6 +97,19 @@ impl Vectors {
 
     pub fn average(verts: &Vec<Vec3>) -> Vec3 {
         verts.iter().fold(Vec3::ZERO, |sum, item| sum + *item) / verts.len() as fxx
+    }
+
+    pub fn rotate_axis_angle(axis: Vec3, angle: fxx, vector: Vec3) -> Vec3 {
+        Quat::from_axis_angle(axis, angle).mul_vec3(vector)
+    }
+    
+    /// rotate a point using an axis and an angle
+    pub fn rotate_pt_axis_angle(center: Vec3, axis: Vec3, angle: fxx, pt: Vec3) -> Vec3 {
+        let norm = -center + pt;
+        // println!("{norm}");
+        let rot = Quat::from_axis_angle(axis, angle).mul_vec3(norm);
+        // println!("{rot}");
+        center + rot
     }
 }
 
