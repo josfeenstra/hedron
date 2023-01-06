@@ -725,11 +725,13 @@ impl Polyhedron {
             )).collect::<Vec<_>>();
         let bad_apples = polygons.iter().map(|p| p.signed_area() > 0.0);
 
+        // TODO uphold edge length by pushing out elastically on neighboring verts
         for vp in self.verts.all_ids() {
             let nbs_pos = self.get_vert_neighbors(vp).iter().map(|nb| self.vert(*nb).pos).collect();
             let avg = Vectors::average(&nbs_pos);
             self.mut_vert(vp).pos = avg;
         }
+
 
         // for ((lp, polygon), bad_apple) in loops.iter().zip(polygons.iter()).zip(bad_apples) {
         //     if bad_apple { continue; }
