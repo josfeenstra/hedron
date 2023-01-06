@@ -19,6 +19,8 @@ pub mod kernel {
     pub const FRAC_PI_2: f32 = std::f32::consts::FRAC_PI_2;
     pub const EPSILON: f32 = std::f32::EPSILON;
 
+    pub const SQRT_OF_3: f32 = 1.7320508075688772;
+
     pub use glam::vec2;
     pub use glam::vec3;
 
@@ -60,6 +62,7 @@ pub mod kernel {
     pub const PI: f64 = std::f64::consts::PI;
     pub const FRAC_PI_2: f64 = std::f64::consts::FRAC_PI_2;
     pub const EPSILON: f64 = std::f64::EPSILON;
+    pub const SQRT_OF_3: f64 = 1.7320508075688772;
 
     pub use glam::dvec2 as vec2;
     pub use glam::dvec3 as vec3;

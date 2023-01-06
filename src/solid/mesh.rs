@@ -1,6 +1,8 @@
 use std::io::Write;
+use std::iter::Rev;
+use std::ops::Range;
 
-use crate::kernel::{fxx, vec2, vec3, Vec2, Vec3};
+use crate::kernel::{fxx, vec2, vec3, Vec2, Vec3, kernel};
 
 use crate::{core::PointBased, data::Grid2};
 
@@ -16,6 +18,11 @@ impl Mesh {
         Self { verts, tri, uvs }
     }
 
+    pub fn new_weave(verts: Grid2<(Vec3, Vec2)>) -> Self {
+        // TODO
+        todo!();
+    }
+
     // Get a grid mesh from weaving vertices of a grid.
     // The grid can deal with holes, use None vertices to indicate holes
     // We do this by finding 'valid cells' of 4 vertices, and lacing them like this:
@@ -29,8 +36,8 @@ impl Mesh {
     //   .      .      .
     //  ( ) .. ( ) .. ( )
     // ```
-    pub fn new_weave(verts: Grid2<Option<(Vec3, Vec2)>>) -> Mesh {
-        let mut mesh = Mesh::default();
+    pub fn new_holed_weave(verts: Grid2<Option<(Vec3, Vec2)>>) -> Self {
+        let mut mesh = Self::default();
 
         // add all verts, and dummy zero vectors at zero spots
         for (i, res) in verts.items.iter().enumerate() {
@@ -88,15 +95,15 @@ impl Mesh {
     }
 
     //
-    pub fn new_diamonds(points: Vec<Vec3>, size: fxx) -> Mesh {
+    pub fn new_diamonds(points: Vec<Vec3>, size: fxx) -> Self {
         let mut meshes = Vec::new();
         for point in points {
-            meshes.push(Mesh::new_diamond(point, size))
+            meshes.push(Self::new_diamond(point, size))
         }
-        Mesh::from_join(meshes)
+        Self::from_join(meshes)
     }
 
-    pub fn new_diamond(center: Vec3, size: fxx) -> Mesh {
+    pub fn new_diamond(center: Vec3, size: fxx) -> Self {
         let mut mesh = Mesh::default();
 
         mesh.verts
@@ -135,6 +142,42 @@ impl Mesh {
         mesh
     }
 
+    // create a mesh as a hexagonal 
+    pub fn new_hexagrid(radius: fxx, divisions: usize) -> Self {
+        let mut mesh = Self::default();        
+
+        // get some ranges / iterations right
+        let min_count = 2 + divisions;
+        let max_count = min_count + 2 + divisions;
+
+        let upper_range: Range<usize> = min_count..max_count;
+        let lower_range: Rev<Range<usize>> = (min_count..max_count-1).rev();
+        let range: Vec<usize> = upper_range.chain(lower_range).collect();
+        
+        // get some counters right for spawning the right grid of points
+        let y_count = 3 + 2 * divisions; 
+        let y_offset = 1 + divisions;
+        
+        let dx = radius / (divisions as fxx + 1.0) * 2.0;
+        let dy = dx * kernel::SQRT_OF_3;
+
+        for (i, steps) in range.iter().enumerate() {
+            let x_start = (steps - 1) as fxx * dx;
+            let y = (i as fxx - y_offset as fxx) * dy;
+            for j in 0..*steps {
+                let x = -x_start + (j as fxx * dx * 2.0);
+                mesh.verts.push(Vec3::new(x, y, 0.0));
+                println!("({x}, {y})")
+            }
+        }
+        
+
+        mesh
+    }
+}
+
+impl Mesh {
+    
     pub fn get_triangles(&self) -> Vec<(usize, usize, usize)> {
         let mut data = Vec::new();
         assert!(self.tri.len() % 3 == 0);
@@ -278,6 +321,12 @@ mod test {
     //     mesh.write_obj_mtl("../data-results/", "some.obj", "some.mtl", "some.png")
     //         .expect("something went wrong!");
     // }
+
+    
+    #[test]
+    fn test_hexagrid() {
+        let mesh = Mesh::new_hexagrid(2.0, 1);
+    }
 
     #[test]
     fn write_file() {
