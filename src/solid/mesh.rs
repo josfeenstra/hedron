@@ -150,9 +150,9 @@ impl Mesh {
         let min_count = 2 + divisions;
         let max_count = min_count + 2 + divisions;
 
-        let upper_range: Range<usize> = min_count..max_count;
-        let lower_range: Rev<Range<usize>> = (min_count..max_count-1).rev();
-        let range: Vec<usize> = upper_range.chain(lower_range).collect();
+        let upper: Range<usize> = min_count..max_count;
+        let lower: Rev<Range<usize>> = (min_count..max_count-1).rev();
+        let range: Vec<usize> = upper.clone().chain(lower.clone()).collect();
         
         // get some counters right for spawning the right grid of points
         let y_count = 3 + 2 * divisions; 
@@ -161,16 +161,49 @@ impl Mesh {
         let dx = radius / (divisions as fxx + 1.0) * 2.0;
         let dy = dx * kernel::SQRT_OF_3;
 
+        // verts
         for (i, steps) in range.iter().enumerate() {
             let x_start = (steps - 1) as fxx * dx;
             let y = (i as fxx - y_offset as fxx) * dy;
             for j in 0..*steps {
                 let x = -x_start + (j as fxx * dx * 2.0);
                 mesh.verts.push(Vec3::new(x, y, 0.0));
-                println!("({x}, {y})")
+                // println!("({x}, {y})")
             }
         }
-        
+
+        // triangles
+        let last = mesh.verts.len() - 1;
+        let mut i = 0;
+        let upper_steps: Vec<_> = upper.collect();
+        for steps in min_count..max_count-1 {
+            for step in 0..steps {
+
+                let a = i;
+                let b = i + 1;
+                let c = i + steps;
+                let d = i + steps + 1;
+                
+                // radial mirror on the opposite side
+                let aa = last - a;
+                let bb = last - b;
+                let cc = last - c;
+                let dd = last - d;
+       
+                // only one triangle at te last segment of the strip
+                if step > (steps-2) {
+                    mesh.tri.append(&mut vec![a, d, c]);
+                    mesh.tri.append(&mut vec![aa, dd, cc]);
+                } else {
+                    mesh.tri.append(&mut vec![a, b, d]);
+                    mesh.tri.append(&mut vec![aa, bb, dd]);
+                    mesh.tri.append(&mut vec![a, d, c]);
+                    mesh.tri.append(&mut vec![aa, dd, cc]);
+                }
+                
+                i += 1;
+            } 
+        }
 
         mesh
     }

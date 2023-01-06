@@ -1,3 +1,5 @@
+use rand::seq::SliceRandom;
+
 use super::Mesh;
 use crate::kernel::{fxx, vec3, Vec3};
 use crate::util::{iter_pairs, iter_triplets};
@@ -150,19 +152,22 @@ impl Polyhedron {
             hedron.add_vert(*vert);
         }
 
-        for (ia, ib, ic) in mesh.get_triangles() {
+        for (ia, ib, ic) in mesh.get_triangles().into_iter() {
+            
             let (a, b, c) = (
                 hedron.verts.get(ia).expect("the mesh pointers should work"),
                 hedron.verts.get(ib).expect("the mesh pointers should work"),
                 hedron.verts.get(ic).expect("the mesh pointers should work"),
             );
             // get triangle normal
-
+            
             // assume counter clockwise CHECK THIS rotation
-            let face_normal = (b.pos - a.pos).cross(b.pos - a.pos);
-
+            let face_normal = (b.pos - a.pos).cross(c.pos - a.pos).normalize();
+            
+            
             // add half edges in accordance with this normal
             for [from, to] in vec![[ia, ib], [ib, ic], [ic, ia]] {
+                // println!("adding edge between: {from} and {to}");
                 hedron.add_edge(from, to, face_normal, face_normal);
             }
         }
@@ -303,19 +308,71 @@ impl Polyhedron {
         self.verts.push(Vert { pos, edge: None }) as VertPtr
     }
 
+
+
     /// NOTE: A - B is a different half edge than B - A.
     fn has_half_edge(&self, start: VertPtr, end: VertPtr) -> bool {
-        if let Some(edge) = self.vert(end).edge {
-            self.get_disk(start).contains(&edge) // these are checked twice as many times as needed
-        } else {
-            false
-        }
+        // println!("edges around {start} are {:?}", self.get_disk(start));
+        self.get_disk(start).iter().any(|ep| self.edge(*ep).from == end) // these are checked twice as many times as needed
     }
 
-    fn delete_edge(&mut self, edge: EdgePtr) {
-        // remove references to this edge
+    /// delete an half-edge and its twin
+    pub fn delete_edge(&mut self, ep: EdgePtr) {
+        let twin = self.edge(ep).twin;
+        let ep_next = self.edge(ep).next;
+        let twin_next = self.edge(twin).next;
 
-        self.edges.delete(edge)
+        let vert_a = self.edge(twin).from;
+        let vert_b = self.edge(ep).from;
+
+        // FIRST take care of faces
+        if self.edge(ep).face != None {
+            todo!();
+        } 
+        if self.edge(twin).face != None {
+            todo!();
+        } 
+
+        // SECOND: take care of vertex ptrs
+        if ep_next == twin {
+            self.mut_vert(vert_a).edge = None;  // vert a will become a dangling vertex 
+        } else {
+            self.mut_vert(vert_a).edge = Some(ep_next); // vert must not point to the edge about to be deleted
+        }
+        if twin_next == ep {
+            self.mut_vert(vert_b).edge = None; // vert a will become a dangling vertex 
+        } else {
+            self.mut_vert(vert_b).edge = Some(twin_next); // vert must not point to the edge about to be deleted
+        }
+
+        // THIRD: take care of edge ptrs: find the previous edge, and edit the disk
+        let mut a_replaced = false;
+        let mut b_replaced = false;
+        for disk_edge in self.get_disk(vert_a) {
+            if self.edge(disk_edge).next == twin { 
+                a_replaced = true;
+                self.mut_edge(disk_edge).next = ep_next;
+                break;
+            }
+        }
+        for disk_edge in self.get_disk(vert_b) {
+            if self.edge(disk_edge).next == ep { 
+                b_replaced = true;
+                self.mut_edge(disk_edge).next = twin_next;
+                break;
+            }
+        }
+
+        if !a_replaced {
+            println!("a did not get replaced!");
+        }
+        if !b_replaced {
+            println!("b did not get replaced!");
+        }
+
+        // LASTLY: actually delete them
+        self.edges.delete(ep);
+        self.edges.delete(twin);
     }
 
     /////////////////////////////////////////////////////////////// Complex Transactions & Traversals
@@ -372,7 +429,7 @@ impl Polyhedron {
         b_normal: Vec3,
     ) -> Option<()> {
         let Some((from_a, from_b)) = self.add_dangling_twins(a, b) else {
-            println!("WARN: edge is already here here!");
+            // println!("Already exists!");
             return None;
         };
         self.add_edge_to_vertex(from_a, a_normal);
@@ -619,6 +676,28 @@ impl Polyhedron {
 impl PointBased for Polyhedron {
     fn mutate_points<'a>(&'a mut self) -> Vec<&'a mut Vec3> {
         self.verts.iter_mut().map(|v| &mut v.pos).collect()
+    }
+}
+
+/// Here I put very specific polyhedron operations
+impl Polyhedron {
+
+    /// return the number of iterations upon exhaustion, or None if max_iterations was reached 
+    pub fn make_random_quads(&mut self) -> Option<usize> {
+        let mut rng = rand::thread_rng(); 
+        for i in 0..1_000_000 {
+            let edges = self.edges.all_ids();
+            let edges_between_triangles: Vec<_> = edges.into_iter().filter(|ep| {
+                let twin = self.edge(*ep).twin;
+                // `ep < twin` to filter out half the half edges
+                *ep < twin && self.get_loop(*ep).len() == 3 && self.get_loop(twin).len() == 3    
+            }).collect();
+            let Some(ep) = edges_between_triangles.choose(&mut rng) else {
+                return Some(i);
+            };
+            self.delete_edge(*ep);
+        }
+        None
     }
 }
 
