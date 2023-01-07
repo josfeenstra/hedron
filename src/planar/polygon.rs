@@ -1,5 +1,8 @@
+use crate::algos::signed_volume;
+use crate::core::Plane;
 use crate::kernel::{fxx, Vec3, FRAC_PI_2, TAU, EPSILON};
 
+use crate::lines::Ray;
 use crate::{
     core::PointBased,
     lines::{Line, LineStrip},
@@ -109,6 +112,22 @@ impl Polygon {
         sum / 2.0
     }
 
+
+    /// Intersect ray
+    /// Only works for convex polygons
+    pub fn x_ray(&self, ray: &Ray) -> Option<fxx> {
+        
+        assert!(self.verts.len() >= 3);
+        
+        for (a, b) in iter_pairs(&self.verts) {
+            if signed_volume(ray.origin, ray.origin + ray.normal, *a, *b) > 0.0 {
+                return None;
+            }
+        }
+
+        let t = ray.x_plane(&Plane::from_pts(self.verts[0], self.verts[1], self.verts[2]));
+        Some(t)
+    }
 }
 
 impl PointBased for Polygon {

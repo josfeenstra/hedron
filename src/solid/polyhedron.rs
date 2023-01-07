@@ -17,7 +17,7 @@ pub type EdgePtr = Ptr;
 pub type FacePtr = Ptr;
 
 /// A vertex of the graph
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Vert {
     pub pos: Vec3,
     pub edge: Option<EdgePtr>, // I believe this Edge is always incoming
@@ -40,7 +40,7 @@ pub struct Vert {
 //
 //       (TO)
 // ```
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct HalfEdge {
     pub from: VertPtr,
     /// the origin vertex
@@ -49,7 +49,7 @@ pub struct HalfEdge {
     pub face: Option<FacePtr>, // not every loop is filled
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Face {
     pub edge: EdgePtr,
 }
@@ -58,7 +58,7 @@ pub struct Face {
 /// Implemented as a half edge mesh.  
 /// Despite the name, the model can also be used as a planar partition.
 /// It all depends on the normals used to determine the edge ordering around a vertex
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Polyhedron {
     pub verts: Pool<Vert>, // disk operations should present a normal to orient around within the function itself. It should not be stored
     pub edges: Pool<HalfEdge>,
@@ -731,7 +731,6 @@ impl Polyhedron {
             let avg = Vectors::average(&nbs_pos);
             self.mut_vert(vp).pos = avg;
         }
-
 
         // for ((lp, polygon), bad_apple) in loops.iter().zip(polygons.iter()).zip(bad_apples) {
         //     if bad_apple { continue; }

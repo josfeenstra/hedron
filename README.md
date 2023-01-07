@@ -45,3 +45,11 @@ Hedron strifes to be a unified modelling library, having support for many differ
 # Stage: Pre Alpha
 Hedron is currently in an very early stage. 
 I don't recommend you use this library quite yet, but hopefully some of the models and operations presented can help you nonetheless!
+
+
+
+
+
+
+# ideas: 
+- Minimum spanning tree: https://en.wikipedia.org/wiki/Euclidean_minimum_spanning_tree

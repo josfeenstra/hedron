@@ -108,9 +108,9 @@ impl Bezier {
 // }
 
 impl Geometry for Bezier {
-    fn mv(mut self, mv: &Vec3) -> Self {
+    fn mv(mut self, mv: Vec3) -> Self {
         for v in self.verts.iter_mut() {
-            *v = *v + *mv;
+            *v = *v + mv;
         }
         self
     }
@@ -122,9 +122,9 @@ impl Geometry for Bezier {
         self
     }
 
-    fn scale(mut self, scale: &Vec3) -> Self {
+    fn scale(mut self, scale: Vec3) -> Self {
         for v in self.verts.iter_mut() {
-            *v = *scale * *v;
+            *v = scale * *v;
         }
         self
     }

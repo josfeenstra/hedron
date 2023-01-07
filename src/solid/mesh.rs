@@ -207,6 +207,10 @@ impl Mesh {
 
         mesh
     }
+
+    pub fn new_cube() -> Self {
+        
+    }
 }
 
 impl Mesh {
@@ -374,7 +378,7 @@ mod test {
     #[test]
     fn transform_mesh() {
         let mut mesh = Mesh::new_diamond(vec3(0.5, 0.5, 0.5), 0.5);
-        mesh = mesh.mv(&-vec3(0.5, 0.5, 0.5));
+        mesh = mesh.mv(-vec3(0.5, 0.5, 0.5));
         mesh = mesh.scale_u(2.0);
         assert_eq!(
             mesh.verts,

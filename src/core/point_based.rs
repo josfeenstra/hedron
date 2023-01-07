@@ -37,9 +37,9 @@ pub trait PointBased: Sized + Geometry {
 }
 
 impl<T: PointBased> Geometry for T {
-    fn mv(mut self, mv: &Vec3) -> Self {
+    fn mv(mut self, mv: Vec3) -> Self {
         for v in self.mutate_points() {
-            *v = *v + *mv;
+            *v = *v + mv;
         }
         self
     }
@@ -51,9 +51,9 @@ impl<T: PointBased> Geometry for T {
         self
     }
 
-    fn scale(mut self, scale: &Vec3) -> Self {
+    fn scale(mut self, scale: Vec3) -> Self {
         for v in self.mutate_points() {
-            *v = *scale * *v;
+            *v = scale * *v;
         }
         self
     }

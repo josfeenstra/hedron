@@ -4,7 +4,7 @@ pub type Ptr = usize;
 /// A data pool. 
 /// If you desire a Vec, and ID's pointing to that vec, 
 /// PLUS delete functionality, this is the data type to use
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Pool<T> {
     data: Vec<Option<T>>,
     freed_ids: Vec<Ptr>, // I prefer to work with a stack of freed spots, than iterating over all spots everytime we add a new one

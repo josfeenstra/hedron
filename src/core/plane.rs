@@ -12,7 +12,7 @@ pub struct Plane {
 }
 
 impl Geometry for Plane {
-    fn mv(mut self, mv: &Vec3) -> Self {
+    fn mv(mut self, mv: Vec3) -> Self {
         self.mat.w_axis += mv.extend(0.0);
         self
     }
@@ -22,7 +22,7 @@ impl Geometry for Plane {
         self
     }
 
-    fn scale(mut self, scale: &Vec3) -> Self {
+    fn scale(mut self, scale: Vec3) -> Self {
         self.mat.x_axis.x *= scale.x;
         self.mat.y_axis.y *= scale.y;
         self.mat.z_axis.z *= scale.z;

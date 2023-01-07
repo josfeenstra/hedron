@@ -45,11 +45,11 @@ pub trait Geometry: Sized {
     //     self
     // }
 
-    fn mv(self, mv: &Vec3) -> Self;
+    fn mv(self, mv: Vec3) -> Self;
 
     fn rot(self, rot: &Quat) -> Self;
 
-    fn scale(self, scale: &Vec3) -> Self;
+    fn scale(self, scale: Vec3) -> Self;
 
     fn scale_u(self, scale: fxx) -> Self;
 
@@ -75,16 +75,16 @@ pub trait Geometry: Sized {
     #[must_use]
     // apply a transformation
     fn tf(self, tf: &Pose) -> Self {
-        self.scale(&tf.scale).rot(&tf.rot).mv(&tf.pos)
+        self.scale(tf.scale).rot(&tf.rot).mv(tf.pos)
     }
 
     #[inline]
     #[must_use]
     // apply the inverse of a transformation
     fn tf_inv(self, tf: &Pose) -> Self {
-        self.mv(&-tf.pos)
+        self.mv(-tf.pos)
             .rot(&tf.rot.inverse())
-            .scale(&(1.0 / tf.scale))
+            .scale(1.0 / tf.scale)
     }
 
     #[must_use]
