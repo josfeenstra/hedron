@@ -66,7 +66,6 @@ pub fn line_hits_plane(l1: Vec3, l2: Vec3, p1: Vec3, p2: Vec3, p3: Vec3) -> bool
     }
 }
 
-// UNTESTED
 pub fn signed_volume(a: Vec3, b: Vec3, c: Vec3, d: Vec3) -> fxx {
     (1.0 / 6.0) * (a - d).dot((c - d).cross(b - d))
 }

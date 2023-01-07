@@ -207,10 +207,6 @@ impl Mesh {
 
         mesh
     }
-
-    pub fn new_cube() -> Self {
-        
-    }
 }
 
 impl Mesh {
