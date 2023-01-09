@@ -62,7 +62,7 @@ pub struct Face {
 pub struct Polyhedron {
     pub verts: Pool<Vert>, // disk operations should present a normal to orient around within the function itself. It should not be stored
     pub edges: Pool<HalfEdge>,
-    pub faces: Pool<Face>, // TODO implement explicit faces later!
+    pub faces: Pool<Face>, 
 }
 
 impl Polyhedron {
@@ -378,6 +378,34 @@ impl Polyhedron {
 
     /////////////////////////////////////////////////////////////// Complex Transactions & Traversals
 
+    pub fn contra_grid(&self) -> Self {
+        let mut contra = Self::new();
+           
+        let faces = self.get_face_loops();
+        let centers = faces.iter().map(|edges| {
+            let first_edge = edges[0];
+            let verts = self.edges_to_verts(&edges);
+            let center = Vectors::average(&verts);
+            center
+        }).collect::<Vec<Vec3>>();
+
+        for center in centers {
+            contra.add_vert(center);
+        }
+
+        for edge in faces {
+            // TODO:
+            // get the two faces 
+            // if not two faces continue
+            // 
+            // map these faces to two new verts, dunno how
+            // add edge between these verts 
+            // contra.add_edge()
+        }
+
+        contra
+    }
+
     /// get all loops in the half-edge structure
     pub fn get_loops(&self) -> Vec<Vec<EdgePtr>> {
         let mut loops = Vec::new();
@@ -401,6 +429,10 @@ impl Polyhedron {
         loops
     }
 
+    pub fn get_face_loops(&self) -> Vec<Vec<EdgePtr>> {
+        self.faces.iter().map(|face| self.get_loop(face.edge)).collect()
+    }
+
     /// get the loop asociated with a certain half-edge, by continuously following 'next'
     /// this half-edge will appear as the first edge
     pub fn get_loop(&self, ep: EdgePtr) -> Vec<EdgePtr> {
@@ -419,7 +451,7 @@ impl Polyhedron {
         my_loop
     }
 
-    /// add two half edges between a and b, order doesnt matter.
+    /// add two half edges between vertex a and vertex b, order doesn't matter.
     /// We need a normal to determine disk ordering, when inserting
     /// these half edges in the network of existing half edges
     pub fn add_edge(
@@ -664,16 +696,39 @@ impl Polyhedron {
         }
     }
 
-    /// cap closed planar holes by creating faces at these holes.
-    pub fn cap_ccw_holes(&mut self) {
+    /// cap closed, counter clockwise planar holes by creating faces at these holes.
+    pub fn cap(&mut self) {
+        self.add_faces_at_holes()
+    }
+    
+    pub fn add_faces_at_holes(&mut self) {
         let loops = self.get_loops();
         for lp in loops {
             let pts: Vec<Vec3> = self.edges_to_verts(&lp);
-            let area = Polygon::new(pts).signed_area();
+            let area = Polygon::new(pts).signed_area(); // TODO add normal
             if area > 0.0 {
                 continue;
             }
-            todo!("add edges")
+            let current_face_slot = self.edge(lp[0]).face;
+
+            // this is a warning assert statement
+            for edge in lp.iter().skip(1) {
+                if self.edge(*edge).face != current_face_slot {
+                    println!("WARN: existing face loops are inconsistent! found {:?}, expected {:?}", 
+                        self.edge(*edge).face, current_face_slot);
+                }   
+            }
+
+            // don't cap existing holes
+            if current_face_slot.is_some() {
+                continue;
+            }   
+
+            // create and set a new face 
+            let face = self.faces.push(Face { edge: lp[0] });
+            for edge in lp {
+                self.mut_edge(edge).face = Some(face); 
+            }
         }
     }
 
