@@ -506,7 +506,7 @@ impl Polyhedron {
         Some((from_a, from_b))
     }
 
-    fn get_vert_neighbors(&self, vp: VertPtr) -> Vec<VertPtr> {
+    pub fn get_vert_neighbors(&self, vp: VertPtr) -> Vec<VertPtr> {
         let vert = self.vert(vp);
         let disk_edges: Vec<EdgePtr> = self.get_disk(vp);
         let neighbors: Vec<VertPtr> = disk_edges
@@ -797,7 +797,6 @@ impl Polyhedron {
         //         self.mut_vert(self.edge(*edge).from).pos += smoother;
         //     } 
         // }
-        
     }
 }
 

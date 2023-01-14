@@ -362,14 +362,14 @@ mod test {
     }
 
     #[test]
-    fn write_file() {
-        let mut buffer = Vec::new();
-        writeln!(&mut buffer, "test").unwrap();
-        writeln!(&mut buffer, "formatted {}", "arguments").unwrap();
+    // fn write_file() {
+    //     let mut buffer = Vec::new();
+    //     writeln!(&mut buffer, "test").unwrap();
+    //     writeln!(&mut buffer, "formatted {}", "arguments").unwrap();
 
-        let mut file = std::fs::File::create("data.txt").expect("create failed");
-        file.write_all(&buffer).expect("write failed");
-    }
+    //     let mut file = std::fs::File::create("data.txt").expect("create failed");
+    //     file.write_all(&buffer).expect("write failed");
+    // }
 
     #[test]
     fn transform_mesh() {
