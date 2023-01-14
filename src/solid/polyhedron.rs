@@ -52,6 +52,8 @@ pub struct HalfEdge {
 #[derive(Default, Debug, Clone)]
 pub struct Face {
     pub edge: EdgePtr,
+    pub center: Vec3,
+    pub normal: Vec3,
 }
 
 /// A polyhedron model.
@@ -296,6 +298,11 @@ impl Polyhedron {
     }
 
     #[inline]
+    pub fn face(&self, fp: FacePtr) -> &Face {
+        self.faces.get(fp).expect("face ptr not found!")
+    }
+
+    #[inline]
     pub fn mut_edge(&mut self, ep: EdgePtr) -> &mut HalfEdge {
         self.edges.get_mut(ep).expect("edge ptr not found!")
     }
@@ -378,9 +385,30 @@ impl Polyhedron {
 
     /////////////////////////////////////////////////////////////// Complex Transactions & Traversals
 
-    pub fn contra_grid(&self) -> Self {
-        let mut contra = Self::new();
-           
+    /// get the geometry of a face of the dual grid, which corresponds to a vertex of this grid
+    /// like always, VertPtr must be valid 
+    pub fn dual_face(&self, vp: VertPtr) -> Polygon {
+        let face_centers = self.get_disk(vp)
+            .into_iter()
+            .step_by(2)
+            .filter_map(|ep| self.edge(ep).face)
+            .map(|fp| self.face(fp).center)
+            .collect::<Vec<_>>();
+        Polygon::new(face_centers)
+    }
+
+    /// get the geometry of an edge of the dual grid, corresponding to an edge of this grid
+    pub fn dual_edge(&self, ep: EdgePtr) -> Option<(Vec3, Vec3)> {
+        let twin = self.edge(ep).twin;
+        let (Some(fp_a), Some(fp_b)) = (self.edge(ep).face, self.edge(ep).twin) else {
+            return None;
+        };
+        Some((self.face(fp_a).center, self.face(fp_b).center));
+    }
+
+    /// get the entire dual graph of this graph
+    pub fn dual_graph(&self) -> Self {
+        let mut dual = Self::new();
         let faces = self.get_face_loops();
         let centers = faces.iter().map(|edges| {
             let first_edge = edges[0];
@@ -390,11 +418,11 @@ impl Polyhedron {
         }).collect::<Vec<Vec3>>();
 
         for center in centers {
-            contra.add_vert(center);
+            dual.add_vert(center);
         }
 
         for edge in faces {
-            // TODO:
+            // TODO
             // get the two faces 
             // if not two faces continue
             // 
@@ -403,7 +431,7 @@ impl Polyhedron {
             // contra.add_edge()
         }
 
-        contra
+        dual
     }
 
     /// get all loops in the half-edge structure
@@ -705,10 +733,17 @@ impl Polyhedron {
         let loops = self.get_loops();
         for lp in loops {
             let pts: Vec<Vec3> = self.edges_to_verts(&lp);
-            let area = Polygon::new(pts).signed_area(); // TODO add normal
+            let polygon = Polygon::new(pts);
+            
+            // let normal: Poly
+            let normal = polygon.estimate_normal();
+            let area = polygon.signed_area(); // TODO add normal
             if area > 0.0 {
                 continue;
             }
+            let center = polygon.center();
+            
+            // let center = Vectors::average(&polygon.verts);
             let current_face_slot = self.edge(lp[0]).face;
 
             // this is a warning assert statement
@@ -725,7 +760,7 @@ impl Polyhedron {
             }   
 
             // create and set a new face 
-            let face = self.faces.push(Face { edge: lp[0] });
+            let face = self.faces.push(Face { edge: lp[0], center, normal });
             for edge in lp {
                 self.mut_edge(edge).face = Some(face); 
             }

@@ -37,6 +37,10 @@ impl Polygon {
         Self::new(verts)
     }
 
+    pub fn center(&self) -> Vec3 {
+        Vectors::average(&self.verts)
+    }
+
     /// Simple triangulate using a fan of triangles, and the center of the vertex
     /// This will work for convex polygons. concave polygons may become weird
     pub fn triangulate_naive(&self) -> Mesh {
@@ -112,6 +116,16 @@ impl Polygon {
         sum / 2.0
     }
 
+    /// NOTE: this is double!!!
+    /// NOTE: this is not foolproof or robust, but should work with convex or convex-like polygons
+    pub fn estimate_normal(&self) -> Vec3 {
+        let mut norms = Vec::new();
+        let center = self.center();
+        for (a, b) in iter_pairs(&self.verts) {
+            norms.push((*a - center).cross(*b - center));
+        }
+        Vectors::average(&norms).normalize()
+    }
 
     /// Intersect ray
     /// Only works for convex polygons

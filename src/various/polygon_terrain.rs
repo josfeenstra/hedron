@@ -95,7 +95,7 @@ impl PolygonTerrain {
         for (pos, occ) in self.cells.iter() {
             
             assert!(self.topo.verts.get(pos.x as usize).is_some());
-            let nbs = Vec::new();
+            // let nbs = Vec::new();
             let bot_nb = &(*pos + ivec2(0, -1));
             let top_nb = &(*pos + ivec2(0,  1));
             let side_nbs = self.cell_side_neighbors(*pos);
@@ -106,7 +106,7 @@ impl PolygonTerrain {
     }
 
     pub fn create_iso_polygon(&self, from: IVec2, dir: FaceDirection) -> Polygon {
-        
+          
         match dir {
             FaceDirection::Top => todo!(),
             FaceDirection::Bottom => todo!(),
