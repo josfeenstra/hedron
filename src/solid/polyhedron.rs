@@ -759,8 +759,7 @@ impl Polyhedron {
             if area > 0.0 {
                 continue;
             }
-            let center = polygon.center();
-            
+
             // let center = Vectors::average(&polygon.verts);
             let current_face_slot = self.edge(lp[0]).face;
 
@@ -778,7 +777,7 @@ impl Polyhedron {
             }   
 
             // create and set a new face 
-            let face = self.faces.push(Face { edge: lp[0], center, normal });
+            let face = self.faces.push(Face { edge: lp[0], normal, center });
             for edge in lp {
                 self.mut_edge(edge).face = Some(face); 
             }

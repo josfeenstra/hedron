@@ -135,7 +135,7 @@ impl Polygon {
     pub fn flip(mut self) -> Self {
         self.verts.reverse()
     }
-    
+
     pub fn center(&self) -> Vec3 {
         Vectors::average(&self.verts)
     }
