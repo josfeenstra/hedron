@@ -406,7 +406,7 @@ impl Polyhedron {
             .into_iter()
             .step_by(2)
             .filter_map(|ep| self.edge(ep).face)
-            .map(|fp| self.face(fp).center * self.face(fp).normal * offset)
+            .map(|fp| self.face(fp).center + self.face(fp).normal * offset)
             .collect::<Vec<_>>();
         Polygon::new(face_centers)
     }

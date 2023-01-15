@@ -127,19 +127,24 @@ impl Polygon {
 
     /// Intersect ray
     /// Only works for convex polygons
-    pub fn x_ray(&self, ray: &Ray) -> Option<fxx> {
-        
+    pub fn intersect_ray_where(&self, ray: &Ray) -> Option<fxx> {
         assert!(self.verts.len() >= 3);
-        
-        for (a, b) in iter_pairs(&self.verts) {
-            if signed_volume(ray.origin, ray.origin + ray.normal, *a, *b) > 0.0 {
-                return None;
-            }
+        if self.intersect_ray(ray) {
+            return None;
         }
-
         let t = ray.x_plane(&Plane::from_pts(self.verts[0], self.verts[1], self.verts[2]));
         Some(t)
     }
+
+    pub fn intersect_ray(&self, ray: &Ray) -> bool {
+        for (a, b) in iter_pairs(&self.verts) {
+            if signed_volume(ray.origin, ray.origin + ray.normal, *a, *b) > 0.0 {
+                return false;
+            }
+        }
+        true
+    }
+
 
 
     /// there are better ways of doing this, 
@@ -152,7 +157,7 @@ impl Polygon {
             normals.push((*a - center).cross(*b - center));
         }
 
-        Vectors::average(&normals)
+        Vectors::average(&normals).normalize()
     } 
 }
 

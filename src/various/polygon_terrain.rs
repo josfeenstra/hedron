@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     kernel::{fxx, Vec3},
-    solid::{Mesh, Polyhedron, VertPtr}, planar::Polygon,
+    solid::{Mesh, Polyhedron, VertPtr}, planar::Polygon, lines::Ray,
 };
 
 #[derive(Eq, Hash, PartialEq, Copy, Clone)]
@@ -22,11 +22,21 @@ impl CellPos {
     }
 }
 
+#[derive(Clone)]
+pub enum FaceDirection {
+    Top,
+    Bottom,
+    Side(VertPtr),
+}
+
 /// a terrain data structure constisting of irregular polygons
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct PolygonTerrain {
     pub topo: Polyhedron,                       // the topology of the terrain. Cells exist at the vertices. TODO rename Polyhedron to graph.
     pub cells: HashMap<CellPos, bool>, // the occupancy cells of the terrain. bool is temporary.
+    pub iso: Vec<(CellPos, FaceDirection, Polygon)>,
+    pub looks: Vec<bool>,
+
     pub delta_height: fxx,
 }
 
@@ -66,16 +76,42 @@ impl PolygonTerrain {
 impl PolygonTerrain {
 
     // create or update a cell
-    pub fn set_cell(&mut self, pos: CellPos, occupancy: bool) {
+    pub fn set(&mut self, pos: CellPos, occupancy: bool) -> bool {
         if self.cells.contains_key(&pos) {
             let cell = self.cells.get_mut(&pos).unwrap();
             *cell = occupancy;
+            false
+        } else {
+            self.cells.insert(pos, occupancy);
+            true
         }
     }
 
     // remove a cell
-    pub fn delete_cell(&mut self, pos: CellPos) {
+    pub fn delete(&mut self, pos: CellPos) {
         self.cells.remove(&pos);
+    }
+
+    /// run this after updating cells
+    pub fn update_iso(&mut self, base_plane: bool) {
+        self.iso = self.create_iso_polygons(base_plane);
+    }
+
+    /// test intersection using the iso faces.
+    /// returns the edge of the dual of graph of this face, and the face itself
+    pub fn intersect_iso(&self, ray: &Ray) -> Option<(CellPos, CellPos, Polygon)>{
+        for (vp, dir, pg) in self.iso.iter() {
+            if pg.intersect_ray(ray) {
+                // TODO first hit, cull back faces
+                let other = match dir {
+                    FaceDirection::Top => CellPos::new(vp.vert, vp.height + 1),
+                    FaceDirection::Bottom => CellPos::new(vp.vert, vp.height - 1),
+                    FaceDirection::Side(side) => CellPos::new(*side, vp.height),
+                };
+                return Some((*vp, other, pg.clone()));
+            }
+        }
+        None
     }
 
     pub fn cell_side_neighbors(&self, pos: CellPos) -> Vec<CellPos> {
@@ -101,8 +137,8 @@ impl PolygonTerrain {
         for (pos, occ) in self.cells.iter() {
             assert!(self.topo.verts.get(pos.vert).is_some());
             
-            let lower = (pos.height as fxx) - 0.5 * self.delta_height;
-            let upper = (pos.height as fxx) + 0.5 * self.delta_height;
+            let lower = ((pos.height as fxx) - 0.5) * self.delta_height;
+            let upper = ((pos.height as fxx) + 0.5) * self.delta_height;
             
             let top_nb = &pos.add_height(1);
             let bot_nb = &pos.add_height(-1);
@@ -114,16 +150,22 @@ impl PolygonTerrain {
             }
 
             if self.cells.get(top_nb).is_none() {
-                let pg = self.topo.dual_face(pos.vert, upper);
+                let pg = self.topo.dual_face(pos.vert, upper).flip();
                 polygons.push((*pos, FaceDirection::Top, pg));
             }
 
             for nb in side_nbs {
                 if self.cells.get(&nb).is_none() {
                     let edge = self.topo.get_edge_between(pos.vert, nb.vert).expect("should exist");
-                    let (a, b) = self.topo.dual_edge(edge, lower).expect("edge should be between two faces");
-                    let (c, d) = self.topo.dual_edge(edge, upper).expect("edge should be between two faces");
-                    let pg = Polygon::new(vec![a, b, d, c]);
+                    
+                    let (Some((a, b)), Some((c, d))) = (
+                        self.topo.dual_edge(edge, lower), 
+                        self.topo.dual_edge(edge, upper)
+                    ) else {
+                        continue;
+                    };
+                    
+                    let pg = Polygon::new(vec![c, d, b, a]);
                     polygons.push((*pos, FaceDirection::Side(nb.vert), pg));
                 }
             }
@@ -132,8 +174,16 @@ impl PolygonTerrain {
     }
 }
 
-pub enum FaceDirection {
-    Top,
-    Bottom,
-    Side(VertPtr),
+impl Into<Mesh> for PolygonTerrain {
+    fn into(self) -> Mesh {
+        Mesh::from_join(self.iso.iter().map(|(_, _, pg)| pg.triangulate_naive()).collect())
+    }
+}
+
+#[cfg(feature = "bevy")]
+impl Into<bevy::prelude::Mesh> for PolygonTerrain {
+    fn into(self) -> bevy::prelude::Mesh {
+        let mesh: Mesh = self.into();
+        mesh.into()
+    }
 }
