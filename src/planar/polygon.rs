@@ -37,8 +37,17 @@ impl Polygon {
         Self::new(verts)
     }
 
+    #[inline]
     pub fn center(&self) -> Vec3 {
         Vectors::average(&self.verts)
+    }
+
+    /// flip the polygon by reversing the order of the vertices
+    #[inline]
+    #[must_use]
+    pub fn flip(mut self) -> Self {
+        self.verts.reverse();
+        self
     }
 
     /// Simple triangulate using a fan of triangles, and the center of the vertex
@@ -132,13 +141,6 @@ impl Polygon {
         Some(t)
     }
 
-    pub fn flip(mut self) -> Self {
-        self.verts.reverse()
-    }
-
-    pub fn center(&self) -> Vec3 {
-        Vectors::average(&self.verts)
-    }
 
     /// there are better ways of doing this, 
     /// TODO: principle component analysis ? overkill ?

@@ -319,7 +319,7 @@ impl Polyhedron {
     /// get the edge from `va` to `vb`
     pub fn get_edge_between(&self, va: VertPtr, vb: VertPtr) -> Option<EdgePtr> {
         for ep in self.get_disk(va).into_iter().skip(1).step_by(2) {
-            if (self.edge(ep).from == vb) {
+            if self.edge(ep).from == vb {
                 return Some(self.edge(ep).twin);
             }
         }
@@ -393,6 +393,12 @@ impl Polyhedron {
 
     /////////////////////////////////////////////////////////////// Complex Transactions & Traversals
 
+    pub fn refactor(&mut self) {
+        // refactor the internal data pools, and update all internal pointers
+        // Pool::refactor(pool)
+        todo!();
+    }
+
     /// get the geometry of a face of the dual grid, which corresponds to a vertex of this grid
     /// like always, VertPtr must be valid 
     pub fn dual_face(&self, vp: VertPtr, offset: fxx) -> Polygon {
@@ -416,14 +422,9 @@ impl Polyhedron {
         Some((a , b))
     }
 
-    pub fn refactor(&mut self) {
-        // refactor the internal data pools, and update all internal pointers
-        // Pool::refactor(pool)
-        todo!();
-    }
-
-    pub fn contra_grid(&self) -> Self {
-        let mut contra = Self::new();
+    /// NOTE: does not produce faces as of yet
+    pub fn dual_graph(&self) -> Self {
+        let mut dual = Self::new();
      
         // this maps face ids to face ids stacked side by side. 
         // that is the same as the vertices we will create in the contragrid
@@ -432,7 +433,7 @@ impl Polyhedron {
 
 
         for face in self.faces.iter() {
-            contra.add_vert(face.center);
+            dual.add_vert(face.center);
         }
 
         for face_loop in face_loops {
@@ -445,9 +446,11 @@ impl Polyhedron {
                     panic!("found an unlisted face!");
                 };
                 let (norm_a, norm_b) = (self.faces.get(fa).unwrap().normal, self.faces.get(fb).unwrap().normal);
-                contra.add_edge(*vert_a, *vert_b, norm_a, norm_b); // TODO face normals
+                dual.add_edge(*vert_a, *vert_b, norm_a, norm_b); // TODO face normals
             }
         }
+
+        // TODO faces!
 
         dual
     }
