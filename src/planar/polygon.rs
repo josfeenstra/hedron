@@ -10,7 +10,7 @@ use crate::{
     solid::Mesh,
     util::{self, iter_pair_ids},
 };
-use crate::util::iter_pairs;
+use crate::util::{iter_pairs, iter_triplet_ids, iter_triplets};
 
 #[derive(Debug, Clone)]
 pub struct Polygon {
@@ -116,17 +116,6 @@ impl Polygon {
         sum / 2.0
     }
 
-    /// NOTE: this is double!!!
-    /// NOTE: this is not foolproof or robust, but should work with convex or convex-like polygons
-    pub fn estimate_normal(&self) -> Vec3 {
-        let mut norms = Vec::new();
-        let center = self.center();
-        for (a, b) in iter_pairs(&self.verts) {
-            norms.push((*a - center).cross(*b - center));
-        }
-        Vectors::average(&norms).normalize()
-    }
-
     /// Intersect ray
     /// Only works for convex polygons
     pub fn x_ray(&self, ray: &Ray) -> Option<fxx> {
@@ -146,6 +135,23 @@ impl Polygon {
     pub fn flip(mut self) -> Self {
         self.verts.reverse()
     }
+    
+    pub fn center(&self) -> Vec3 {
+        Vectors::average(&self.verts)
+    }
+
+    /// there are better ways of doing this, 
+    /// TODO: principle component analysis ? overkill ?
+    pub fn average_normal(&self) -> Vec3 {
+        assert!(self.verts.len() >= 3);
+        let center = self.center();
+        let mut normals = Vec::new();
+        for (a, b) in iter_pairs(&self.verts) {
+            normals.push((*a - center).cross(*b - center));
+        }
+
+        Vectors::average(&normals)
+    } 
 }
 
 impl PointBased for Polygon {

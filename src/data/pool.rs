@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 /// A dumb pointer
 pub type Ptr = usize;
 
@@ -12,14 +14,31 @@ pub struct Pool<T> {
 
 impl<T: Clone> Pool<T> {
     
+    /// Returns a list which maps the old indices to their new indices
+    /// Get this before actual remapping.
+    pub fn get_refactor_mapping(&self) -> HashMap<usize, usize> {
+        let mut mapping = HashMap::new();
+        let mut offset = 0;
+        for i in 0..self.data.len() {
+            if let Some(item) = self.get(i) {
+                mapping.insert(i, i - offset);
+            } else {
+                offset += 1;
+            }
+        }
+        mapping
+    }
+
     /// clean up all empty spots within the vector
     /// WARNING: this invalidates all externally stored pointers!
-    pub fn refactor(mut pool: Pool<T>) -> Pool<T> {
-        pool.freed_ids.clear();
+    
+    pub fn refactor(&mut self) {
+        
+        self.freed_ids.clear();
         let mut offset = 0;
-        for i in 0..pool.data.len() {
-            if let Some(item) = pool.get(i) {
-                pool.set(i - offset, item.clone())
+        for i in 0..self.data.len() {
+            if let Some(item) = self.get(i) {
+                self.set(i - offset, item.clone())
             } else {
                 offset += 1;
             }
@@ -27,9 +46,8 @@ impl<T: Clone> Pool<T> {
 
         // remove the last X items, which should be correctly copied and replaced
         for i in 0..offset {
-            pool.data.pop();
+            self.data.pop();
         }
-        pool
     }
 }
 
@@ -124,7 +142,6 @@ impl<T> Pool<T> {
     pub fn all_ids(&self) -> Vec<Ptr> {
         self.iter_enum().map(|(ptr, _)| ptr).collect()
     }
-
 }
 
 
@@ -170,7 +187,7 @@ mod tests {
         pool.delete(3);
         
         println!("{:?}", pool);
-        pool = Pool::refactor(pool);
+        pool.refactor();
         println!("{:?}", pool);
         
         assert_eq!(pool.all(), vec![&"penk", &"muis", &"duis"]);

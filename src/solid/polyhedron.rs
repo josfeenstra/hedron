@@ -416,29 +416,37 @@ impl Polyhedron {
         Some((a , b))
     }
 
-    /// get the entire dual graph of this graph
-    pub fn dual_graph(&self) -> Self {
-        let mut dual = Self::new();
-        let faces = self.get_face_loops();
-        let centers = faces.iter().map(|edges| {
-            let first_edge = edges[0];
-            let verts = self.edges_to_verts(&edges);
-            let center = Vectors::average(&verts);
-            center
-        }).collect::<Vec<Vec3>>();
+    pub fn refactor(&mut self) {
+        // refactor the internal data pools, and update all internal pointers
+        // Pool::refactor(pool)
+        todo!();
+    }
 
-        for center in centers {
-            dual.add_vert(center);
+    pub fn contra_grid(&self) -> Self {
+        let mut contra = Self::new();
+     
+        // this maps face ids to face ids stacked side by side. 
+        // that is the same as the vertices we will create in the contragrid
+        let face_to_vert = self.faces.get_refactor_mapping();
+        let face_loops = self.get_face_loops();
+
+
+        for face in self.faces.iter() {
+            contra.add_vert(face.center);
         }
 
-        for edge in faces {
-            // TODO
-            // get the two faces 
-            // if not two faces continue
-            // 
-            // map these faces to two new verts, dunno how
-            // add edge between these verts 
-            // contra.add_edge()
+        for face_loop in face_loops {
+            for edge in face_loop {
+                let twin = self.edge(edge).twin;
+                let (Some(fa), Some(fb)) = (self.edge(edge).face, self.edge(twin).face) else {
+                    continue;
+                };
+                let (Some(vert_a), Some(vert_b)) = (face_to_vert.get(&fa), face_to_vert.get(&fb)) else {
+                    panic!("found an unlisted face!");
+                };
+                let (norm_a, norm_b) = (self.faces.get(fa).unwrap().normal, self.faces.get(fb).unwrap().normal);
+                contra.add_edge(*vert_a, *vert_b, norm_a, norm_b); // TODO face normals
+            }
         }
 
         dual
@@ -744,9 +752,9 @@ impl Polyhedron {
         for lp in loops {
             let pts: Vec<Vec3> = self.edges_to_verts(&lp);
             let polygon = Polygon::new(pts);
-            
-            // let normal: Poly
-            let normal = polygon.estimate_normal();
+            let normal = polygon.average_normal();
+            let center = polygon.center();
+
             let area = polygon.signed_area(); // TODO add normal
             if area > 0.0 {
                 continue;
