@@ -21,6 +21,9 @@ pub mod kernel {
 
     pub const SQRT_OF_3: f32 = 1.7320508075688772;
 
+    pub const INFINITY: f32 = std::f32::INFINITY;
+    pub const NEG_INFINITY: f32 = std::f32::NEG_INFINITY;
+
     pub use glam::vec2;
     pub use glam::vec3;
 
@@ -63,6 +66,9 @@ pub mod kernel {
     pub const FRAC_PI_2: f64 = std::f64::consts::FRAC_PI_2;
     pub const EPSILON: f64 = std::f64::EPSILON;
     pub const SQRT_OF_3: f64 = 1.7320508075688772;
+
+    pub const INFINITY: f64 = std::f64::INFINITY;
+    pub const NEG_INFINITY: f64 = std::f64::NEG_INFINITY;
 
     pub use glam::dvec2 as vec2;
     pub use glam::dvec3 as vec3;

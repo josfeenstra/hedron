@@ -128,7 +128,9 @@ impl Polygon {
     /// Intersect ray
     /// Only works for convex polygons
     pub fn intersect_ray_where(&self, ray: &Ray) -> Option<fxx> {
-        assert!(self.verts.len() >= 3);
+        if self.verts.len() < 3 {
+            return None;
+        }
         if self.intersect_ray(ray) {
             return None;
         }

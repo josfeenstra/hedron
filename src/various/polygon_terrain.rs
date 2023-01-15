@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    kernel::{fxx, Vec3},
+    kernel::{fxx, Vec3, INFINITY},
     solid::{Mesh, Polyhedron, VertPtr}, planar::Polygon, lines::Ray,
 };
 
@@ -100,18 +100,34 @@ impl PolygonTerrain {
     /// test intersection using the iso faces.
     /// returns the edge of the dual of graph of this face, and the face itself
     pub fn intersect_iso(&self, ray: &Ray) -> Option<(CellPos, CellPos, Polygon)>{
-        for (vp, dir, pg) in self.iso.iter() {
+        let mut best_dist = INFINITY;
+        let mut best_hit: Option<usize> = None;
+        for (i, (vp, dir, pg)) in self.iso.iter().enumerate() {
             if pg.intersect_ray(ray) {
-                // TODO first hit, cull back faces
+                let dist = pg.center().distance(ray.origin);
+                let dot = ray.normal.dot(pg.average_normal() * -1.0);
+                if dot < 0.0 {
+                    continue;
+                }
+
+                if dist < best_dist {
+                    best_dist = dist;
+                    best_hit = Some(i);
+                }
+            }
+        }
+        match best_hit {
+            Some(i) => {
+                let (vp, dir, pg) = &self.iso[i];
                 let other = match dir {
                     FaceDirection::Top => CellPos::new(vp.vert, vp.height + 1),
                     FaceDirection::Bottom => CellPos::new(vp.vert, vp.height - 1),
                     FaceDirection::Side(side) => CellPos::new(*side, vp.height),
                 };
-                return Some((*vp, other, pg.clone()));
-            }
+                Some((*vp, other, pg.clone()))
+            },
+            None => None,
         }
-        None
     }
 
     pub fn cell_side_neighbors(&self, pos: CellPos) -> Vec<CellPos> {
@@ -128,7 +144,10 @@ impl PolygonTerrain {
             for (vp, vert) in self.topo.verts.iter_enum() {
                 let y = -1;
                 let upper = (y as fxx) + 0.5 * self.delta_height;
-                let pg = self.topo.dual_face(vp, upper);
+                let pg = self.topo.dual_face(vp, upper).flip();
+                if pg.verts.len() < 3 {
+                    continue;
+                }
                 let pos = CellPos::new(vp, y);
                 polygons.push((pos, FaceDirection::Top, pg));
             }
