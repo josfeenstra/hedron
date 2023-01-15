@@ -316,7 +316,15 @@ impl Polyhedron {
         self.verts.push(Vert { pos, edge: None }) as VertPtr
     }
 
-
+    /// get the edge from `va` to `vb`
+    pub fn get_edge_between(&self, va: VertPtr, vb: VertPtr) -> Option<EdgePtr> {
+        for ep in self.get_disk(va).into_iter().skip(1).step_by(2) {
+            if (self.edge(ep).from == vb) {
+                return Some(self.edge(ep).twin);
+            }
+        }
+        None
+    }
 
     /// NOTE: A - B is a different half edge than B - A.
     fn has_half_edge(&self, start: VertPtr, end: VertPtr) -> bool {
@@ -387,23 +395,25 @@ impl Polyhedron {
 
     /// get the geometry of a face of the dual grid, which corresponds to a vertex of this grid
     /// like always, VertPtr must be valid 
-    pub fn dual_face(&self, vp: VertPtr) -> Polygon {
+    pub fn dual_face(&self, vp: VertPtr, offset: fxx) -> Polygon {
         let face_centers = self.get_disk(vp)
             .into_iter()
             .step_by(2)
             .filter_map(|ep| self.edge(ep).face)
-            .map(|fp| self.face(fp).center)
+            .map(|fp| self.face(fp).center * self.face(fp).normal * offset)
             .collect::<Vec<_>>();
         Polygon::new(face_centers)
     }
 
     /// get the geometry of an edge of the dual grid, corresponding to an edge of this grid
-    pub fn dual_edge(&self, ep: EdgePtr) -> Option<(Vec3, Vec3)> {
+    pub fn dual_edge(&self, ep: EdgePtr, offset: fxx) -> Option<(Vec3, Vec3)> {
         let twin = self.edge(ep).twin;
-        let (Some(fp_a), Some(fp_b)) = (self.edge(ep).face, self.edge(ep).twin) else {
+        let (Some(fp_a), Some(fp_b)) = (self.edge(ep).face, self.edge(twin).face) else {
             return None;
         };
-        Some((self.face(fp_a).center, self.face(fp_b).center));
+        let a = self.face(fp_a).center + self.face(fp_a).normal * offset;
+        let b = self.face(fp_b).center + self.face(fp_b).normal * offset;
+        Some((a , b))
     }
 
     /// get the entire dual graph of this graph

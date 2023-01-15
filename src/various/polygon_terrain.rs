@@ -89,34 +89,50 @@ impl PolygonTerrain {
         let polygons = Vec::new();
 
         if base_plane {
-            // todo create a faces for each vert in topo
+            for vert in self.topo.verts.iter() {
+                let height = -0.5 * self.delta_height; 
+                let pg = self.topo.dual_face(vert, height);
+                polygons.add((pos, FaceDirection::Top, pg));
+            }
         }
 
         for (pos, occ) in self.cells.iter() {
+            let vert = pos.x as usize;
+            assert!(self.topo.verts.get(vert).is_some());
             
-            assert!(self.topo.verts.get(pos.x as usize).is_some());
-            // let nbs = Vec::new();
-            let bot_nb = &(*pos + ivec2(0, -1));
+            let lower = (pos.y as fxx) - 0.5 * self.delta_height;
+            let upper = (pos.y as fxx) + 0.5 * self.delta_height;
+            
             let top_nb = &(*pos + ivec2(0,  1));
+            let bot_nb = &(*pos + ivec2(0, -1));
             let side_nbs = self.cell_side_neighbors(*pos);
 
-            
+            if self.cells.get(bot_nb).is_none() {
+                let pg = self.topo.dual_face(vert, lower);
+                polygons.add((pos, FaceDirection::Bottom, pg));
+            }
+
+            if self.cells.get(top_nb).is_none() {
+                let pg = self.topo.dual_face(vert, upper);
+                polygons.add((pos, FaceDirection::Top, pg));
+            }
+
+            for nb in side_nbs {
+                if self.cells.get(&ivec2(nb, pos.y)).is_none() {
+                    let edge = self.topo.get_edge_between(vert, nb);
+                    let (a, b) = self.topo.dual_edge(edge, lower);
+                    let (c, b) = self.topo.dual_edge(edge, upper);
+                    let pg = Polygon::new(vec![a, b, d, c]);
+                    polygons.add((pos, FaceDirection::Top, pg));
+                }
+            }
         }
         polygons
-    }
-
-    pub fn create_iso_polygon(&self, from: IVec2, dir: FaceDirection) -> Polygon {
-          
-        match dir {
-            FaceDirection::Top => todo!(),
-            FaceDirection::Bottom => todo!(),
-            FaceDirection::Side(_) => todo!(),
-        }
     }
 }
 
 pub enum FaceDirection {
     Top,
     Bottom,
-    Side(IVec2),
+    Side(VertPtr),
 }

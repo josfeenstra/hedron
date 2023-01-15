@@ -142,6 +142,10 @@ impl Polygon {
         let t = ray.x_plane(&Plane::from_pts(self.verts[0], self.verts[1], self.verts[2]));
         Some(t)
     }
+
+    pub fn flip(mut self) -> Self {
+        self.verts.reverse()
+    }
 }
 
 impl PointBased for Polygon {
