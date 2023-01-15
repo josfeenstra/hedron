@@ -10,7 +10,7 @@ use crate::{
     solid::Mesh,
     util::{self, iter_pair_ids},
 };
-use crate::util::iter_pairs;
+use crate::util::{iter_pairs, iter_triplet_ids, iter_triplets};
 
 #[derive(Debug, Clone)]
 pub struct Polygon {
@@ -128,6 +128,23 @@ impl Polygon {
         let t = ray.x_plane(&Plane::from_pts(self.verts[0], self.verts[1], self.verts[2]));
         Some(t)
     }
+
+    pub fn center(&self) -> Vec3 {
+        Vectors::average(&self.verts)
+    }
+
+    /// there are better ways of doing this, 
+    /// TODO: principle component analysis ? overkill ?
+    pub fn average_normal(&self) -> Vec3 {
+        assert!(self.verts.len() >= 3);
+        let center = self.center();
+        let mut normals = Vec::new();
+        for (a, b) in iter_pairs(&self.verts) {
+            normals.push((*a - center).cross(*b - center));
+        }
+
+        Vectors::average(&normals)
+    } 
 }
 
 impl PointBased for Polygon {

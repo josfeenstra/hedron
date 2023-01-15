@@ -52,6 +52,8 @@ pub struct HalfEdge {
 #[derive(Default, Debug, Clone)]
 pub struct Face {
     pub edge: EdgePtr,
+    pub center: Vec3,
+    pub normal: Vec3,
 }
 
 /// A polyhedron model.
@@ -378,29 +380,37 @@ impl Polyhedron {
 
     /////////////////////////////////////////////////////////////// Complex Transactions & Traversals
 
+    pub fn refactor(&mut self) {
+        // refactor the internal data pools, and update all internal pointers
+        // Pool::refactor(pool)
+        todo!();
+    }
+
     pub fn contra_grid(&self) -> Self {
         let mut contra = Self::new();
-           
-        let faces = self.get_face_loops();
-        let centers = faces.iter().map(|edges| {
-            let first_edge = edges[0];
-            let verts = self.edges_to_verts(&edges);
-            let center = Vectors::average(&verts);
-            center
-        }).collect::<Vec<Vec3>>();
+     
+        // this maps face ids to face ids stacked side by side. 
+        // that is the same as the vertices we will create in the contragrid
+        let face_to_vert = self.faces.get_refactor_mapping();
+        let face_loops = self.get_face_loops();
 
-        for center in centers {
-            contra.add_vert(center);
+
+        for face in self.faces.iter() {
+            contra.add_vert(face.center);
         }
 
-        for edge in faces {
-            // TODO:
-            // get the two faces 
-            // if not two faces continue
-            // 
-            // map these faces to two new verts, dunno how
-            // add edge between these verts 
-            // contra.add_edge()
+        for face_loop in face_loops {
+            for edge in face_loop {
+                let twin = self.edge(edge).twin;
+                let (Some(fa), Some(fb)) = (self.edge(edge).face, self.edge(twin).face) else {
+                    continue;
+                };
+                let (Some(vert_a), Some(vert_b)) = (face_to_vert.get(&fa), face_to_vert.get(&fb)) else {
+                    panic!("found an unlisted face!");
+                };
+                let (norm_a, norm_b) = (self.faces.get(fa).unwrap().normal, self.faces.get(fb).unwrap().normal);
+                contra.add_edge(*vert_a, *vert_b, norm_a, norm_b); // TODO face normals
+            }
         }
 
         contra
@@ -705,7 +715,11 @@ impl Polyhedron {
         let loops = self.get_loops();
         for lp in loops {
             let pts: Vec<Vec3> = self.edges_to_verts(&lp);
-            let area = Polygon::new(pts).signed_area(); // TODO add normal
+            let polygon = Polygon::new(pts);
+            let normal = polygon.average_normal();
+            let center = polygon.center();
+
+            let area = polygon.signed_area(); // TODO add normal
             if area > 0.0 {
                 continue;
             }
@@ -725,7 +739,7 @@ impl Polyhedron {
             }   
 
             // create and set a new face 
-            let face = self.faces.push(Face { edge: lp[0] });
+            let face = self.faces.push(Face { edge: lp[0], normal, center });
             for edge in lp {
                 self.mut_edge(edge).face = Some(face); 
             }
