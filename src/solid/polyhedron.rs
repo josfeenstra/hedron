@@ -655,6 +655,14 @@ impl Polyhedron {
         }
     }
 
+    pub fn get_vert_faces(&self, vp: VertPtr) -> Vec<FacePtr> {
+        self.get_disk(vp)
+            .into_iter()
+            .step_by(2)
+            .filter_map(|ep| self.edge(ep).face)
+            .collect()
+    }
+
     /////////////////////////////////////////////////////////////// Movement
 
     /////////////////////////////////////////////////////////////// Modelling

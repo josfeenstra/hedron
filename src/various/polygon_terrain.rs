@@ -20,6 +20,21 @@ impl CellPos {
     pub fn add_height(&self, height: i32) -> Self {
         Self::new(self.vert, self.height + height)
     }
+
+    /// order the positions first by vert, then by height
+    pub fn is_higher_order_than(&self, rhs: &Self) -> bool {
+        if self.vert > rhs.vert {
+            true
+        } else if self.vert < rhs.vert {
+            false
+        } else {
+            if self.height > rhs.height {
+                true
+            } else  {
+                false
+            }   
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -190,6 +205,86 @@ impl PolygonTerrain {
             }
         }
         polygons
+    }
+
+    /// create all data needed to render the polygon using marching cubes
+    /// TODO 1 : build a unit test for this
+    /// TODO 2 : integrate with the marching cubes meshes you have! 
+    /// TODO 3 : trilinear interpolation!
+    pub fn create_cuboids(&self) -> Vec<[(Vec3, bool); 8]> {
+        let mut cubes = Vec::new();
+        
+        for (base_pos, occupancy) in self.cells.iter() {
+            let quads = self.topo.get_vert_faces(base_pos.vert);
+
+            // twice per quad
+            for quad in quads {
+                let edges = self.topo.get_loop(self.topo.face(quad).edge);
+                let vps = edges.iter().map(|ep| self.topo.edge(*ep).from).collect::<Vec<_>>();
+                let points = vps.iter().map(|vp| self.topo.vert(*vp).pos).collect::<Vec<_>>();
+
+                for i in 0..2 {                            
+                    let lower_height = base_pos.height + i - 1 as i32;
+                    let upper_height = base_pos.height + i as i32;
+
+                    let lower = lower_height as fxx * self.delta_height;
+                    let upper = upper_height as fxx * self.delta_height;
+
+                    let [a, b, c, d] = points[..] else {
+                        println!("WARN: not a quad!");
+                        continue;
+                    };
+                    let [va, vb, vc, vd] = vps[..] else {
+                        println!("WARN: not a quad!");
+                        continue;
+                    };
+                    
+                    let cell_positions = [
+                        CellPos::new(va, lower_height),
+                        CellPos::new(vb, lower_height),
+                        CellPos::new(vd, lower_height),
+                        CellPos::new(vc, lower_height),
+                        CellPos::new(va, upper_height),
+                        CellPos::new(vb, upper_height),
+                        CellPos::new(vd, upper_height),
+                        CellPos::new(vc, upper_height)
+                    ];
+
+                    fn get(t: &PolygonTerrain, pos: &CellPos) -> bool {
+                        match t.cells.get(pos) {
+                            Some(b) => *b,
+                            None => false,
+                        }
+                    }
+
+                    // prevent duplicates: 
+                    // - of all cells occupied by something (so the ones we are iterating through using the base_pos)
+                    // - only continue if base_pos is the highest order one.
+                    // - this ordering is arbitrary, just some metric to make 1 stand out on top
+                    if cell_positions
+                        .iter()
+                        .filter(|pos| get(&self, pos)) 
+                        .any(|pos| pos.is_higher_order_than(base_pos)) { 
+                        continue;
+                    }
+
+                    let cube = [
+                        (a + lower, get(&self, &cell_positions[0])),
+                        (b + lower, get(&self, &cell_positions[1])),
+                        (d + lower, get(&self, &cell_positions[2])),
+                        (c + lower, get(&self, &cell_positions[3])),
+                        (a + upper, get(&self, &cell_positions[4])),
+                        (b + upper, get(&self, &cell_positions[5])),
+                        (d + upper, get(&self, &cell_positions[6])),
+                        (c + upper, get(&self, &cell_positions[7]))
+                    ];
+
+                    cubes.push(cube);
+                }
+            }
+        }
+
+        cubes
     }
 }
 
