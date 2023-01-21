@@ -27,8 +27,8 @@ impl Mesh {
 
     pub fn from_bi_surface(srf: BiSurface, u_segments: usize, v_segments: usize) -> Mesh {
         // returns vertices & indices of a flat grid
-        let uPoints = u_segments + 1;
-        let vPoints = v_segments + 1;
+        // let uPoints = u_segments + 1;
+        // let vPoints = v_segments + 1;
 
         todo!();
 
@@ -80,7 +80,7 @@ impl Mesh {
     /// cap / triangulate before running this
     pub fn from_polyhedron(graph: Polyhedron) -> Mesh {
         
-        let mesh = Mesh::default();
+        let mut mesh = Mesh::default();
         
         let remapper = graph.verts.get_refactor_mapping();
         for v in graph.verts.iter() {
@@ -113,7 +113,7 @@ impl Mesh {
         let ids = CUBE_FACES
             .into_iter()
             .map(|face| quad_to_tri(face))
-            .fold(Vec::new(), |tris, idset| {tris.extend(idset); tris });
+            .fold(Vec::new(), |mut tris, idset| {tris.extend(idset); tris });
         Self::new(verts.to_vec(), ids, vec!())
     }
 

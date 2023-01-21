@@ -29,24 +29,24 @@ impl Rectangle3 {
 }
 
 impl Geometry for Rectangle3 {
-    fn mv(self, mv: crate::kernel::Vec3) -> Self {
+    fn mv(mut self, mv: crate::kernel::Vec3) -> Self {
         self.pose.pos += mv;
         self
     }
 
-    fn rot(self, rot: &crate::kernel::Quat) -> Self {
+    fn rot(mut self, rot: &crate::kernel::Quat) -> Self {
         self.pose.rot *= *rot;
         self
     }
 
     // this scales the bound, NOT the pose 
-    fn scale(self, scale: crate::kernel::Vec3) -> Self {
+    fn scale(mut self, scale: crate::kernel::Vec3) -> Self {
         self.bounds.scale(scale.truncate());
         self
     }
 
     // this scales the bound, NOT the pose 
-    fn scale_u(self, scale: crate::kernel::fxx) -> Self {
+    fn scale_u(mut self, scale: crate::kernel::fxx) -> Self {
         self.bounds.scale_u(scale);
         self
     }
