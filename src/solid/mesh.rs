@@ -4,25 +4,430 @@ use std::ops::Range;
 
 use crate::kernel::{fxx, vec2, vec3, Vec2, Vec3, kernel};
 
+use crate::srf::{BiSurface, TriSurface, Rectangle3};
 use crate::{core::PointBased, data::Grid2};
 
+use super::{CUBE_FACES, quad_to_tri, Cuboid, Polyhedron, Octoid};
+
+/// A dead simple, internal data structure to store meshes. 
+/// Can get confusing in conjunction with bevy's mesh
 #[derive(Default, Debug)]
 pub struct Mesh {
     pub verts: Vec<Vec3>,
-    pub uvs: Vec<Vec2>,
     pub tri: Vec<usize>,
+    pub uvs: Vec<Vec2>,
+    // pub normals: Vec<Vec3>, // normalKind
 }
 
 impl Mesh {
+
     pub fn new(verts: Vec<Vec3>, tri: Vec<usize>, uvs: Vec<Vec2>) -> Self {
         Self { verts, tri, uvs }
     }
 
-    pub fn new_weave(verts: Grid2<(Vec3, Vec2)>) -> Self {
-        // TODO
+    pub fn from_bi_surface(srf: BiSurface, u_segments: usize, v_segments: usize) -> Mesh {
+        // returns vertices & indices of a flat grid
+        let uPoints = u_segments + 1;
+        let vPoints = v_segments + 1;
+
+        todo!();
+
+        // let verts = MultiVector3.new(uPoints * vPoints);
+        // let links = new IntMatrix(uSegments * vSegments * 2, 3);
+
+        // // create all positions
+        // for (let u = 0; u < uPoints; u++) {
+        //     for (let v = 0; v < vPoints; v++) {
+        //         let i = u * vPoints + v;
+        //         verts.set(i, srf.pointAt(u / uSegments, v / vSegments));
+        //     }
+        // }
+
+        // // create all indices
+        // // a---c
+        // // | \ |
+        // // b---d
+        // for (let u = 0; u < uSegments; u++) {
+        //     for (let v = 0; v < vSegments; v++) {
+        //         let start_index = 2 * (u * vSegments + v);
+        //         let a = u * uPoints + v;
+        //         let b = a + vPoints;
+        //         let c = a + 1;
+        //         let d = b + 1;
+
+        //         links.setRow(start_index, [a, b, d]);
+        //         links.setRow(start_index + 1, [c, a, d]);
+        //     }
+        // }
+        // Self::new(verts, links)
+    }
+
+    pub fn from_tri_surface(srf: TriSurface, segments: usize) -> Mesh {
+        todo!()
+    }
+
+    pub fn from_rectangle(rect: Rectangle3) -> Mesh {
+        // let verts = rect.getCorners();
+
+        // // we cant handle quads yet
+        // let faces: number[] = [];
+        // faces.push(...quadToTri(cubeFaces[0]));
+        // return this.fromLists(verts, faces);
         todo!();
     }
 
+    /// will only convert triangular faces
+    /// cap / triangulate before running this
+    pub fn from_polyhedron(graph: Polyhedron) -> Mesh {
+        
+        let mesh = Mesh::default();
+        
+        let remapper = graph.verts.get_refactor_mapping();
+        for v in graph.verts.iter() {
+            mesh.verts.push(v.pos);
+        }
+
+        for lp in graph.get_face_loops() {
+            if lp.len() != 3 {
+                continue;
+            }
+            
+            for edge in lp {
+                let id = remapper.get(&graph.edge(edge).from).expect("not a valid vert id");
+                mesh.tri.push(*id);
+            }       
+        }
+
+        mesh
+    }
+
+    pub fn new_triangle(verts: [Vec3; 3]) -> Self {
+        Self::new(verts.to_vec(), [0,1,2].to_vec(), vec!())
+    }
+
+    pub fn new_quad(verts: [Vec3; 4]) -> Self {
+        Self::new(verts.to_vec(), [0,1 ,2, 0, 2, 3].to_vec(), vec!())
+    }
+
+    pub fn new_oct(verts: [Vec3; 8]) -> Self {
+        let ids = CUBE_FACES
+            .into_iter()
+            .map(|face| quad_to_tri(face))
+            .fold(Vec::new(), |tris, idset| {tris.extend(idset); tris });
+        Self::new(verts.to_vec(), ids, vec!())
+    }
+
+    pub fn from_octoid(oct: Octoid) -> Self {
+        Self::new_oct(oct.verts)
+    }
+
+    pub fn new_icosahedron(scale: fxx) -> Self {
+        let mut graph = Polyhedron::new();
+
+        let a = scale;
+        let phi = (1.0 + 5.0_f32.powf(0.5)) / 2.0;
+        let b = a * phi;
+
+        let vecs = [
+            vec3(-a, -b, 0.0),
+            vec3(a, -b, 0.0),
+            vec3(-a, b, 0.0),
+            vec3(a, b, 0.0),
+            vec3(0.0, -a, -b),
+            vec3(0.0, a, -b),
+            vec3(0.0, -a, b),
+            vec3(0.0, a, b),
+            vec3(-b, 0.0, -a),
+            vec3(-b, 0.0, a),
+            vec3(b, 0.0, -a),
+            vec3(b, 0.0, a),
+        ];
+
+        for vec in vecs.iter() {
+            graph.add_vert(*vec);
+        }
+
+        // build edges
+        fn add_edge(graph: &mut Polyhedron, vecs: &[Vec3], a: usize, b: usize) {
+            graph.add_edge(a, b, vecs[a], vecs[b]);
+        }
+
+        // let addEdge = (a: number, b: number) => {
+        //     graph.addEdge(a, b);
+        // };
+        // for (let i = 0; i < 12; i += 4) {
+        for i in (0..12).step_by(4) {
+            add_edge(&mut graph, &vecs, i + 0, i + 1);
+            add_edge(&mut graph, &vecs, i + 2, i + 3);
+
+            let inext = (i + 4) % 12;
+
+            add_edge(&mut graph, &vecs, i + 0, inext + 2);
+            add_edge(&mut graph, &vecs, i + 0, inext + 0);
+            add_edge(&mut graph, &vecs, i + 1, inext + 2);
+            add_edge(&mut graph, &vecs, i + 1, inext + 0);
+
+            add_edge(&mut graph, &vecs, i + 2, inext + 3);
+            add_edge(&mut graph, &vecs, i + 2, inext + 1);
+            add_edge(&mut graph, &vecs, i + 3, inext + 3);
+            add_edge(&mut graph, &vecs, i + 3, inext + 1);
+        }
+
+        Self::from_polyhedron(graph)
+    }
+
+    // // TODO remove center. Just move afterwards
+    // static newSphere(center: Vector3, radius: number, numRings: number, resolution: number): Mesh {
+    //     // verts
+    //     let vertCount = numRings * resolution + 2;
+    //     let verts = MultiVector3.new(vertCount);
+    //     let setVert = function (i: number, vector: Vector3) {
+    //         verts.set(i, vector.scale(radius).add(center));
+    //     };
+
+    //     setVert(0, new Vector3(0, 0, 1));
+    //     for (let ring = 0; ring < numRings; ring++) {
+    //         for (let perRing = 0; perRing < resolution; perRing++) {
+    //             let alpha = (Math.PI * (ring + 1)) / (numRings + 1);
+    //             let beta = (2 * Math.PI * perRing) / resolution;
+
+    //             let x = Math.sin(alpha) * Math.cos(beta);
+    //             let y = Math.sin(alpha) * Math.sin(beta);
+    //             let z = Math.cos(alpha);
+
+    //             let index = 1 + ring * resolution + perRing;
+    //             setVert(index, new Vector3(x, y, z));
+    //         }
+    //     }
+    //     setVert(vertCount - 1, new Vector3(0, 0, -1));
+
+    //     // faces
+    //     let faceCount = resolution * numRings * 2;
+    //     let links = new IntMatrix(faceCount, 3);
+    //     links.fill(-1);
+    //     let setFace = function (i: number, row: number[]) {
+    //         links.setRow(i, row);
+    //     };
+
+    //     // faces top
+    //     for (let i = 0; i < resolution; i++) {
+    //         setFace(i, [0, i + 1, ((i + 1) % resolution) + 1]);
+    //     }
+
+    //     // faces middle
+    //     // we are at this cursor
+    //     // console.log("faces", faceCount);
+
+    //     for (let ring = 0; ring < numRings - 1; ring++) {
+    //         let vertCursor = resolution * ring + 1;
+    //         let vertCursorBelow = vertCursor + resolution;
+
+    //         for (let perRing = 0; perRing < resolution; perRing++) {
+    //             let a = vertCursor + perRing;
+    //             let b = vertCursor + ((perRing + 1) % resolution);
+
+    //             let c = vertCursorBelow + perRing;
+    //             let d = vertCursorBelow + ((perRing + 1) % resolution);
+
+    //             let iFace = resolution + resolution * ring * 2 + perRing * 2;
+
+    //             // console.log(iFace);
+    //             setFace(iFace, [a, c, b]);
+    //             setFace(iFace + 1, [c, d, b]);
+    //         }
+    //     }
+
+    //     // faces bottom
+    //     for (let i = 0; i < resolution; i++) {
+    //         let iNext = (i + 1) % resolution;
+    //         let last = vertCount - 1;
+
+    //         let iFace = faceCount - resolution + i;
+
+    //         let zero = vertCount - resolution - 1;
+    //         let vertI = zero + i;
+    //         let vertINext = zero + iNext;
+
+    //         // console.log(iFace);
+    //         // console.log("face", last, vertINext, vertI);
+
+    //         setFace(iFace, [last, vertINext, vertI]);
+    //     }
+
+    //     return new Mesh(verts, links);
+    // }
+
+    // // TODO remove from & to, Just move the mesh afterwards
+    // static newCylinder(from: Vector3, to: Vector3, radius: number, resolution: number): Mesh {
+    //     let normal = to.subbed(from);
+
+    //     let numVerts = resolution * 2 + 2;
+    //     let numFaces = (numVerts - 2) * 2;
+    //     let verts = MultiVector3.new(numVerts);
+
+    //     // some dumb stuff
+    //     let setVert = function (i: number, vector: Vector3) {
+    //         verts.set(i, vector);
+    //     };
+
+    //     // planes to represent top & bottom
+    //     let planeFrom = Plane.fromPN(from, normal);
+    //     // console.log(planeFrom);
+
+    //     let planeTo = Plane.fromPN(to, normal);
+    //     // console.log(planeFrom);
+
+    //     // verts 'from ring
+    //     setVert(0, from);
+    //     for (let i = 0; i < resolution; i++) {
+    //         let v = new Vector3(
+    //             Math.cos((Math.PI * 2 * i) / resolution),
+    //             Math.sin((Math.PI * 2 * i) / resolution),
+    //             0,
+    //         ).scale(radius);
+
+    //         v = planeFrom.matrix.multiplyVector(v);
+    //         setVert(i + 1, v);
+    //     }
+
+    //     // verts 'to' ring
+    //     let numVertsHalf = numVerts / 2;
+    //     for (let i = 0; i < resolution; i++) {
+    //         let v = new Vector3(
+    //             Math.cos((Math.PI * 2 * i) / resolution),
+    //             Math.sin((Math.PI * 2 * i) / resolution),
+    //             0,
+    //         ).scale(radius);
+
+    //         v = planeTo.matrix.multiplyVector(v);
+    //         setVert(numVertsHalf + i, v);
+    //     }
+    //     setVert(numVerts - 1, to);
+
+    //     // start making links
+    //     let links = new IntMatrix(numFaces, 3);
+    //     links.fill(-1);
+    //     let setFace = function (i: number, row: number[]) {
+    //         links.setRow(i, row);
+    //     };
+
+    //     // set faces
+    //     for (let i = 0; i < resolution; i++) {
+    //         let a = 0;
+    //         let b = 1 + i;
+    //         let c = 1 + ((i + 1) % resolution);
+
+    //         let d = numVerts - 1;
+    //         let e = numVertsHalf + i;
+    //         let f = numVertsHalf + ((i + 1) % resolution);
+
+    //         setFace(i * 4, [a, c, b]);
+    //         setFace(i * 4 + 1, [b, c, e]);
+    //         setFace(i * 4 + 2, [c, f, e]);
+    //         setFace(i * 4 + 3, [d, e, f]);
+    //     }
+
+    //     return new Mesh(verts, links);
+    // }
+
+    // // TODO remove center, just move afterwards
+    // static newCone(center: Vector3, radius: number, height: number, resolution: number) {
+    //     let numVerts = resolution + 2;
+    //     let numFaces = resolution * 2;
+    //     let verts = MultiVector3.new(numVerts);
+    //     let setVert = function (i: number, vector: Vector3) {
+    //         verts.set(i, vector.add(center));
+    //     };
+    //     let links = new IntMatrix(numFaces, 3);
+    //     links.fill(-1);
+    //     let setFace = function (i: number, row: number[]) {
+    //         links.setRow(i, row);
+    //     };
+
+    //     // set verts
+    //     setVert(0, new Vector3(0, 0, 0));
+    //     for (let i = 0; i < resolution; i++) {
+    //         setVert(
+    //             i + 1,
+    //             new Vector3(
+    //                 Math.cos((Math.PI * 2 * i) / resolution),
+    //                 Math.sin((Math.PI * 2 * i) / resolution),
+    //                 0,
+    //             ).scale(radius),
+    //         );
+    //     }
+    //     setVert(numVerts - 1, new Vector3(0, 0, height));
+
+    //     // set faces
+    //     for (let i = 0; i < resolution; i++) {
+    //         let a = 0;
+    //         let b = numVerts - 1;
+    //         let c = 1 + i;
+    //         let d = 1 + ((i + 1) % resolution);
+
+    //         setFace(i * 2, [a, d, c]);
+    //         setFace(i * 2 + 1, [c, d, b]);
+    //     }
+
+    //     return new Mesh(verts, links);
+    // }
+
+    // static newTorus(r1: number, r2: number, ringCount: number, vertCount: number) {
+    //     // verts * normals
+    //     let count = ringCount * vertCount;
+    //     let verts = MultiVector3.new(count);
+    //     let normals = MultiVector3.new(count);
+
+    //     // create `resolution` number of section rings
+    //     for (let i = 0; i < ringCount; i++) {
+    //         let alpha = (Math.PI * 2 * i) / ringCount;
+    //         let ringCenter = Vector3.new(Math.cos(alpha) * r1, Math.sin(alpha) * r1, 0);
+
+    //         // per section, create `sectionResolution` number of
+    //         for (let j = 0; j < vertCount; j++) {
+    //             let beta = (Math.PI * 2 * j) / vertCount;
+    //             let normal = Vector3.new(
+    //                 Math.cos(beta) * Math.cos(alpha),
+    //                 Math.cos(beta) * Math.sin(alpha),
+    //                 Math.sin(beta),
+    //             ).normalize();
+
+    //             normals.set(i * vertCount + j, normal);
+    //             verts.set(i * vertCount + j, normal.scale(r2).add(ringCenter));
+    //         }
+    //     }
+
+    //     // links & uvs
+    //     let links = IntMatrix.new(count * 2, 3);
+    //     let uvs = undefined;
+
+    //     let getIndex = (i: number, j: number) => {
+    //         return (i % ringCount) * vertCount + (j % vertCount);
+    //     };
+
+    //     for (let i = 0; i < ringCount; i++) {
+    //         for (let j = 0; j < vertCount; j++) {
+    //             let a = getIndex(i, j);
+    //             let b = getIndex(i, j + 1);
+    //             let c = getIndex(i + 1, j);
+    //             let d = getIndex(i + 1, j + 1);
+
+    //             let iRow = a * 2;
+
+    //             links.setRow(iRow, [a, c, b]);
+    //             links.setRow(iRow + 1, [b, c, d]);
+    //         }
+    //     }
+
+    //     let mesh = Mesh.new(verts, links, uvs, normals);
+    //     return mesh;
+    // }
+
+
+}
+
+// more convoluted and specific constructors 
+impl Mesh {
     // Get a grid mesh from weaving vertices of a grid.
     // The grid can deal with holes, use None vertices to indicate holes
     // We do this by finding 'valid cells' of 4 vertices, and lacing them like this:

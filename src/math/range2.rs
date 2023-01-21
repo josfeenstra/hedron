@@ -3,7 +3,7 @@ use rand::prelude::Distribution;
 use rand::rngs::ThreadRng;
 use rand::Rng;
 
-use crate::kernel::{fxx, Vec2};
+use crate::kernel::{fxx, Vec2, vec2};
 use crate::math::quick;
 use std::ops::Range;
 
@@ -29,6 +29,24 @@ impl Range2 {
 
     pub fn from_radius(r: fxx) -> Self {
         Self::from_ranges(-r..r, -r..r)
+    }
+
+    pub fn add(&mut self, rhs: Vec2) {
+        self.x.start += rhs.x;
+        self.x.end   += rhs.x;
+        self.y.start += rhs.y;
+        self.y.end   += rhs.y;
+    }
+
+    pub fn scale(&mut self, rhs: Vec2) {
+        self.x.start *= rhs.x;
+        self.x.end   *= rhs.x;
+        self.y.start *= rhs.y;
+        self.y.end   *= rhs.y;
+    }
+
+    pub fn scale_u(&mut self, scalar: fxx) {
+        self.scale(vec2(scalar, scalar));
     }
 
     pub fn normalize(&self, t: Vec2) -> Vec2 {

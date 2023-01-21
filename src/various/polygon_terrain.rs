@@ -207,6 +207,8 @@ impl PolygonTerrain {
         polygons
     }
 
+
+
     /// create all data needed to render the polygon using marching cubes
     /// TODO 1 : build a unit test for this
     /// TODO 2 : integrate with the marching cubes meshes you have! 
@@ -260,7 +262,7 @@ impl PolygonTerrain {
                     // prevent duplicates: 
                     // - of all cells occupied by something (so the ones we are iterating through using the base_pos)
                     // - only continue if base_pos is the highest order one.
-                    // - this ordering is arbitrary, just some metric to make 1 stand out on top
+                    // - this ordering is arbitrary, just some metric to make 1 stand out on top consistently
                     if cell_positions
                         .iter()
                         .filter(|pos| get(&self, pos)) 
