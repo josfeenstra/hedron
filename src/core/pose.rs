@@ -259,7 +259,7 @@ impl Pose {
     }
 
     /// Rotates this [`Pose`] so that its local negative `Z` direction is toward
-    /// `target` and its local `Y` direction is toward `up`.
+    /// `target` and its local `Y` direction is towards `up`.
     #[inline]
     pub fn look_at(&mut self, target: Vec3, up: Vec3) {
         let forward = Vec3::normalize(self.pos - target);

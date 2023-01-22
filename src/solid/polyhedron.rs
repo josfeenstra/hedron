@@ -140,6 +140,62 @@ impl Polyhedron {
 
         hedron
     }
+
+    pub fn new_icosahedron(scale: f32) -> Self {
+        let mut graph = Self::new();
+
+        let a = scale;
+        let phi = (1.0 + (5.0 as fxx).powf(0.5)) / 2.0;
+        let b = a * phi;
+
+        let vecs = [
+            vec3(-a, -b, 0.0),
+            vec3(a, -b, 0.0),
+            vec3(-a, b, 0.0),
+            vec3(a, b, 0.0),
+            vec3(0.0, -a, -b),
+            vec3(0.0, a, -b),
+            vec3(0.0, -a, b),
+            vec3(0.0, a, b),
+            vec3(-b, 0.0, -a),
+            vec3(-b, 0.0, a),
+            vec3(b, 0.0, -a),
+            vec3(b, 0.0, a),
+        ];
+
+        for vec in vecs.iter() {
+            graph.add_vert(*vec);
+        }
+
+        // build edges
+        fn add_edge(graph: &mut Polyhedron, vecs: &[Vec3], a: usize, b: usize) {
+            graph.add_edge(a, b, vecs[a].normalize(), vecs[b].normalize());
+        }
+
+        // let addEdge = (a: number, b: number) => {
+        //     graph.addEdge(a, b);
+        // };
+        // for (let i = 0; i < 12; i += 4) {
+        for i in (0..12).step_by(4) { // go through [0, 4, 8]
+            
+            let inext = (i + 4) % 12;
+            add_edge(&mut graph, &vecs, i + 0, i + 1);
+            add_edge(&mut graph, &vecs, i + 0, inext + 2);
+            add_edge(&mut graph, &vecs, i + 0, inext + 0);
+            add_edge(&mut graph, &vecs, i + 1, inext + 2);
+            add_edge(&mut graph, &vecs, i + 1, inext + 0);
+
+
+            add_edge(&mut graph, &vecs, i + 2, i + 3);
+            add_edge(&mut graph, &vecs, i + 2, inext + 3);
+            add_edge(&mut graph, &vecs, i + 2, inext + 1);
+            add_edge(&mut graph, &vecs, i + 3, inext + 3);
+            add_edge(&mut graph, &vecs, i + 3, inext + 1);
+        }
+
+        graph.cap(false);
+        graph
+    }
 }
 
 impl Polyhedron {
@@ -253,7 +309,7 @@ impl Polyhedron {
                         .collect(),
                 )
             })
-            .filter(|p| p.signed_area() < 0.0)
+            .filter(|p| p.signed_area_2d() < 0.0)
             .collect()
     }
 
@@ -724,8 +780,9 @@ impl Polyhedron {
             .filter_map(|edges| {
                 let first_edge = edges[0];
                 let verts = self.edges_to_verts(&edges);
-                let center = Vectors::average(&verts);
-                let signed_area = Polygon::new(verts).signed_area();
+                let polygon = Polygon::new(verts);
+                let center = polygon.center();
+                let signed_area = polygon.signed_area_2d();
                 if signed_area > 0.0 {
                     None
                 } else {
@@ -754,11 +811,12 @@ impl Polyhedron {
     }
 
     /// cap closed, counter clockwise planar holes by creating faces at these holes.
-    pub fn cap(&mut self) {
-        self.add_faces_at_holes()
+    pub fn cap(&mut self, planar: bool) {
+        self.add_faces_at_holes(planar)
     }
     
-    pub fn add_faces_at_holes(&mut self) {
+    /// if `rel_planar` is true, we calculate the area using the relative planar orientation of a face. 
+    fn add_faces_at_holes(&mut self, planar: bool) {
         let loops = self.get_loops();
         for lp in loops {
             let pts: Vec<Vec3> = self.edges_to_verts(&lp);
@@ -766,9 +824,11 @@ impl Polyhedron {
             let normal = polygon.average_normal();
             let center = polygon.center();
 
-            let area = polygon.signed_area(); // TODO add normal
-            if area > 0.0 {
-                continue;
+            if planar {
+                let area = polygon.signed_area_2d();
+                if area > 0.0 {
+                    continue;
+                }
             }
 
             // let center = Vectors::average(&polygon.verts);
@@ -841,7 +901,7 @@ impl Polyhedron {
                 .map(|ep| self.vert(self.edge(*ep).from).pos)
                 .collect()
             )).collect::<Vec<_>>();
-        let bad_apples = polygons.iter().map(|p| p.signed_area() > 0.0);
+        // let bad_apples = polygons.iter().map(|p| p.signed_area() > 0.0);
 
         // TODO uphold edge length by pushing out elastically on neighboring verts
         for vp in self.verts.all_ids() {

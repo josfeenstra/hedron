@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::{
-    kernel::{fxx, Vec3, INFINITY},
-    solid::{Mesh, Polyhedron, VertPtr, Octoid}, planar::Polygon, lines::Ray,
+    kernel::{fxx, Vec3, vec3, INFINITY},
+    solid::{Mesh, Polyhedron, VertPtr, Octoid}, planar::Polygon, lines::Ray, core::Geometry,
 };
 
 #[derive(Eq, Hash, PartialEq, Copy, Clone)]
@@ -83,7 +83,7 @@ impl PolygonTerrain {
         for _ in 0..smoothings {
             hedron.quad_smooth_planar_partition(Vec3::Z, smooth_length);
         }
-        hedron.cap();
+        hedron.cap(true);
         Self::new(hedron, delta_height)
     }
 }
@@ -118,12 +118,15 @@ impl PolygonTerrain {
     /// TODO lets first do it on dry land, and create one joined mesh from everything.
     pub fn render_marching_cubes(&self) -> Mesh {
         let cuboids = self.create_cuboids();
-        let source_meshes = [Mesh::new_icosahedron(1.0)];
+
+        println!("{} cuboids", cuboids.len());
+
+        let source_meshes = [Mesh::new_icosahedron(0.5).scale_u(0.5).mv(vec3(0.5, 0.5, 0.5))];
         let mut target_meshes = Vec::new();
         
         for cuboid in cuboids {
             let verts = [cuboid[0].0, cuboid[1].0, cuboid[2].0, cuboid[3].0, cuboid[4].0, cuboid[5].0, cuboid[6].0, cuboid[7].0];
-            let key = [cuboid[0].1, cuboid[1].1, cuboid[2].1, cuboid[3].1, cuboid[4].1, cuboid[5].1, cuboid[6].1, cuboid[7].1];
+            let key   = [cuboid[0].1, cuboid[1].1, cuboid[2].1, cuboid[3].1, cuboid[4].1, cuboid[5].1, cuboid[6].1, cuboid[7].1];
             // TODO: look up using the key
             let mut tile = source_meshes[0].clone();
             
@@ -199,15 +202,18 @@ impl PolygonTerrain {
                         continue;
                     }
 
+                    let v_lower = vec3(0.0,0.0,lower);
+                    let v_upper = vec3(0.0,0.0,upper);
+
                     let cube = [
-                        (a + lower, get(&self, &cell_positions[0])),
-                        (b + lower, get(&self, &cell_positions[1])),
-                        (d + lower, get(&self, &cell_positions[2])),
-                        (c + lower, get(&self, &cell_positions[3])),
-                        (a + upper, get(&self, &cell_positions[4])),
-                        (b + upper, get(&self, &cell_positions[5])),
-                        (d + upper, get(&self, &cell_positions[6])),
-                        (c + upper, get(&self, &cell_positions[7]))
+                        (a + v_lower, get(&self, &cell_positions[0])),
+                        (b + v_lower, get(&self, &cell_positions[1])),
+                        (d + v_lower, get(&self, &cell_positions[2])),
+                        (c + v_lower, get(&self, &cell_positions[3])),
+                        (a + v_upper, get(&self, &cell_positions[4])),
+                        (b + v_upper, get(&self, &cell_positions[5])),
+                        (d + v_upper, get(&self, &cell_positions[6])),
+                        (c + v_upper, get(&self, &cell_positions[7]))
                     ];
 
                     cubes.push(cube);
@@ -330,7 +336,8 @@ impl PolygonTerrain {
 
 impl Into<Mesh> for PolygonTerrain {
     fn into(self) -> Mesh {
-        self.render_iso()
+        // self.render_iso()
+        self.render_marching_cubes()
     }
 }
 

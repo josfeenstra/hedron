@@ -4,6 +4,7 @@ use std::ops::Range;
 
 use crate::kernel::{fxx, vec2, vec3, Vec2, Vec3, kernel};
 
+use crate::lines::LineList;
 use crate::srf::{BiSurface, TriSurface, Rectangle3};
 use crate::{core::PointBased, data::Grid2};
 
@@ -122,57 +123,7 @@ impl Mesh {
     }
 
     pub fn new_icosahedron(scale: fxx) -> Self {
-        let mut graph = Polyhedron::new();
-
-        let a = scale;
-        let phi = (1.0 + (5.0 as fxx).powf(0.5)) / 2.0;
-        let b = a * phi;
-
-        let vecs = [
-            vec3(-a, -b, 0.0),
-            vec3(a, -b, 0.0),
-            vec3(-a, b, 0.0),
-            vec3(a, b, 0.0),
-            vec3(0.0, -a, -b),
-            vec3(0.0, a, -b),
-            vec3(0.0, -a, b),
-            vec3(0.0, a, b),
-            vec3(-b, 0.0, -a),
-            vec3(-b, 0.0, a),
-            vec3(b, 0.0, -a),
-            vec3(b, 0.0, a),
-        ];
-
-        for vec in vecs.iter() {
-            graph.add_vert(*vec);
-        }
-
-        // build edges
-        fn add_edge(graph: &mut Polyhedron, vecs: &[Vec3], a: usize, b: usize) {
-            graph.add_edge(a, b, vecs[a], vecs[b]);
-        }
-
-        // let addEdge = (a: number, b: number) => {
-        //     graph.addEdge(a, b);
-        // };
-        // for (let i = 0; i < 12; i += 4) {
-        for i in (0..12).step_by(4) {
-            add_edge(&mut graph, &vecs, i + 0, i + 1);
-            add_edge(&mut graph, &vecs, i + 2, i + 3);
-
-            let inext = (i + 4) % 12;
-
-            add_edge(&mut graph, &vecs, i + 0, inext + 2);
-            add_edge(&mut graph, &vecs, i + 0, inext + 0);
-            add_edge(&mut graph, &vecs, i + 1, inext + 2);
-            add_edge(&mut graph, &vecs, i + 1, inext + 0);
-
-            add_edge(&mut graph, &vecs, i + 2, inext + 3);
-            add_edge(&mut graph, &vecs, i + 2, inext + 1);
-            add_edge(&mut graph, &vecs, i + 3, inext + 3);
-            add_edge(&mut graph, &vecs, i + 3, inext + 1);
-        }
-
+        let graph = Polyhedron::new_icosahedron(scale);
         Self::from_polyhedron(graph)
     }
 
@@ -636,6 +587,19 @@ impl Mesh {
         edges
     }
 
+    pub fn to_lines(&self) -> LineList {
+        
+        let mut lines = Vec::new();
+
+        for edge in self.get_edges() {
+            let (a, b) = edge;
+            lines.push(self.verts[a]);
+            lines.push(self.verts[b]);
+        }
+        
+        LineList::new(lines)
+    }
+
     pub fn to_clean(&self) -> Mesh {
         // TODO: identify all vertices which are not references by any triangle,
         // exclude them
@@ -736,14 +700,7 @@ impl Mesh {
     }
 }
 
-impl Mesh {
 
-    /// trilinearly interpolate
-    pub fn octopolate(&mut self, oct: &Octoid) {
-
-    }
-
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 

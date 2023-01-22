@@ -1,6 +1,6 @@
 use crate::algos::signed_volume;
-use crate::core::Plane;
-use crate::kernel::{fxx, Vec3, FRAC_PI_2, TAU, EPSILON};
+use crate::core::{Plane, Pose};
+use crate::kernel::{fxx, Vec3, FRAC_PI_2, TAU, EPSILON, Vec2};
 
 use crate::lines::Ray;
 use crate::{
@@ -120,8 +120,32 @@ impl Polygon {
     }
     
     // pretend the polygon is 2d
-    pub fn signed_area(&self) -> fxx {
+    pub fn signed_area_2d(&self) -> fxx {
         let sum = iter_pairs(&self.verts).fold(0.0, |sum, (a, b)| sum + (b.x - a.x) * (b.y + a.y));
+        sum / 2.0
+    }
+
+    pub fn estimate_pose(&self) -> Pose {
+        if self.verts.len() < 3 {
+            panic!("polygon invalid");
+        } 
+        let center = self.center();
+        let normal = self.average_normal();
+        let first = self.verts.first().unwrap();
+        let axis = *first - center;
+        Pose::from_pos(center).looking_at(normal, axis)
+    }
+
+    /// calculate the normalized vertices using the estimated pose
+    pub fn planarized_verts(&self) -> Vec<Vec2> {
+        let pose = self.estimate_pose();
+        self.verts.iter().map(|vert| pose.transform_point_inv(*vert).truncate()).collect()
+    }
+
+    pub fn signed_area_planar(&self) -> fxx {
+        let plan_verts = self.planarized_verts();
+        let sum = iter_pairs(&plan_verts).fold(0.0, |sum, (a, b)| sum + (b.x - a.x) * (b.y + a.y));
+        // dbg!(plan_verts);
         sum / 2.0
     }
 

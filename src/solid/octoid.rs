@@ -5,19 +5,19 @@ use super::Mesh;
 /// The cube model usd) ------ 2 ------ (c)ed:
 /// ```markdown
 ///
-///     (e) --------------- (f)
+///     (g) --------------- (h)
 ///     /|                  /|
 ///    / |      z          / |
 ///   /  |        y       /  |
-/// (h) --------------- (g)  |
+/// (e) --------------- (f)  |
 ///  |   |               |   |
 ///  |-x |               | x |
 ///  |   |    -y         |   |
-///  |  (a) --------------- (b)
+///  |  (c) --------------- (d)
 ///  |  /                |  /
 ///  | /       -z        | /
 ///  |/                  |/
-/// (d) --------------- (c)
+/// (a) --------------- (b)
 /// ```
 pub struct Octoid {
     pub verts: [Vec3; 8]
@@ -43,12 +43,12 @@ impl Octoid {
         let [a, b, c, d, e, f, g, h] = self.verts;
 
         [
-            Polygon::new(vec![a,b,c,d]),
+            Polygon::new(vec![a,c,d,b]),
+            Polygon::new(vec![a,b,f,e]),
+            Polygon::new(vec![b,d,h,f]),
             Polygon::new(vec![d,c,g,h]),
-            Polygon::new(vec![c,b,f,g]),
-            Polygon::new(vec![b,a,e,f]),
-            Polygon::new(vec![a,d,h,e]),
-            Polygon::new(vec![e,f,g,h])
+            Polygon::new(vec![c,a,e,g]),
+            Polygon::new(vec![e,f,h,g])
         ]
     }
 
@@ -58,15 +58,17 @@ impl Octoid {
         // create a z plane from the point z
         let [a, b, c, d, e, f, g, h] = self.verts;
 
+        dbg!(point.clone());
+
         let za = Vec3::lerp(a, e, point.z);
         let zb = Vec3::lerp(b, f, point.z);
         let zc = Vec3::lerp(c, g, point.z);
         let zd = Vec3::lerp(d, h, point.z);
 
-        let ya = Vec3::lerp(zd, za, point.y);
-        let yb = Vec3::lerp(zc, zb, point.y);
+        let ac = Vec3::lerp(za, zc, point.y);
+        let bd = Vec3::lerp(zb, zd, point.y);
 
-        Vec3::lerp(ya, yb, point.x)
+        Vec3::lerp(ac, bd, point.x)
     }
 
 

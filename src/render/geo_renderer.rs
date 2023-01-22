@@ -24,9 +24,16 @@ impl GeoRenderer {
 
     // TODO add with key, to make it replaceable
     pub fn set<M: Into<Mesh>>(&mut self, key: &str, renderable: M, color: Color, width: fxx) {
-        if let Some(_) = self.rendered.get(key) {
+        if self.rendered.get(key).is_some() {
             self.delete(key);
         }
+
+        // check if it hasnt been set twice
+        if self.to_add.iter().any(|(existing_key, _, _, _)| existing_key == key) {
+            println!("WANR: we are re-adding things");
+            return;
+        }
+
         self.to_add
             .push((key.to_owned(), renderable.into(), color, width));
     }
