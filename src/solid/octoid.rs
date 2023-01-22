@@ -5,19 +5,19 @@ use super::Mesh;
 /// The cube model usd) ------ 2 ------ (c)ed:
 /// ```markdown
 ///
-///     (e) ------ 4 ------ (f)
+///     (e) --------------- (f)
 ///     /|                  /|
-///    7 |                 5 |
-///   /  |                /  |
-/// (h) ------ 6 ------ (g)  |
-///  |   8               |   9
+///    / |      z          / |
+///   /  |        y       /  |
+/// (h) --------------- (g)  |
 ///  |   |               |   |
-///  |   |               |   |
-///  |  (a) ------ 0 ------ (b)
-///  11 /               10  /
-///  | 3                 | 1
+///  |-x |               | x |
+///  |   |    -y         |   |
+///  |  (a) --------------- (b)
+///  |  /                |  /
+///  | /       -z        | /
 ///  |/                  |/
-/// (d) ------ 2 ------ (c)
+/// (d) --------------- (c)
 /// ```
 pub struct Octoid {
     pub verts: [Vec3; 8]
@@ -33,6 +33,7 @@ impl Octoid {
         Self::new([a, b, c, d, a + extrusion, b + extrusion, c + extrusion, d + extrusion])
     }
 
+    /// TODO: can be more efficient
     pub fn to_mesh(&self) -> Mesh {
         Mesh::from_join(self.faces_to_polygons().iter().map(|p| p.triangulate_naive()).collect())
     }
@@ -49,5 +50,28 @@ impl Octoid {
             Polygon::new(vec![a,d,h,e]),
             Polygon::new(vec![e,f,g,h])
         ]
+    }
+
+    /// trilinear interpolation
+    pub fn tri_lerp(&self, point: Vec3) -> Vec3 {
+
+        // create a z plane from the point z
+        let [a, b, c, d, e, f, g, h] = self.verts;
+
+        let za = Vec3::lerp(a, e, point.z);
+        let zb = Vec3::lerp(b, f, point.z);
+        let zc = Vec3::lerp(c, g, point.z);
+        let zd = Vec3::lerp(d, h, point.z);
+
+        let ya = Vec3::lerp(zd, za, point.y);
+        let yb = Vec3::lerp(zc, zb, point.y);
+
+        Vec3::lerp(ya, yb, point.x)
+    }
+
+
+    /// TODO: add callback (a: Vec3, b: Vec3, f: fxx, ia: usize, ib: usize) -> fxx
+    pub fn tri_lerp_smooth(&self, point: Vec3) -> Vec3 {
+        self.tri_lerp(point)
     }
 }

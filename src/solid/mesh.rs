@@ -125,7 +125,7 @@ impl Mesh {
         let mut graph = Polyhedron::new();
 
         let a = scale;
-        let phi = (1.0 + 5.0_f32.powf(0.5)) / 2.0;
+        let phi = (1.0 + (5.0 as fxx).powf(0.5)) / 2.0;
         let b = a * phi;
 
         let vecs = [

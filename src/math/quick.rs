@@ -5,6 +5,7 @@ use crate::kernel::fxx;
 use crate::kernel::Vec3;
 use crate::kernel::FRAC_PI_2;
 use crate::kernel::PI;
+use crate::kernel::vec2;
 use num_traits::float::Float;
 use std::ops::Range;
 
@@ -121,6 +122,30 @@ pub fn lerp(a: fxx, b: fxx, t: fxx) -> fxx {
     a + t * (b - a)
 }
 
+/// bezier-interpolate 
+/// with w_start, w_end, and t in [0..1], create a 2D unit bezier curve as (0,0), (start, 0), (1 - end,1), (1,1). 
+/// interpolate this bezier using t, then return the x of this bezier
+/// TODO: currenty, this is the opposite of what we want: speed at the edges, smooth in the middle... 
+pub fn quad_bezier_int(w_start: fxx, w_end: fxx, t: fxx) -> fxx {
+    let [p0, p1, p2, p3] = [0.0, w_start, 1.0 - w_end, 1.0];
+    
+    // TODO: rewrite: so that we get a regular curve in the shape of y = ... polynomial
+    let px = 
+        0.0 *       (1.0 - t).powi(3) +
+        0.0 * 3.0 * (1.0 - t).powi(2) * t + 
+        1.0 * 3.0 * (1.0 - t)         * t.powi(2) + 
+        1.0                           * t.powi(3);
+
+    // let py = 
+    //     p0 *       (1.0 - px).powi(3) +
+    //     p1 * 3.0 * (1.0 - px).powi(2) * px + 
+    //     p2 * 3.0 * (1.0 - px)         * px.powi(2) + 
+    //     p3                            * px.powi(3);
+
+    px
+}
+
+
 #[inline]
 pub fn parabola(t: fxx, k: i32) -> fxx {
     (4.0 * t * (1.0 - t)).powi(k)
@@ -197,4 +222,25 @@ pub fn remap(t: fxx, from: &Range<fxx>, to: &Range<fxx>, clamped: bool) -> fxx {
         norm = fxx::clamp(norm, 0.0, 1.0);
     }
     lerp(norm, to.start, to.end)
+}
+
+
+
+
+#[cfg(test)]
+mod test {
+    use crate::kernel::fxx;
+
+    use super::quad_bezier_int;
+
+
+    #[test]
+    fn test_bezier_int() {
+        for i in 0..101 {
+            let f = i as fxx / 100.0;
+
+            let t = quad_bezier_int(1.0, 1.0, f);
+            println!("f {f}, t {t}");
+        }
+    }
 }
