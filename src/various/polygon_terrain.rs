@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     kernel::{fxx, Vec3, INFINITY},
-    solid::{Mesh, Polyhedron, VertPtr}, planar::Polygon, lines::Ray,
+    solid::{Mesh, Polyhedron, VertPtr, Octoid}, planar::Polygon, lines::Ray,
 };
 
 #[derive(Eq, Hash, PartialEq, Copy, Clone)]
@@ -207,7 +207,26 @@ impl PolygonTerrain {
         polygons
     }
 
+    /// render the terrain using marching cubes
+    /// TODO lets first do it on dry land, and create one joined mesh from everything.
+    pub fn render_marching_cubes(&self) -> Mesh {
+        let cuboids = self.create_cuboids();
+        let source_meshes = Mesh::new_icosahedron(1.0);
+        let target_meshes = Vec::new();
+        
+        for cuboid in cuboids {
+            let verts = [cuboid[0].0, cuboid[1].0, cuboid[2].0, cuboid[3].0, cuboid[4].0, cuboid[5].0, cuboid[6].0, cuboid[7].0];
+            let key = [cuboid[0].1, cuboid[1].1, cuboid[2].1, cuboid[3].1, cuboid[4].1, cuboid[5].1, cuboid[6].1, cuboid[7].1];
+            // TODO: look up using the key
+            let source = &source_meshes;
+            
+            let oct = Octoid::new(verts);
+            
+            // target_meshes.push();
+        }
 
+        Mesh::from_join(target_meshes)
+    }
 
     /// create all data needed to render the polygon using marching cubes
     /// TODO 1 : build a unit test for this

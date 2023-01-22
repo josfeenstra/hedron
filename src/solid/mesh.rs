@@ -11,7 +11,7 @@ use super::{CUBE_FACES, quad_to_tri, Cuboid, Polyhedron, Octoid};
 
 /// A dead simple, internal data structure to store meshes. 
 /// Can get confusing in conjunction with bevy's mesh
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Mesh {
     pub verts: Vec<Vec3>,
     pub tri: Vec<usize>,
@@ -734,6 +734,15 @@ impl Mesh {
         }
         Ok(obj)
     }
+}
+
+impl Mesh {
+
+    /// trilinearly interpolate
+    pub fn octopolate(&mut self, oct: &Octoid) {
+
+    }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
