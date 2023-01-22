@@ -57,9 +57,7 @@ impl Octoid {
 
         // create a z plane from the point z
         let [a, b, c, d, e, f, g, h] = self.verts;
-
-        dbg!(point.clone());
-
+        
         let za = Vec3::lerp(a, e, point.z);
         let zb = Vec3::lerp(b, f, point.z);
         let zc = Vec3::lerp(c, g, point.z);

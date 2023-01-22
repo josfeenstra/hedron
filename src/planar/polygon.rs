@@ -145,7 +145,6 @@ impl Polygon {
     pub fn signed_area_planar(&self) -> fxx {
         let plan_verts = self.planarized_verts();
         let sum = iter_pairs(&plan_verts).fold(0.0, |sum, (a, b)| sum + (b.x - a.x) * (b.y + a.y));
-        // dbg!(plan_verts);
         sum / 2.0
     }
 

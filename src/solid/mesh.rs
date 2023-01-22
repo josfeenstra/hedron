@@ -17,13 +17,13 @@ pub struct Mesh {
     pub verts: Vec<Vec3>,
     pub tri: Vec<usize>,
     pub uvs: Vec<Vec2>,
-    // pub normals: Vec<Vec3>, // normalKind
+    pub normals: Vec<Vec3>, // TODO normalKind
 }
 
 impl Mesh {
 
-    pub fn new(verts: Vec<Vec3>, tri: Vec<usize>, uvs: Vec<Vec2>) -> Self {
-        Self { verts, tri, uvs }
+    pub fn new(verts: Vec<Vec3>, tri: Vec<usize>, uvs: Vec<Vec2>, normals: Vec<Vec3>) -> Self {
+        Self { verts, tri, uvs, normals}
     }
 
     pub fn from_bi_surface(srf: BiSurface, u_segments: usize, v_segments: usize) -> Mesh {
@@ -103,11 +103,11 @@ impl Mesh {
     }
 
     pub fn new_triangle(verts: [Vec3; 3]) -> Self {
-        Self::new(verts.to_vec(), [0,1,2].to_vec(), vec!())
+        Self::new(verts.to_vec(), [0,1,2].to_vec(), vec!(), vec!())
     }
 
     pub fn new_quad(verts: [Vec3; 4]) -> Self {
-        Self::new(verts.to_vec(), [0,1 ,2, 0, 2, 3].to_vec(), vec!())
+        Self::new(verts.to_vec(), [0,1 ,2, 0, 2, 3].to_vec(), vec!(), vec!())
     }
 
     pub fn new_oct(verts: [Vec3; 8]) -> Self {
@@ -115,7 +115,7 @@ impl Mesh {
             .into_iter()
             .map(|face| quad_to_tri(face))
             .fold(Vec::new(), |mut tris, idset| {tris.extend(idset); tris });
-        Self::new(verts.to_vec(), ids, vec!())
+        Self::new(verts.to_vec(), ids, vec!(), vec!())
     }
 
     pub fn from_octoid(oct: Octoid) -> Self {
