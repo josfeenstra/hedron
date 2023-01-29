@@ -1,45 +1,51 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, marker::PhantomData};
 
 use super::{
     extract_vertices, FaceMaterial, InstanceData, InstanceMaterialData, InstanceMaterialPlugin,
     LineMaterial,
 };
-use crate::kernel::fxx;
+use crate::{kernel::fxx, core::Geometry};
 use bevy::{prelude::*, render::view::NoFrustumCulling};
+use dynstack::DynStack;
+
 
 #[derive(Resource, Default)]
-pub struct GeoRenderer {
-    to_add: Vec<(String, Mesh, Color, fxx)>,
-    // to_update: Vec<(String, Mesh, Color, fxx)>,
+pub struct GeoRenderer<M:Material + Default> {
+    // to_add: DynStack<(String, Mesh, dyn Material)>,
+    to_add: Vec<(String, Mesh, Color, fxx, bool)>,
     to_remove: Vec<Entity>,
-
     rendered: HashMap<String, Entity>,
+    pub custom_mat: Handle<M>,
 }
 
 // a simple (debug) renderer for geometry.
-impl GeoRenderer {
-    pub fn new() -> GeoRenderer {
-        GeoRenderer { ..default() }
+impl<M:Material + Default> GeoRenderer<M> {
+    
+    pub fn new() -> Self {
+        Self { ..default() }
     }
 
     // TODO add with key, to make it replaceable
-    pub fn set<M: Into<Mesh>>(&mut self, key: &str, renderable: M, color: Color, width: fxx) {
+    pub fn set<Meshable: Into<Mesh>>(&mut self, key: &str, meshable: Meshable, color: Color, width: fxx, custom: bool) {
         if self.rendered.get(key).is_some() {
             self.delete(key);
         }
 
         // check if it hasnt been set twice
-        if self.to_add.iter().any(|(existing_key, _, _, _)| existing_key == key) {
+        if self.to_add.iter().any(|(existing_key, _, _, _, _)| existing_key == key) {
             println!("WANR: we are re-adding things");
             return;
         }
 
-        self.to_add
-            .push((key.to_owned(), renderable.into(), color, width));
+        self.to_add.push((key.to_owned(), meshable.into(), color, width, custom));
     }
 
-    pub fn set_quick<M: Into<Mesh>>(&mut self, key: &str, renderable: M) {
-        self.set(key, renderable, Color::WHITE, 1.0)
+    pub fn set_mat(&mut self, mat: Handle<M>) {
+        self.custom_mat = mat;
+    }
+
+    pub fn set_quick<Meshable: Into<Mesh>>(&mut self, key: &str, renderable: Meshable) {
+        self.set(key, renderable, Color::WHITE, 1.0, false)
     }
 
     pub fn delete(&mut self, id: &str) -> Option<()> {
@@ -52,12 +58,13 @@ impl GeoRenderer {
         }
     }
 
-    fn update_system(
+    pub fn update_system(
         mut c: Commands,
-        mut gr: ResMut<GeoRenderer>,
+        mut gr: ResMut<GeoRenderer<M>>,
         mut meshes: ResMut<Assets<Mesh>>,
         mut l_materials: ResMut<Assets<LineMaterial>>,
         mut f_materials: ResMut<Assets<FaceMaterial>>,
+        mut custom_materials: ResMut<Assets<M>>,
     ) {
         // REMOVE
         while let Some(entity) = gr.to_remove.pop() {
@@ -65,7 +72,7 @@ impl GeoRenderer {
         }
 
         // ADD
-        while let Some((id, mut mesh, color, width)) = gr.to_add.pop() {
+        while let Some((id, mut mesh, color, width, use_custom_material)) = gr.to_add.pop() {
             // spawn something different based on the type of mesh
             let entity = match mesh.primitive_topology() {
                 bevy::render::render_resource::PrimitiveTopology::PointList => {
@@ -90,7 +97,7 @@ impl GeoRenderer {
                                 .collect(),
                         ),
                         NoFrustumCulling,
-                        Name::new("instanced points"),
+                        Name::new(id.clone()),
                     ))
                     .id()
                 }
@@ -101,7 +108,7 @@ impl GeoRenderer {
                             material: l_materials.add(LineMaterial { color }),
                             ..default()
                         },
-                        Name::new("Lines"),
+                        Name::new(id.clone()),
                     ))
                     .id(),
                 bevy::render::render_resource::PrimitiveTopology::LineStrip => c
@@ -111,19 +118,29 @@ impl GeoRenderer {
                             material: l_materials.add(LineMaterial { color }),
                             ..default()
                         },
-                        Name::new("Line Strip"),
+                        Name::new(id.clone()),
                     ))
                     .id(),
-                bevy::render::render_resource::PrimitiveTopology::TriangleList => c
-                    .spawn((
-                        MaterialMeshBundle {
-                            mesh: meshes.add(mesh),
-                            material: f_materials.add(FaceMaterial { color }),
-                            ..default()
-                        },
-                        Name::new("Triangle List"),
-                    ))
-                    .id(),
+                bevy::render::render_resource::PrimitiveTopology::TriangleList => 
+                    match use_custom_material {
+                        true => c.spawn((
+                            MaterialMeshBundle {
+                                mesh: meshes.add(mesh),
+                                material: gr.custom_mat.clone(),
+                                ..default()
+                            },
+                            Name::new(id.clone()),
+                        )).id(),   
+                        false => c
+                        .spawn((
+                            MaterialMeshBundle {
+                                mesh: meshes.add(mesh),
+                                material: f_materials.add(FaceMaterial { color }),
+                                ..default()
+                            },
+                            Name::new(id.clone()),
+                        )).id(),
+                    },
                 bevy::render::render_resource::PrimitiveTopology::TriangleStrip => c
                     .spawn((
                         MaterialMeshBundle {
@@ -131,7 +148,7 @@ impl GeoRenderer {
                             material: f_materials.add(FaceMaterial { color }),
                             ..default()
                         },
-                        Name::new("Triangle Strip"),
+                        Name::new(id.clone()),
                     ))
                     .id(),
             };
@@ -168,11 +185,14 @@ impl GeoRenderer {
     }
 }
 
-pub struct GeoRendererPlugin;
+#[derive(Default)]
+pub struct GeoRendererPlugin<M> {
+    pub dummy: M // this is weird, dont look at it
+}
 
-impl Plugin for GeoRendererPlugin {
+impl<M: Material + Default> Plugin for GeoRendererPlugin<M> {
     fn build(&self, app: &mut App) {
-        app.insert_resource(GeoRenderer::default());
-        app.add_system(GeoRenderer::update_system);
+        app.insert_resource(GeoRenderer::<M>::default());
+        app.add_system(GeoRenderer::<M>::update_system);
     }
 }

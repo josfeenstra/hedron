@@ -16,24 +16,23 @@ use crate::{
 impl From<HMesh> for Mesh {
     fn from(hmesh: HMesh) -> Self {
         let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
-        mesh.insert_attribute(
-            Mesh::ATTRIBUTE_POSITION,
-            Vectors::new(hmesh.verts).to_vec_of_arrays(),
-        );
+        let verts = Vectors::new(hmesh.verts).to_vec_of_arrays();
+        let normals = Vectors::new(hmesh.normals).to_vec_of_arrays();
+        let uvs = hmesh
+            .uvs
+            .iter()
+            .map(|v| v.to_array())
+            .collect::<Vec<[f32; 2]>>();
+        let ids = hmesh.tri.iter().map(|v| *v as u32).collect();
 
-        if !hmesh.uvs.is_empty() {
-            mesh.insert_attribute(
-                Mesh::ATTRIBUTE_UV_0,
-                hmesh
-                    .uvs
-                    .iter()
-                    .map(|v| v.to_array())
-                    .collect::<Vec<[f32; 2]>>(),
-            );
-        }
-        mesh.set_indices(Some(Indices::U32(
-            hmesh.tri.iter().map(|v| *v as u32).collect(),
-        )));
+        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, verts);
+        if !normals.is_empty() {
+            mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);  
+        } 
+        if !uvs.is_empty() {
+            mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);  
+        } 
+        mesh.set_indices(Some(Indices::U32(ids)));
         mesh
     }
 }

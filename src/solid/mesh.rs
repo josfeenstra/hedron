@@ -490,6 +490,8 @@ impl Mesh {
         for mut other in meshes {
             let length = other.verts.len();
             mesh.verts.append(&mut other.verts);
+            mesh.uvs.append(&mut other.uvs);
+            mesh.normals.append(&mut other.normals);
             mesh.tri
                 .append(&mut other.tri.iter().map(|t| t + vertcount).collect());
             vertcount += length;
