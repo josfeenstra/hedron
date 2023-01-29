@@ -121,21 +121,37 @@ impl Rig {
 
     fn update_mouse_controls(
         &mut self,
+        key_input: &Input<KeyCode>,
+        dt: fxx,
         mouse_input: &Input<MouseButton>,
         mouse_motion_events: &mut EventReader<MouseMotion>,
         mouse_wheel_events: &mut EventReader<MouseWheel>,
     ) -> bool {
-        if mouse_input.any_pressed([MouseButton::Middle, MouseButton::Right]) {
+
+        // modifiers
+        let control = key_input.any_pressed([KeyCode::LControl, KeyCode::RControl]);
+        
+        if control && mouse_input.pressed(MouseButton::Right) || mouse_input.pressed(MouseButton::Middle) {
+            // rotate
             let mut delta = Vec2::ZERO;
             for event in mouse_motion_events.iter() {
                 delta += event.delta;
             }
             self.set_rot_delta(delta.x * MOUSE_ROTATE_POWER, -delta.y * MOUSE_ROTATE_POWER);
+        } else if control && mouse_input.pressed(MouseButton::Left) {
+             // pan
+            let mut delta = Vec2::ZERO;
+            for event in mouse_motion_events.iter() {
+                delta += event.delta;
+            }
+            self.pos -= self.rel_x() * delta.x * SPEED * 0.001;
+            self.pos += self.rel_y() * delta.y * SPEED * 0.001;
         } else {
             // consume
             for _ in mouse_motion_events.iter() {}
         }
 
+        // zooming
         for event in mouse_wheel_events.iter() {
             let y_normalized = if event.y > EPSILON { 1.0 } else { -1.0 };
             self.dis
@@ -185,6 +201,8 @@ impl Rig {
             if rig.controls_active {
                 let _change_keys = rig.update_key_controls(&key_input, dt);
                 let _change_mouse = rig.update_mouse_controls(
+                    &key_input,
+                    dt,
                     &mouse_input,
                     &mut mouse_motion_events,
                     &mut mouse_wheel_events,
