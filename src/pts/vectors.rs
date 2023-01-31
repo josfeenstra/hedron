@@ -20,6 +20,10 @@ impl Vectors {
         Self { data }
     }
 
+    pub fn center(&self) -> Vec3 {
+        Vectors::average(&self.data)
+    }
+
     pub fn len(&self) -> usize {
         self.data.len()
     }
