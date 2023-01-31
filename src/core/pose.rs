@@ -3,7 +3,7 @@ use std::ops::Mul;
 use crate::kernel::{fxx, Affine3, Mat3, Mat4, Quat, Vec3};
 
 /// TODO: Merge Pose with Plane
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Pose {
     pub pos: Vec3,
     pub rot: Quat,
