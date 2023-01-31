@@ -8,7 +8,7 @@ use super::geometry::Geometry;
 // TODO use a transform instead of a matrix!!!
 #[derive(Clone)]
 pub struct Plane {
-    mat: Mat4,
+    pub mat: Mat4,
 }
 
 impl Geometry for Plane {

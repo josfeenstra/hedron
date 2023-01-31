@@ -30,6 +30,11 @@ impl Line {
         );
         Vec3::new(x, y, 0.0)
     }
+
+    pub fn closest_line_between_lines() {
+        // https://math.stackexchange.com/questions/1993953/closest-points-between-two-lines
+        todo!()
+    }
 }
 
 impl Curve for Line {
