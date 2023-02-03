@@ -126,9 +126,7 @@ impl Polygon {
     }
 
     pub fn estimate_pose(&self) -> Pose {
-        if self.verts.len() < 3 {
-            panic!("polygon invalid");
-        } 
+        assert!(!(self.verts.len() < 3), "we need at least 3 vertices to estimate a normal");
         let center = self.center();
         let normal = self.average_normal();
         let first = self.verts.first().unwrap();
@@ -162,6 +160,10 @@ impl Polygon {
     }
 
     pub fn intersect_ray(&self, ray: &Ray) -> bool {
+        if self.verts.len() < 3 {
+            return false;
+        }
+
         for (a, b) in iter_pairs(&self.verts) {
             if signed_volume(ray.origin, ray.origin + ray.normal, *a, *b) > 0.0 {
                 return false;
@@ -170,12 +172,10 @@ impl Polygon {
         true
     }
 
-
-
     /// there are better ways of doing this, 
     /// TODO: principle component analysis ? overkill ?
     pub fn average_normal(&self) -> Vec3 {
-        assert!(self.verts.len() >= 3);
+        assert!(!(self.verts.len() < 3), "we need at least three vertices to calculate a valid cross product");
         let center = self.center();
         let mut normals = Vec::new();
         for (a, b) in iter_pairs(&self.verts) {

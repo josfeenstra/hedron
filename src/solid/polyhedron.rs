@@ -821,6 +821,10 @@ impl Polyhedron {
         for lp in loops {
             let pts: Vec<Vec3> = self.edges_to_verts(&lp);
             let polygon = Polygon::new(pts);
+            if polygon.verts.len() < 3 {
+                continue;
+            }
+
             let normal = polygon.average_normal();
             let center = polygon.center();
 
