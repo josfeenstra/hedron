@@ -123,7 +123,7 @@ impl From<Polyhedron> for Mesh {
         HMesh::from_join(
             p.all_cww_loops_as_polygons()
                 .into_iter()
-                .map(|pg| pg.offset(Vec3::Z, 0.1).triangulate_naive())
+                .map(|pg| pg.offset(Vec3::Z, 0.02).triangulate_naive())
                 .collect(),
         )
         .into()
