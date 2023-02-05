@@ -33,7 +33,8 @@ impl<M:Material + Default> GeoRenderer<M> {
 
         // check if it hasnt been set twice
         if self.to_add.iter().any(|(existing_key, _, _, _, _)| existing_key == key) {
-            println!("WANR: we are re-adding things");
+            // TODO this only goes wrong if the 'update_system' is too late.
+            // println!("WARN: we are re-adding things");
             return;
         }
 
@@ -64,7 +65,6 @@ impl<M:Material + Default> GeoRenderer<M> {
         mut meshes: ResMut<Assets<Mesh>>,
         mut l_materials: ResMut<Assets<LineMaterial>>,
         mut f_materials: ResMut<Assets<FaceMaterial>>,
-        mut custom_materials: ResMut<Assets<M>>,
     ) {
         // REMOVE
         while let Some(entity) = gr.to_remove.pop() {
