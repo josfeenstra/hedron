@@ -69,6 +69,24 @@ pub fn log_lerp(from: fxx, to: fxx, t: fxx) -> fxx {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
+/// linearly interpolate between multiple values
+/// assumes p is normalized.
+/// returns none if data.len = 0;
+pub fn multi_lerp(t: f64, data: &Vec<f64>) -> Option<f64> {
+    
+    if data.len() == 0 { return None; } 
+    if data.len() == 1 { return Some(data[0]); } 
+    if t <= 0.0 { return Some(data[0]); }
+    if t <= 0.0 { return Some(data[0]); }
+    if t >= 1.0 { return Some(data[data.len() - 1]); } 
+    
+    let float_index = t * (data.len() - 1) as f64;
+    let start = float_index.floor();
+    let end = float_index.ceil();
+
+    Some(lerp(data[start as usize], data[end as usize], float_index - start))
+}
+
 /// when interpolating t between multiple data points,
 /// 'select' the two data points it falls between, if t in 0..data.len().
 pub fn select_sample(t: fxx, data: Vec<fxx>) -> (fxx, fxx, fxx) {
@@ -197,4 +215,23 @@ pub fn remap(t: fxx, from: &Range<fxx>, to: &Range<fxx>, clamped: bool) -> fxx {
         norm = fxx::clamp(norm, 0.0, 1.0);
     }
     lerp(norm, to.start, to.end)
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+#[cfg(test)]
+mod QuickMathTest {
+    use crate::{kernel::fxx, math};
+
+    #[test]
+    fn test_multi_lerp() {
+        assert_eq!(math::multi_lerp(0.0, &vec![]), None);
+        assert_eq!(math::multi_lerp(0.5, &vec![5.0, 6.0]), Some(5.5));
+        assert_eq!(math::multi_lerp(0.5, &vec![5.0, 6.0, 0.0]), Some(6.0));
+        assert_eq!(math::multi_lerp(0.0, &vec![5.0, 6.0, 0.0]), Some(5.0));
+        assert_eq!(math::multi_lerp(1.0, &vec![5.0, 6.0, 0.0]), Some(0.0));
+        assert_eq!(math::multi_lerp(0.75, &vec![5.0, 6.0, 0.0]), Some(3.0));
+        assert_eq!(math::multi_lerp(fxx::INFINITY, &vec![5.0, 6.0, 0.0]), Some(0.0));
+        assert_eq!(math::multi_lerp(-fxx::INFINITY, &vec![5.0, 6.0, 0.0]), Some(5.0));
+    }
 }
