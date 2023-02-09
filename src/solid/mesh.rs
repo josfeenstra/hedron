@@ -4,7 +4,7 @@ use crate::kernel::{fxx, vec2, vec3, Vec2, Vec3};
 
 use crate::{core::PointBased, data::Grid2};
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Mesh {
     pub verts: Vec<Vec3>,
     pub uvs: Vec<Vec2>,

@@ -4,6 +4,7 @@ use glam::IVec2;
 /**
 A grid data structure
 */
+#[derive(Clone)]
 pub struct Grid2<T> {
     pub width: usize,
     pub height: usize,
@@ -172,7 +173,7 @@ mod tests {
     #[test]
     fn test_grid() {
         let grid = Grid2::<fxx>::new(4, 5);
-
+        
         assert_eq!(grid.to_xy(0), (0, 0));
         assert_eq!(grid.to_xy(1), (1, 0));
         assert_eq!(grid.to_xy(4), (0, 1));
