@@ -22,10 +22,6 @@ An all-in-one 3D modelling crate, written in Rust!
   - Svg exporting (TODO)
   - Various mathematical tools to support the operations mentioned above.
 
-
-## Used in:
-- [My upcoming game](https://twitter.com/i_am_feenster/status/1622708645606703104)
-
 ## Use cases
 - **Basic Modelling**: Hedron could be used to develop a 3D modelling tool, a very basic `blender` clone.
 
@@ -37,6 +33,11 @@ An all-in-one 3D modelling crate, written in Rust!
 - **Not CAD ready** : The crate does not support common CAD file types such as STL. It also does not contain constructive solid geometry (CSG) models.
 - **Not BIM ready** : Currently, the crate does not support IFC models.
 - **No GIS support** : The crate offers no tooling to load and process large geographical datasets. 
+
+# Used in:
+> ![Nothing grabs the attention like some cute graphics](./LOGO.PNG)
+> [My upcoming game](https://twitter.com/i_am_feenster/status/1622708645606703104)
+
 
 # Design 
 Hedron is designed to strike a balance between usability and expressiveness. It sacrifices A CGAL-level of expressivenes, in favor of a more simple and predictable API. 
