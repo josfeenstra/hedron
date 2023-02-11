@@ -23,13 +23,15 @@ An all-in-one 3D modelling crate, written in Rust!
   - Various mathematical tools to support the operations mentioned above.
 
 
+## Used in:
+- [My upcoming game](https://twitter.com/i_am_feenster/status/1622708645606703104)
+
 ## Use cases
 - **Basic Modelling**: Hedron could be used to develop a 3D modelling tool, a very basic `blender` clone.
 
 - **Procedural Geometry / 'Parametric Design'**: Hedron is intended for parametric modelling, akin to what can be done with Rhino & Grasshopper. 
 
 - **Web Geometry Processing**: The crate can be complied to WebAssembly, allowing these operations to be used on the web.
-
 
 ## What it is not (yet)
 - **Not CAD ready** : The crate does not support common CAD file types such as STL. It also does not contain constructive solid geometry (CSG) models.
