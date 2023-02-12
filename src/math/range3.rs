@@ -38,7 +38,7 @@ impl Range3 {
     }
 
     pub fn center(&self) -> Vec3 {
-        self.lerp(vec3(0.5,0.5,0.5))
+        self.lerp(Vec3::new(0.5,0.5,0.5))
     }
 
     /// iterate through this space

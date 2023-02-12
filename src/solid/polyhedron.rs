@@ -1,6 +1,7 @@
 use rand::seq::SliceRandom;
 
 use super::Mesh;
+use crate::algos::line_hits_plane;
 use crate::core::Pose;
 use crate::kernel::{fxx, vec3, Vec3};
 use crate::util::{iter_pairs, iter_triplets};
@@ -142,7 +143,7 @@ impl Polyhedron {
         hedron
     }
 
-    pub fn new_icosahedron(scale: f32) -> Self {
+    pub fn new_icosahedron(scale: fxx) -> Self {
         let mut graph = Self::new();
 
         let a = scale;
@@ -878,11 +879,27 @@ impl Polyhedron {
 
     // 
     pub fn intersect_plane(&self, plane: &Pose) {
-        
+
+        let p1 = plane.transform_point(Vec3::ZERO);
+        let p2 = plane.transform_point(vec3(1.0,0.0,0.0));
+        let p3 = plane.transform_point(vec3(0.0,1.0,0.0));
+
         // intersect edges 
-        // for edge in self.all_unique_edges() {
+        for edge in self.all_unique_edges() {
             
-        // }
+            let (l1, l2) = self.edge_verts(edge);
+            
+            if line_hits_plane(l1, l2, p1, p2, p3) {
+                
+            }
+
+            // line_hits_plane
+            // line_hits_plane
+        }
+
+         
+        // intersect with these lines 
+        // add vert to the edge.
 
         todo!();
     }

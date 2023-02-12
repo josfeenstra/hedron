@@ -11,32 +11,6 @@ pub struct Plane {
     mat: Mat4,
 }
 
-impl Geometry for Plane {
-    fn mv(mut self, mv: Vec3) -> Self {
-        self.mat.w_axis += mv.extend(0.0);
-        self
-    }
-
-    fn rot(mut self, rot: &Quat) -> Self {
-        self.mat = self.mat.mul_mat4(&Mat4::from_quat(*rot));
-        self
-    }
-
-    fn scale(mut self, scale: Vec3) -> Self {
-        self.mat.x_axis.x *= scale.x;
-        self.mat.y_axis.y *= scale.y;
-        self.mat.z_axis.z *= scale.z;
-        self
-    }
-
-    fn scale_u(mut self, scalar: fxx) -> Self {
-        self.mat.x_axis.x *= scalar;
-        self.mat.y_axis.y *= scalar;
-        self.mat.z_axis.z *= scalar;
-        self
-    }
-}
-
 impl Plane {
     pub const WORLD_XY: Self = Self::new(Mat4::from_cols(Vec4::X, Vec4::Y, Vec4::Z, Vec4::W));
     pub const WORLD_YZ: Self = Self::new(Mat4::from_cols(
@@ -148,4 +122,30 @@ impl Plane {
     // fn abcd(&self) -> (fxx, fxx, fxx, fxx) {
     //     (self.a(), self.b(), self.c(), self.d())
     // }
+}
+
+impl Geometry for Plane {
+    fn mv(mut self, mv: Vec3) -> Self {
+        self.mat.w_axis += mv.extend(0.0);
+        self
+    }
+
+    fn rot(mut self, rot: &Quat) -> Self {
+        self.mat = self.mat.mul_mat4(&Mat4::from_quat(*rot));
+        self
+    }
+
+    fn scale(mut self, scale: Vec3) -> Self {
+        self.mat.x_axis.x *= scale.x;
+        self.mat.y_axis.y *= scale.y;
+        self.mat.z_axis.z *= scale.z;
+        self
+    }
+
+    fn scale_u(mut self, scalar: fxx) -> Self {
+        self.mat.x_axis.x *= scalar;
+        self.mat.y_axis.y *= scalar;
+        self.mat.z_axis.z *= scalar;
+        self
+    }
 }

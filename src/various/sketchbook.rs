@@ -43,19 +43,4 @@ pub fn from_mask_to_world(
     results
 }
 
-/// add vertices to a mesh by intersecting it with a plane
-pub fn plane_x_graph(
-    plane: Pose,
-    mesh: Mesh,
-) -> Vec<usize> {
-
-    // get all edges of a mesh 
-    // intersect with these lines 
-    // add vert to the edge.
-
-
-
-    todo!()
-}
-
 

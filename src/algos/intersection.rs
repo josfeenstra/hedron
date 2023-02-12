@@ -1,4 +1,4 @@
-use crate::kernel::{fxx, Vec3};
+use crate::{kernel::{fxx, Vec3}, core::Pose};
 // I like to split away these intersection / geometric predicates stuff from the main code
 
 // simple 2x2
@@ -68,4 +68,47 @@ pub fn line_hits_plane(l1: Vec3, l2: Vec3, p1: Vec3, p2: Vec3, p3: Vec3) -> bool
 
 pub fn signed_volume(a: Vec3, b: Vec3, c: Vec3, d: Vec3) -> fxx {
     (1.0 / 6.0) * (a - d).dot((c - d).cross(b - d))
+}
+
+/// don't know if this works
+pub fn line_x_plane(a: Vec3, b: Vec3, plane_pos: Vec3, plane_normal: Vec3) -> Option<fxx> {
+
+    let ba = a - b;
+    let cross = plane_normal;
+    let top = cross.dot(a - plane_pos);
+    let bot = ba.dot(cross);
+    if bot == 0.0 {
+        return None;
+    }
+    let t = top / bot;
+    Some(t)    
+}
+
+
+#[cfg(test)]
+mod test {
+    use crate::kernel::{vec3};
+    use crate::core::Pose;
+    use crate::kernel::Quat;
+    use super::line_x_plane;
+
+    #[test]
+    fn test() {
+        assert_eq!(line_x_plane(
+            vec3(-1.0, -1.0, -1.0), 
+            vec3(1.0, 1.0, 1.0), 
+            vec3(0.0, 0.0, 0.0), 
+            vec3(0.0, 0.0, 1.0)
+        ), Some(0.5));
+
+        let res = line_x_plane(
+            vec3(1.0, -1.0, -2.0), 
+            vec3(-1.0, 1.0, 3.0), 
+            vec3(0.0, 0.0, 0.0), 
+            vec3(1.0, 0.0, 0.0)
+        );  
+        dbg!(res);
+
+    }
+
 }
