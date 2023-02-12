@@ -75,7 +75,8 @@ pub trait Geometry: Sized {
     #[must_use]
     // apply a transformation
     fn tf(self, tf: &Pose) -> Self {
-        self.scale(tf.scale).rot(&tf.rot).mv(tf.pos)
+        // scale(tf.scale)
+        self.rot(&tf.rot).mv(tf.pos)
     }
 
     #[inline]
@@ -84,7 +85,7 @@ pub trait Geometry: Sized {
     fn tf_inv(self, tf: &Pose) -> Self {
         self.mv(-tf.pos)
             .rot(&tf.rot.inverse())
-            .scale(1.0 / tf.scale)
+            // .scale(1.0 / tf.scale)
     }
 
     #[must_use]
@@ -94,7 +95,7 @@ pub trait Geometry: Sized {
 }
 
 pub fn transform_point(tf: &Pose, mut point: Vec3) -> Vec3 {
-    point = tf.scale * point;
+    // point = tf.scale * point;
     point = tf.rot * point;
     point += tf.pos;
     point
@@ -103,7 +104,7 @@ pub fn transform_point(tf: &Pose, mut point: Vec3) -> Vec3 {
 pub fn transform_point_inverse(tf: &Pose, mut point: Vec3) -> Vec3 {
     point -= tf.pos;
     point = tf.rot.inverse() * point;
-    point = point / tf.scale;
+    // point = point / tf.scale;
     point
 }
 

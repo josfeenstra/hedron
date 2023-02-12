@@ -3,12 +3,13 @@ use std::ops::Mul;
 use crate::kernel::{fxx, Affine3, Mat3, Mat4, Quat, Vec3};
 
 /// TODO: Merge Pose with Plane
-/// TODO: remove scale??
+/// Strictly speaking, a pose should not have a scale. 
+/// Its the difference between a 'transform' and a 'scale'
 #[derive(Debug)]
 pub struct Pose {
     pub pos: Vec3,
     pub rot: Quat,
-    pub scale: Vec3,
+    // pub scale: Vec3,
 }
 
 impl Pose {
@@ -16,21 +17,21 @@ impl Pose {
     pub const IDENTITY: Self = Self {
         pos: Vec3::ZERO,
         rot: Quat::IDENTITY,
-        scale: Vec3::ONE,
+        // scale: Vec3::ONE,
     };
 
     pub const WORLD_XY: Self = Self::IDENTITY;
 
     pub const WORLD_YZ: Self = Self {
         pos: Vec3::ZERO,
-        rot: Quat::IDENTITY,
-        scale: Vec3::ONE,
+        rot: Quat::IDENTITY, // TODO
+        // scale: Vec3::ONE,
     };
 
     pub const WORLD_ZX: Self = Self {
         pos: Vec3::ZERO,
-        rot: Quat::IDENTITY,
-        scale: Vec3::ONE,
+        rot: Quat::IDENTITY, // TODO
+        // scale: Vec3::ONE,
     };
 
     /// Creates a new [`Pose`] at the position `(x, y, z)`. In 2d, the `z` component
@@ -46,7 +47,11 @@ impl Pose {
     #[inline]
     pub fn from_matrix(matrix: Mat4) -> Self {
         let (scale, rot, pos) = matrix.to_scale_rotation_translation();
-        Self { pos, rot, scale }
+        Self { 
+            pos, 
+            rot, 
+            // scale 
+        }
     }
 
     /// Creates a new [`Pose`], with `translation`. Rotation will be 0 and scale 1 on
@@ -69,15 +74,15 @@ impl Pose {
         }
     }
 
-    /// Creates a new [`Pose`], with `scale`. Translation will be 0 and rotation 0 on
-    /// all axes.
-    #[inline]
-    pub const fn from_scale(scale: Vec3) -> Self {
-        Self {
-            scale,
-            ..Self::IDENTITY
-        }
-    }
+    // /// Creates a new [`Pose`], with `scale`. Translation will be 0 and rotation 0 on
+    // /// all axes.
+    // #[inline]
+    // pub const fn from_scale(scale: Vec3) -> Self {
+    //     Self {
+    //         scale,
+    //         ..Self::IDENTITY
+    //     }
+    // }
 
     /// Updates and returns this [`Pose`] by rotating it so that its unit
     /// vector in the local negative `Z` direction is toward `target` and its
@@ -105,26 +110,30 @@ impl Pose {
         self
     }
 
-    /// Returns this [`Pose`] with a new scale.
-    #[inline]
-    #[must_use]
-    pub const fn with_scale(mut self, scale: Vec3) -> Self {
-        self.scale = scale;
-        self
-    }
+    // /// Returns this [`Pose`] with a new scale.
+    // #[inline]
+    // #[must_use]
+    // pub const fn with_scale(mut self, scale: Vec3) -> Self {
+    //     self.scale = scale;
+    //     self
+    // }
 
     /// Returns the 3d affine transformation matrix from this transforms translation,
     /// rotation, and scale.
     #[inline]
     pub fn compute_matrix(&self) -> Mat4 {
-        Mat4::from_scale_rotation_translation(self.scale, self.rot, self.pos)
+        // let scale = self.scale
+        let scale = Vec3::ONE;
+        Mat4::from_scale_rotation_translation(scale, self.rot, self.pos)
     }
 
     /// Returns the 3d affine transformation matrix from this transforms translation,
     /// rotation, and scale.
     #[inline]
     pub fn compute_affine(&self) -> Affine3 {
-        Affine3::from_scale_rotation_translation(self.scale, self.rot, self.pos)
+        // let scale = self.scale
+        let scale = Vec3::ONE;
+        Affine3::from_scale_rotation_translation(Vec3::ONE, self.rot, self.pos)
     }
 
     /// Get the unit vector in the local `X` direction.
@@ -275,14 +284,16 @@ impl Pose {
     pub fn mul_transform(&self, pose: Pose) -> Self {
         let pos = self.transform_point(pose.pos);
         let rot = self.rot * pose.rot;
-        let scale = self.scale * pose.scale;
-        Pose { pos, rot, scale }
+        // let scale = self.scale * pose.scale;
+        Pose { pos, rot, 
+            // scale 
+        }
     }
 
     /// Transforms the given `point`, applying scale, rotation and translation.
     #[inline]
     pub fn transform_point(&self, mut point: Vec3) -> Vec3 {
-        point = self.scale * point;
+        // point = self.scale * point;
         point = self.rot * point;
         point += self.pos;
         point
@@ -295,7 +306,7 @@ impl Pose {
     pub fn transform_point_inv(&self, mut point: Vec3) -> Vec3 {
         point -= self.pos;
         point = self.rot.inverse() * point;
-        point = point / self.scale;
+        // point = point / self.scale;
         point
     }
 }

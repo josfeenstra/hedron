@@ -1,6 +1,7 @@
 use rand::seq::SliceRandom;
 
 use super::Mesh;
+use crate::core::Pose;
 use crate::kernel::{fxx, vec3, Vec3};
 use crate::util::{iter_pairs, iter_triplets};
 use crate::various::{get_smoothers_quad_to_square, get_smoothers_quad_to_square_at_length};
@@ -56,13 +57,13 @@ pub struct Face {
     pub normal: Vec3,
 }
 
-/// A polyhedron model.
+/// A graph / polyhedron model.
 /// Implemented as a half edge mesh.  
 /// Despite the name, the model can also be used as a planar partition.
 /// It all depends on the normals used to determine the edge ordering around a vertex
 #[derive(Default, Debug, Clone)]
 pub struct Polyhedron {
-    pub verts: Pool<Vert>, // disk operations should present a normal to orient around within the function itself. It should not be stored
+    pub verts: Pool<Vert>,
     pub edges: Pool<HalfEdge>,
     pub faces: Pool<Face>, 
 }
@@ -866,7 +867,27 @@ impl Polyhedron {
             .collect()
     }
 
-    pub fn all_face_loops() {}
+    pub fn all_face_loops() {
+        todo!()
+    }
+
+    /// add extra edges to faces which are not triangular, to make the polyhedron triangular
+    pub fn triangulate_faces(&self) {
+        todo!()
+    }
+
+    // 
+    pub fn intersect_plane(&self, plane: &Pose) {
+        
+        // intersect edges 
+        // for edge in self.all_unique_edges() {
+            
+        // }
+
+        todo!();
+    }
+
+
 }
 
 impl PointBased for Polyhedron {

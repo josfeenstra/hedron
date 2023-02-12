@@ -62,20 +62,23 @@ impl From<Bezier> for Mesh {
 
 impl From<Transform> for Pose {
     fn from(tf: Transform) -> Self {
+        let scale = Vec3::ZERO;
+        // scale: tf.scale,
         Self {
             pos: tf.translation,
             rot: tf.rotation,
-            scale: tf.scale,
+            // scale,
         }
     }
 }
 
 impl From<Pose> for Transform {
     fn from(pose: Pose) -> Self {
+        // pose.scale
         Transform {
             translation: pose.pos,
             rotation: pose.rot,
-            scale: pose.scale,
+            scale: Vec3::ZERO,
         }
     }
 }

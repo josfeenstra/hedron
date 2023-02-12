@@ -23,17 +23,17 @@ pub trait PointBased: Sized + Geometry {
         self
     }
 
-    /// scale from a Pose, by applying only the scale element from the pose
-    fn scale_nu(mut self, pose: &Pose) -> Self {
-        let pos_inv = pose.pos * -1.0;
-        let rot_inv = pose.rot.inverse();
-        for v in self.mutate_points() {
-            let v_norm = rot_inv * (*v + pos_inv); // move and rotate thte point to pose space
-            let v_scaled = v_norm * pose.scale; // then scale it
-            *v = (pose.rot * v_scaled) + pose.pos; // and translate it back
-        }
-        self
-    }
+    // /// scale from a Pose, by applying only the scale element from the pose
+    // fn scale_nu(mut self, pose: &Pose) -> Self {
+    //     let pos_inv = pose.pos * -1.0;
+    //     let rot_inv = pose.rot.inverse();
+    //     for v in self.mutate_points() {
+    //         let v_norm = rot_inv * (*v + pos_inv); // move and rotate thte point to pose space
+    //         let v_scaled = v_norm * pose.scale; // then scale it
+    //         *v = (pose.rot * v_scaled) + pose.pos; // and translate it back
+    //     }
+    //     self
+    // }
 }
 
 impl<T: PointBased> Geometry for T {
