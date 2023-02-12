@@ -1,4 +1,4 @@
-use glam::UVec3;
+use glam::{UVec3, vec3};
 use rand::Rng;
 use rand::distributions::Uniform;
 
@@ -31,6 +31,15 @@ impl Range3 {
         Self::from_ranges(-r..r, -r..r, -r..r)
     }
 
+    pub fn includes(&self, t: Vec3) -> bool {
+        !(t.x < self.x.start || t.x > self.x.end ||
+          t.y < self.y.start || t.y > self.y.end || 
+          t.z < self.z.start || t.z > self.z.end)
+    }
+
+    pub fn center(&self) -> Vec3 {
+        self.lerp(vec3(0.5,0.5,0.5))
+    }
 
     /// iterate through this space
     pub fn iter<'a>(&'a self, count: UVec3) -> impl Iterator<Item = Vec3> + 'a {
@@ -38,8 +47,8 @@ impl Range3 {
         util::iter_xyz_u(count).map(move |u| self.lerp(uvec3_to_vec3(u) / fcount))
     }
 
-    /// normalize
-    pub fn norm(&self, t: Vec3) -> Vec3 {
+    
+    pub fn normalize(&self, t: Vec3) -> Vec3 {
         Vec3::new(
             quick::normalize(t.x, &self.x),
             quick::normalize(t.y, &self.y),

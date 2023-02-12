@@ -68,8 +68,7 @@ impl Octoid {
 
         Vec3::lerp(ac, bd, point.x)
     }
-
-
+ 
     /// TODO: add callback (a: Vec3, b: Vec3, f: fxx, ia: usize, ib: usize) -> fxx
     pub fn tri_lerp_smooth(&self, point: Vec3) -> Vec3 {
         self.tri_lerp(point)
