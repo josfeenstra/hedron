@@ -1,7 +1,7 @@
 use rand::seq::SliceRandom;
 
 use super::Mesh;
-use crate::algos::line_hits_plane;
+use crate::algos::{line_hits_plane, line_x_plane};
 use crate::core::Pose;
 use crate::kernel::{fxx, vec3, Vec3};
 use crate::util::{iter_pairs, iter_triplets};
@@ -877,33 +877,44 @@ impl Polyhedron {
         todo!()
     }
 
-    // 
-    pub fn intersect_plane(&self, plane: &Pose) {
+    /// cut edges using a plane, splting the edges at the intersection point 
+    /// returns a list of vertices added at the intersection point
+    pub fn cut_edges_with_plane(&mut self, plane: &Pose) -> Vec<VertPtr> {
 
-        let p1 = plane.transform_point(Vec3::ZERO);
+        let plane_pos = plane.pos.clone();
         let p2 = plane.transform_point(vec3(1.0,0.0,0.0));
         let p3 = plane.transform_point(vec3(0.0,1.0,0.0));
+        let plane_normal = plane.local_z();
 
-        // intersect edges 
+        // intersect edges
+        let mut new_verts = Vec::new(); 
         for edge in self.all_unique_edges() {
             
             let (l1, l2) = self.edge_verts(edge);
             
-            if line_hits_plane(l1, l2, p1, p2, p3) {
-                
+            if !line_hits_plane(l1, l2, plane_pos, p2, p3) {
+                continue;
             }
-
-            // line_hits_plane
-            // line_hits_plane
+            let Some(t) = line_x_plane(l1, l2, plane_pos, plane_normal) else {
+                continue;
+            };
+            if t <= 0.0 || t >= 1.0 {
+                continue;
+            }
+            let (v, _, _) = self.split_edge(edge, t);
+            new_verts.push(v);
         }
 
-         
-        // intersect with these lines 
-        // add vert to the edge.
-
-        todo!();
+        new_verts
     }
 
+    /// returns the ring of edges representing the cut
+    pub fn cut_with_plane(&mut self, plane: &Pose) -> Vec<EdgePtr> {
+        // cut edges 
+        // for each face adjacent to cut edges: 
+
+        Vec::new()
+    }
 
 }
 

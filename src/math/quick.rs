@@ -204,10 +204,18 @@ pub fn smooth(t: fxx) -> fxx {
     t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
 }
 
+/// TODO this syntax is not all that nice
 #[inline]
 pub fn normalize(t: fxx, range: &Range<fxx>) -> fxx {
     (t - range.start) / (range.end - range.start)
 }
+
+
+#[inline]
+pub fn normalizze(t: fxx, start: fxx, end: fxx) -> fxx {
+    (t - start) / (end - start)
+}
+
 
 /// same as lerp, but using a Range
 #[inline]
@@ -224,6 +232,32 @@ pub fn remap(t: fxx, from: &Range<fxx>, to: &Range<fxx>, clamped: bool) -> fxx {
     lerp(norm, to.start, to.end)
 }
 
+
+// add some of these functions to std range
+pub trait Mapper {
+    fn normalize(&self, t: fxx) -> fxx;
+    fn norm_clamp(&self, t: fxx) -> fxx;
+    fn elevate(&self, n: fxx) -> fxx;
+    fn remap_to(&self, other: &Range<fxx>, n: fxx, clamped: bool) -> fxx;
+}
+
+impl Mapper for Range<fxx> {
+    fn normalize(&self, t: fxx) -> fxx {
+        normalize(t, self)
+    }
+
+    fn norm_clamp(&self, t: fxx) -> fxx {
+        normalize(t, self).clamp(self.start, self.end)
+    }
+
+    fn elevate(&self, n: fxx) -> fxx {
+        interpolate(n, self)
+    }
+
+    fn remap_to(&self, other: &Range<fxx>, t: fxx, clamped: bool) -> fxx {
+        remap(t, self, other, clamped)
+    }
+}
 
 
 
