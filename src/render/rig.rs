@@ -32,7 +32,7 @@ impl Default for Rig {
     fn default() -> Self {
         Self {
             pos: Vec3::ZERO,
-            dis: Dropoff::new(80.0, 1.0, 100.0, LERP_TOLERANCE),
+            dis: Dropoff::new(50.0, 1.0, 100.0, LERP_TOLERANCE),
             rot_x: Dropoff::new(PI * 0.85, 0.0, 0.0, LERP_TOLERANCE),
             rot_y: Dropoff::new(PI * 0.40, EPSILON, PI - EPSILON, LERP_TOLERANCE),
             has_updated: false,

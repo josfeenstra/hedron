@@ -37,6 +37,8 @@ pub trait PointBased: Sized + Geometry {
 }
 
 impl<T: PointBased> Geometry for T {
+
+    /// TODO: rename this to `trans`?
     fn mv(mut self, mv: Vec3) -> Self {
         for v in self.mutate_points() {
             *v = *v + mv;
