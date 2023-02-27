@@ -65,7 +65,7 @@ pub fn stack_sum(n: usize) -> usize {
 /// logaritmic lerping
 #[inline]
 pub fn log_lerp(from: fxx, to: fxx, t: fxx) -> fxx {
-    let zoom = lerp(fxx::ln(from), fxx::ln(to), t);
+    let zoom = lerp(t, fxx::ln(from), fxx::ln(to));
     fxx::exp(zoom)
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -118,7 +118,7 @@ pub fn between(t: fxx, data: Vec<fxx>) -> (usize, usize) {
 ////////////////////////////////////////////////////////////////////////////
 
 #[inline]
-pub fn lerp(a: fxx, b: fxx, t: fxx) -> fxx {
+pub fn lerp(t: fxx, a: fxx, b: fxx) -> fxx {
     a + t * (b - a)
 }
 
@@ -164,12 +164,12 @@ pub fn quad_out(t: fxx) -> fxx {
 #[inline]
 pub fn smooth_step(t: fxx) -> fxx {
     // this mixing is very interesting for what I want to do with the wobble
-    lerp(quad_in(t), quad_out(t), t)
+    lerp(t, quad_in(t), quad_out(t))
 }
 
 pub fn skewed_smooth_step(t: fxx, s: fxx) -> fxx {
     // this mixing is very interesting for what I want to do with the wobble
-    lerp(quad_in(t) * (1.0 - s), quad_out(t) * s, t)
+    lerp(t, quad_in(t) * (1.0 - s), quad_out(t) * s)
 }
 
 #[inline]
@@ -204,58 +204,44 @@ pub fn smooth(t: fxx) -> fxx {
     t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
 }
 
-/// TODO this syntax is not all that nice
 #[inline]
-pub fn normalize(t: fxx, range: &Range<fxx>) -> fxx {
-    (t - range.start) / (range.end - range.start)
-}
-
-
-#[inline]
-pub fn normalizze(t: fxx, start: fxx, end: fxx) -> fxx {
+pub fn normalize(t: fxx, start: fxx, end: fxx) -> fxx {
     (t - start) / (end - start)
 }
 
-
-/// same as lerp, but using a Range
 #[inline]
-pub fn interpolate(t: fxx, range: &Range<fxx>) -> fxx {
-    range.start + t * (range.end - range.start)
-}
-
-#[inline]
-pub fn remap(t: fxx, from: &Range<fxx>, to: &Range<fxx>, clamped: bool) -> fxx {
-    let mut norm = normalize(t, from);
+pub fn remap(t: fxx, from_start: fxx, from_end: fxx, to_start: fxx, to_end:fxx, clamped: bool) -> fxx {
+    let mut norm = normalize(t, from_start, from_end);
     if clamped {
         norm = fxx::clamp(norm, 0.0, 1.0);
     }
-    lerp(norm, to.start, to.end)
+    lerp(norm, to_start, to_end)
 }
 
 
 // add some of these functions to std range
-pub trait Mapper {
+pub trait RangeMapping {
     fn normalize(&self, t: fxx) -> fxx;
     fn norm_clamp(&self, t: fxx) -> fxx;
-    fn elevate(&self, n: fxx) -> fxx;
-    fn remap_to(&self, other: &Range<fxx>, n: fxx, clamped: bool) -> fxx;
+    fn lerp(&self, t: fxx) -> fxx;
+    fn remap(&self, other: &Range<fxx>, n: fxx, clamped: bool) -> fxx;
 }
 
-impl Mapper for Range<fxx> {
+impl RangeMapping for Range<fxx> {
     fn normalize(&self, t: fxx) -> fxx {
-        normalize(t, self)
+        normalize(t, self.start, self.end)
     }
 
     fn norm_clamp(&self, t: fxx) -> fxx {
-        normalize(t, self).clamp(self.start, self.end)
+        normalize(t, self.start, self.end).clamp(self.start, self.end)
     }
 
-    fn elevate(&self, n: fxx) -> fxx {
-        interpolate(n, self)
+    fn lerp(&self, t: fxx) -> fxx {
+        lerp(t, self.start, self.end)
     }
 
-    fn remap_to(&self, other: &Range<fxx>, t: fxx, clamped: bool) -> fxx {
-        remap(t, self, other, clamped)
+    fn remap(&self, other: &Range<fxx>, t: fxx, clamped: bool) -> fxx {
+        remap(t, self.start, self.end, other.start, other.end, clamped)
     }
 }
 

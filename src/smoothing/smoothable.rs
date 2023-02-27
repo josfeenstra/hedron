@@ -21,7 +21,7 @@ pub trait Smoothable {
 
 impl Smoothable for fxx {
     fn lerp(&self, other: &Self, t: fxx) -> Self {
-        crate::math::lerp(*self, *other, t)
+        crate::math::lerp(t, *self, *other)
     }
 
     fn add(self, rhs: Self) -> Self {

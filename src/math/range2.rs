@@ -6,6 +6,7 @@ use rand::Rng;
 use crate::kernel::{fxx, Vec2, vec2};
 use crate::math::quick;
 use std::ops::Range;
+use super::RangeMapping;
 
 /// A two dimentional range.
 /// Can also be interpreted as an axis-aligned rectangle
@@ -51,23 +52,23 @@ impl Range2 {
 
     pub fn normalize(&self, t: Vec2) -> Vec2 {
         Vec2::new(
-            quick::normalize(t.x, &self.x),
-            quick::normalize(t.y, &self.y),
+            self.x.normalize(t.x),
+            self.y.normalize(t.y),
         )
     }
 
     pub fn lerp(&self, t: Vec2) -> Vec2 {
         Vec2::new(
-            quick::interpolate(t.x, &self.x),
-            quick::interpolate(t.y, &self.y),
+            self.x.lerp(t.x),
+            self.y.lerp(t.y),
         )
     }
 
     /// remap from self to other
     pub fn remap(&self, other: &Self, t: Vec2, clamp: bool) -> Vec2 {
         Vec2::new(
-            quick::remap(t.x, &self.x, &other.x, clamp),
-            quick::remap(t.y, &self.y, &other.y, clamp),
+            self.x.remap(&other.x, t.x, clamp),
+            self.y.remap(&other.y, t.y, clamp),
         )
     }
 

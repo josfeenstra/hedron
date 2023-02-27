@@ -6,6 +6,8 @@ use crate::kernel::{fxx, Vec3, uvec3_to_vec3};
 use crate::{math::quick, util};
 use std::ops::Range;
 
+use super::RangeMapping;
+
 /// A two dimentional range.
 /// Can also be interpreted as an axis-aligned rectangle
 pub struct Range3 {
@@ -50,27 +52,27 @@ impl Range3 {
     
     pub fn normalize(&self, t: Vec3) -> Vec3 {
         Vec3::new(
-            quick::normalize(t.x, &self.x),
-            quick::normalize(t.y, &self.y),
-            quick::normalize(t.z, &self.z),
+            self.x.normalize(t.x),
+            self.y.normalize(t.y),
+            self.z.normalize(t.z),
         )
     }
 
     /// linearly interpolate
     pub fn lerp(&self, t: Vec3) -> Vec3 {
         Vec3::new(
-            quick::interpolate(t.x, &self.x),
-            quick::interpolate(t.y, &self.y),
-            quick::interpolate(t.z, &self.z),
+            self.x.lerp(t.x),
+            self.y.lerp(t.y),
+            self.z.lerp(t.z),
         )
     }
 
     /// remap from self to other
     pub fn remap(&self, other: &Self, t: Vec3, clamp: bool) -> Vec3 {
         Vec3::new(
-            quick::remap(t.x, &self.x, &other.x, clamp),
-            quick::remap(t.y, &self.y, &other.y, clamp),
-            quick::remap(t.z, &self.z, &other.z, clamp),
+            self.x.remap(&other.x, t.x, clamp),
+            self.x.remap(&other.y, t.y, clamp),
+            self.x.remap(&other.z, t.z, clamp),
         )
     }
 
