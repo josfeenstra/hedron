@@ -1,12 +1,14 @@
+use glam::UVec2;
 use rand::distributions::Uniform;
 use rand::prelude::Distribution;
 use rand::rngs::ThreadRng;
 use rand::Rng;
 
-use crate::kernel::{fxx, Vec2, vec2};
+use crate::kernel::{fxx, Vec2, vec2, uvec2_to_vec2};
 use crate::math::quick;
+use crate::util;
 use std::ops::Range;
-use super::RangeMapping;
+use super::Range1;
 
 /// A two dimentional range.
 /// Can also be interpreted as an axis-aligned rectangle
@@ -75,13 +77,14 @@ impl Range2 {
     // Produces a continuous random generator.
     // This code works, but we have to clone thread rng. not nice if we are dealing with a seeded random
     // requires `with_chunks::2<>` to properly fix things 
-    pub fn gen<'a, RNG: Rng + Clone>(&'a self, rng: &'a mut RNG) -> impl Iterator<Item = Vec2> + 'a {
+    pub fn gen<'a, RNG: Rng + Clone>(&self, rng: &'a mut RNG) -> impl Iterator<Item = Vec2> + 'a {
         // let vec = rng.gen::<Vec2>();
         let dist_x = rng.clone().sample_iter(Uniform::new(self.x.start, self.x.end));
         let dist_y = rng.sample_iter(Uniform::new(self.y.start, self.y.end));
         dist_x.zip(dist_y).map(|(x, y)| Vec2::new(x, y))
     }
 
+    /// iterator-less
     pub fn spawn<RNG: Rng>(&self, rng: &mut RNG, count: usize) -> Vec<Vec2> {
         let mut points = Vec::new();
         let ux = Uniform::from(self.x.clone());
@@ -91,6 +94,31 @@ impl Range2 {
         }
         points
     }
+
+    /// Explained in Range3 
+    pub fn iter<'a>(&'a self, n_times: UVec2) -> impl Iterator<Item = Vec2> + 'a {
+        let fcount: Vec2 = uvec2_to_vec2(n_times) - Vec2::ONE;
+        util::iter_xy_u(n_times).map(move |u| self.lerp(uvec2_to_vec2(u) / fcount))
+    }
+
+    /// duplicate, but different implementation. Well see which one sticks...
+    pub fn iter_n_times(&self, times: UVec2) -> impl Iterator<Item = Vec2> + '_ {
+        self.y.iter_n_times(times.y as usize)
+            .flat_map(move |y| self.x.iter_n_times(times.x as usize)
+            .map(move |x| vec2(x, y))
+        )
+    }
+
+    pub fn iter_by_delta(&self, delta: Vec2) -> impl Iterator<Item = Vec2> + '_ {
+        self.y.iter_by_delta(delta.y)
+            .flat_map(move |y| self.x.iter_by_delta(delta.x)
+            .map(move |x| vec2(x, y))
+        )
+    }
+
+    // fn iter_by_delta(&self, delta: fxx) -> Self::Iter {
+    //     Box::new(iter_by_delta(self.start, self.end, delta))
+    // }
 }
 
 #[cfg(test)]

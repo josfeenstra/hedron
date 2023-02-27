@@ -2,7 +2,7 @@
 
 use crate::{
     core::PointBased,
-    kernel::{fxx, Vec3, TAU, Quat},
+    kernel::{fxx, Vec3, TAU, Quat, Vec2},
 };
 
 // abstraction around a list of vectors.
@@ -128,6 +128,30 @@ impl PointBased for Vectors {
 impl From<Vectors> for Vec<Vec3> {
     fn from(points: Vectors) -> Self {
         points.data
+    }
+}
+
+impl From<Vec<Vec3>> for Vectors {
+    fn from(data: Vec<Vec3>) -> Self {
+        Vectors { data }
+    }
+}
+
+impl From<Vec<Vec2>> for Vectors {
+    fn from(data: Vec<Vec2>) -> Self {
+        Vectors { data: data.iter().map(|v| v.extend(0.0)).collect::<Vec<_>>() }
+    }
+}
+
+impl FromIterator<Vec3> for Vectors {
+    fn from_iter<T: IntoIterator<Item = Vec3>>(iter: T) -> Self {
+        iter.into_iter().collect::<Vec<_>>().into()
+    }
+}
+
+impl FromIterator<Vec2> for Vectors {
+    fn from_iter<T: IntoIterator<Item = Vec2>>(iter: T) -> Self {
+        iter.into_iter().collect::<Vec<_>>().into()
     }
 }
 

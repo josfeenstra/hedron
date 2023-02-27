@@ -62,12 +62,6 @@ pub fn stack_sum(n: usize) -> usize {
     sum
 }
 
-/// logaritmic lerping
-#[inline]
-pub fn log_lerp(from: fxx, to: fxx, t: fxx) -> fxx {
-    let zoom = lerp(t, fxx::ln(from), fxx::ln(to));
-    fxx::exp(zoom)
-}
 ///////////////////////////////////////////////////////////////////////////////
 
 /// when interpolating t between multiple data points,
@@ -117,6 +111,13 @@ pub fn between(t: fxx, data: Vec<fxx>) -> (usize, usize) {
 // from : https://www.youtube.com/watch?v=YJB1QnEmlTs
 ////////////////////////////////////////////////////////////////////////////
 
+/// logaritmic lerping
+#[inline]
+pub fn log_lerp(from: fxx, to: fxx, t: fxx) -> fxx {
+    let zoom = lerp(t, fxx::ln(from), fxx::ln(to));
+    fxx::exp(zoom)
+}
+
 #[inline]
 pub fn lerp(t: fxx, a: fxx, b: fxx) -> fxx {
     a + t * (b - a)
@@ -126,7 +127,8 @@ pub fn lerp(t: fxx, a: fxx, b: fxx) -> fxx {
 /// with w_start, w_end, and t in [0..1], create a 2D unit bezier curve as (0,0), (start, 0), (1 - end,1), (1,1). 
 /// interpolate this bezier using t, then return the x of this bezier
 /// TODO: currenty, this is the opposite of what we want: speed at the edges, smooth in the middle... 
-pub fn quad_bezier_int(w_start: fxx, w_end: fxx, t: fxx) -> fxx {
+#[inline]
+pub fn lerp_quad_bezier(w_start: fxx, w_end: fxx, t: fxx) -> fxx {
     let [p0, p1, p2, p3] = [0.0, w_start, 1.0 - w_end, 1.0];
     
     // TODO: rewrite: so that we get a regular curve in the shape of y = ... polynomial
@@ -218,40 +220,25 @@ pub fn remap(t: fxx, from_start: fxx, from_end: fxx, to_start: fxx, to_end:fxx, 
     lerp(norm, to_start, to_end)
 }
 
-
-// add some of these functions to std range
-pub trait RangeMapping {
-    fn normalize(&self, t: fxx) -> fxx;
-    fn norm_clamp(&self, t: fxx) -> fxx;
-    fn lerp(&self, t: fxx) -> fxx;
-    fn remap(&self, other: &Range<fxx>, n: fxx, clamped: bool) -> fxx;
+#[inline]
+pub fn iter_n_times(start: fxx, end: fxx, steps: usize) -> impl Iterator<Item = fxx> {
+    let delta = (end - start) / (steps - 1) as fxx;
+    let thing = (0..steps).map(move |i| start + delta * i as fxx);
+    thing
 }
 
-impl RangeMapping for Range<fxx> {
-    fn normalize(&self, t: fxx) -> fxx {
-        normalize(t, self.start, self.end)
-    }
-
-    fn norm_clamp(&self, t: fxx) -> fxx {
-        normalize(t, self.start, self.end).clamp(self.start, self.end)
-    }
-
-    fn lerp(&self, t: fxx) -> fxx {
-        lerp(t, self.start, self.end)
-    }
-
-    fn remap(&self, other: &Range<fxx>, t: fxx, clamped: bool) -> fxx {
-        remap(t, self.start, self.end, other.start, other.end, clamped)
-    }
+/// 
+#[inline]
+pub fn iter_by_delta(start: fxx, end: fxx, delta: fxx) -> impl Iterator<Item = fxx> {
+    let steps = ((end - start) / delta).floor() as usize + 1;
+    (0..steps).map(move |i| start + delta * i as fxx)
 }
-
-
 
 #[cfg(test)]
 mod test {
     use crate::kernel::fxx;
 
-    use super::quad_bezier_int;
+    use super::lerp_quad_bezier;
 
 
     #[test]
@@ -259,7 +246,7 @@ mod test {
         for i in 0..101 {
             let f = i as fxx / 100.0;
 
-            let t = quad_bezier_int(1.0, 1.0, f);
+            let t = lerp_quad_bezier(1.0, 1.0, f);
             println!("f {f}, t {t}");
         }
     }

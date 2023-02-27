@@ -6,7 +6,7 @@ use crate::kernel::{fxx, Vec3, uvec3_to_vec3};
 use crate::{math::quick, util};
 use std::ops::Range;
 
-use super::RangeMapping;
+use super::Range1;
 
 /// A two dimentional range.
 /// Can also be interpreted as an axis-aligned rectangle
@@ -42,13 +42,6 @@ impl Range3 {
     pub fn center(&self) -> Vec3 {
         self.lerp(Vec3::new(0.5,0.5,0.5))
     }
-
-    /// iterate through this space
-    pub fn iter<'a>(&'a self, count: UVec3) -> impl Iterator<Item = Vec3> + 'a {
-        let fcount: Vec3 = uvec3_to_vec3(count);
-        util::iter_xyz_u(count).map(move |u| self.lerp(uvec3_to_vec3(u) / fcount))
-    }
-
     
     pub fn normalize(&self, t: Vec3) -> Vec3 {
         Vec3::new(
@@ -86,4 +79,30 @@ impl Range3 {
         }
         points
     }
+
+    /// iterate through this space
+    /// hmmm... this approach is more stable, floating point wise
+    pub fn iter<'a>(&'a self, n_times: UVec3) -> impl Iterator<Item = Vec3> + 'a {
+        let fcount: Vec3 = uvec3_to_vec3(n_times) + - Vec3::ONE;
+        util::iter_xyz_u(n_times).map(move |u| self.lerp(uvec3_to_vec3(u) / fcount))
+    }
+
+    /// same as above. 
+    /// Benchmark the fastest approach
+    fn iter_n_times(&self, x_steps: usize, y_steps: usize, z_steps: usize) -> impl Iterator<Item = Vec3> + '_ {
+        self.z.iter_n_times(z_steps)
+            .flat_map(move |z| self.x.iter_n_times(y_steps)
+            .flat_map(move |y| self.x.iter_n_times(x_steps)
+            .map(move |x| vec3(x, y, z))
+        ))
+    }
+
+    fn iter_by_delta(&self, delta: Vec3) -> impl Iterator<Item = Vec3> + '_ {
+        self.z.iter_by_delta(delta.z)
+            .flat_map(move |z| self.x.iter_by_delta(delta.y)
+            .flat_map(move |y| self.x.iter_by_delta(delta.x)
+            .map(move |x| vec3(x, y, z))
+        ))
+    }
+
 }

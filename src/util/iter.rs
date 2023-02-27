@@ -22,7 +22,10 @@ pub fn iter_xyz<'a>(
     count: (usize, usize, usize),
 ) -> impl Iterator<Item = (usize, usize, usize)> + 'a {
     (0..count.2)
-        .flat_map(move |z| (0..count.1).flat_map(move |y| (0..count.0).map(move |x| (x, y, z))))
+        .flat_map(move |z| (0..count.1)
+        .flat_map(move |y| (0..count.0)
+        .map(move |x| (x, y, z))
+    ))
 }
 
 /// NOTE: this wraps around: given 3, this gives: (0, 1), (1, 2), and (2, 0)

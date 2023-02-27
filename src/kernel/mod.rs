@@ -31,6 +31,10 @@ pub mod kernel {
         some.as_vec3()
     }
 
+    pub fn uvec2_to_vec2(some: glam::UVec2) -> Vec2 {
+        some.as_vec2()
+    }
+
     pub fn ivec3_to_vec3(some: glam::IVec3) -> Vec3 {
         some.as_vec3()
     }
