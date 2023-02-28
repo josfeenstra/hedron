@@ -11,6 +11,7 @@ use std::ops::Range;
 use super::Range1;
 
 /// A 2D range, or axis-aligned rectangle
+#[derive(Debug)]
 pub struct Range2 {
     pub x: Range<fxx>,
     pub y: Range<fxx>,
@@ -27,6 +28,10 @@ impl Range2 {
     #[inline]
     pub const fn from_ranges(x: Range<fxx>, y: Range<fxx>) -> Self {
         Self { x, y }
+    }
+
+    pub fn splat(x: Range<fxx>) -> Self {
+        Self { x: x.clone(), y: x }
     }
 
     pub fn from_radius(r: fxx) -> Self {

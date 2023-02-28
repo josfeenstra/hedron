@@ -16,6 +16,7 @@ pub trait Range1 {
     fn iter_n_times(&self, steps: usize) -> Self::Iter; 
     fn iter_by_delta(&self, delta: fxx) -> Self::Iter; 
     fn expand_to(&mut self, t: fxx);
+    fn lerp_shaped(&self, t: fxx, shaper: &Shaper) -> fxx;
 }
 
 impl Range1 for Range<fxx> {
@@ -33,6 +34,10 @@ impl Range1 for Range<fxx> {
 
     fn lerp(&self, t: fxx) -> fxx {
         lerp(t, self.start, self.end)
+    }
+
+    fn lerp_shaped(&self, t: fxx, shaper: &Shaper) -> fxx {
+        self.lerp(shaper.eval(t))
     }
 
     fn remap(&self, other: &Range<fxx>, t: fxx, clamped: bool) -> fxx {

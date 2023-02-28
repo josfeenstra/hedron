@@ -118,7 +118,7 @@ pub fn normalize(t: fxx, start: fxx, end: fxx) -> fxx {
 }
 
 #[inline]
-pub fn remap(t: fxx, from_start: fxx, from_end: fxx, to_start: fxx, to_end:fxx, clamped: bool) -> fxx {
+pub fn remap(t: fxx, from_start: fxx, from_end: fxx, to_start: fxx, to_end: fxx, clamped: bool) -> fxx {
     let mut norm = normalize(t, from_start, from_end);
     if clamped {
         norm = fxx::clamp(norm, 0.0, 1.0);

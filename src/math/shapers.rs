@@ -4,20 +4,27 @@
 // from : https://www.youtube.com/watch?v=YJB1QnEmlTs
 ////////////////////////////////////////////////////////////////////////////
 
-use crate::kernel::{fxx, FRAC_PI_2};
+use bevy_inspector_egui::Inspectable;
+
+use crate::kernel::{fxx, FRAC_PI_2, Vec2};
 
 use super::lerp;
 
+#[derive(Clone, Debug, PartialEq, Default)]
+#[cfg_attr(feature = "bevy", derive(Inspectable))]
 pub enum Shaper {
+
+    #[default]
     Linear,
     Log,
     Smooth,
     QuadIn,
     QuadOut,
-    QuadInOut,
     Parabola(i32),
-    SkewedSmooth(fxx),
     CubicBezier(fxx, fxx),
+    BezierMorph(fxx),
+    BounceOut,
+    ElasticOut,
 }
 
 impl Shaper {
@@ -28,10 +35,11 @@ impl Shaper {
             Shaper::Smooth => smooth(t),
             Shaper::QuadIn => quad_in(t),
             Shaper::QuadOut => quad_out(t),
-            Shaper::QuadInOut => quad_in_out(t),
             Shaper::Parabola(k) => parabola(t, *k),
-            Shaper::SkewedSmooth(s) => skewed_smooth_step(t, *s),
-            Shaper::CubicBezier(w_start, w_end) => lerp_cubic_bezier(t, *w_start, *w_end),
+            Shaper::CubicBezier(w_start, w_end) => cubic_bezier(t, *w_start, *w_end),
+            Shaper::BezierMorph(param) => bezier_morph(t, *param),
+            Shaper::BounceOut => bounce_out_default(t),
+            Shaper::ElasticOut => elastic_out(t),
         }
     }
 }
@@ -57,13 +65,8 @@ pub fn quad_in(t: fxx) -> fxx {
 
 #[inline]
 pub fn quad_out(t: fxx) -> fxx {
-    1.0 * (1.0 - t) * (1.0 - t)
-}
-
-#[inline]
-pub fn quad_in_out(t: fxx) -> fxx {
-    // this mixing is very interesting for what I want to do with the wobble
-    lerp(t, quad_in(t), quad_out(t))
+    // (1.0 - t) * (1.0 - t)
+    1.0 - (t * t) 
 }
 
 #[inline]
@@ -71,38 +74,38 @@ pub fn parabola(t: fxx, k: i32) -> fxx {
     (4.0 * t * (1.0 - t)).powi(k)
 }
 
+// X and Y correspond to the mid-way control point of the quad bezier curve.
+// pub fn quad_bezier(t: fxx, x: fxx, y: fxx) -> fxx {
+//     let [p0, p1, p2] = [0.0, w_start, 1.0 - w_end, 1.0];
+// }
 
 /// bezier-interpolate 
 /// with w_start, w_end, and t in [0..1], create a 2D unit bezier curve as (0,0), (start, 0), (1 - end,1), (1,1). 
 /// interpolate this bezier using t, then return the x of this bezier
 /// TODO: currenty, this is the opposite of what we want: speed at the edges, smooth in the middle... 
-#[inline]
-pub fn lerp_cubic_bezier(t: fxx, w_start: fxx, w_end: fxx) -> fxx {
-    let [p0, p1, p2, p3] = [0.0, w_start, 1.0 - w_end, 1.0];
+pub fn cubic_bezier(t: fxx, w_start: fxx, w_end: fxx) -> fxx {
+    let [p0, p1, p2, p3] = [0.0, w_start, w_end, 1.0];
     
     // TODO: rewrite: so that we get a regular curve in the shape of y = ... polynomial
-    let px = 
-        0.0 *       (1.0 - t).powi(3) +
-        0.0 * 3.0 * (1.0 - t).powi(2) * t + 
-        1.0 * 3.0 * (1.0 - t)         * t.powi(2) + 
-        1.0                           * t.powi(3);
-
-    // let py = 
-    //     p0 *       (1.0 - px).powi(3) +
-    //     p1 * 3.0 * (1.0 - px).powi(2) * px + 
-    //     p2 * 3.0 * (1.0 - px)         * px.powi(2) + 
-    //     p3                            * px.powi(3);
-
-    px
+    let l = 1.0 - t;
+    let param = p0 * l.powi(3) + 
+                p1 * 3.0 * l.powi(2) * t + 
+                p2 * 3.0 * l * t.powi(2) + 
+                p3 * t.powi(3);
+    param
 }
 
-
-
-
-#[inline]
-pub fn skewed_smooth_step(t: fxx, s: fxx) -> fxx {
-    // this mixing is very interesting for what I want to do with the wobble
-    lerp(t, quad_in(t) * (1.0 - s), quad_out(t) * s)
+// shape using a cubic bezier.
+// base the bezier parameters on a morph parameter from [-1.0, 1.0]:
+// (0.0,) => linear
+// (1.0,) => x completely bend to the end, y linear
+// (-1.0) => x completely bend to the start, y linear
+pub fn bezier_morph(t: fxx, morpher: fxx) -> fxx {
+    let third = 0.3333333;
+    let two_third = 0.66666666;
+    let p1 = two_third * morpher;
+    let p2 = third + p1;
+    cubic_bezier(t, p1, p2)
 }
 
 #[inline]
@@ -135,7 +138,7 @@ pub fn bounce_out_default(t: fxx) -> fxx {
 mod test {
     use crate::kernel::fxx;
 
-    use super::lerp_cubic_bezier;
+    use super::cubic_bezier;
 
 
     #[test]
@@ -143,7 +146,7 @@ mod test {
         for i in 0..101 {
             let f = i as fxx / 100.0;
 
-            let t = lerp_cubic_bezier(1.0, 1.0, f);
+            let t = cubic_bezier(1.0, 1.0, f);
             println!("f {f}, t {t}");
         }
     }
