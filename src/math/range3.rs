@@ -6,7 +6,7 @@ use crate::kernel::{fxx, Vec3, uvec3_to_vec3, vec3};
 use crate::{math::quick, util};
 use std::ops::Range;
 
-use super::Range1;
+use super::{Range1, Shaper};
 
 /// A 3D range, or axis-aligned box
 pub struct Range3 {
@@ -63,6 +63,10 @@ impl Range3 {
             self.y.lerp(t.y),
             self.z.lerp(t.z),
         )
+    }
+
+    pub fn lerp_shaped(&self, t: Vec3, shapers: (Shaper, Shaper, Shaper)) -> Vec3 {
+        self.lerp(Vec3::new(shapers.0.eval(t.x), shapers.1.eval(t.y), shapers.2.eval(t.z)))
     }
 
     /// remap from self to other

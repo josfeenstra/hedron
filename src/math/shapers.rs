@@ -101,11 +101,8 @@ pub fn cubic_bezier(t: fxx, w_start: fxx, w_end: fxx) -> fxx {
 // (1.0,) => x completely bend to the end, y linear
 // (-1.0) => x completely bend to the start, y linear
 pub fn bezier_morph(t: fxx, morpher: fxx) -> fxx {
-    let third = 0.3333333;
-    let two_third = 0.66666666;
-    let p1 = two_third * morpher;
-    let p2 = third + p1;
-    cubic_bezier(t, p1, p2)
+    let delta = fxx::min(1.0 - morpher, morpher) * 0.3;
+    cubic_bezier(t, morpher- delta, morpher + delta)
 }
 
 #[inline]
