@@ -1,8 +1,8 @@
-use glam::{UVec3, vec3};
+use glam::{UVec3};
 use rand::Rng;
 use rand::distributions::Uniform;
 
-use crate::kernel::{fxx, Vec3, uvec3_to_vec3};
+use crate::kernel::{fxx, Vec3, uvec3_to_vec3, vec3};
 use crate::{math::quick, util};
 use std::ops::Range;
 
