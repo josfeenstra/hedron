@@ -15,6 +15,7 @@ pub trait Range1 {
 
     fn iter_n_times(&self, steps: usize) -> Self::Iter; 
     fn iter_by_delta(&self, delta: fxx) -> Self::Iter; 
+    fn expand_to(&mut self, t: fxx);
 }
 
 impl Range1 for Range<fxx> {
@@ -36,6 +37,11 @@ impl Range1 for Range<fxx> {
 
     fn remap(&self, other: &Range<fxx>, t: fxx, clamped: bool) -> fxx {
         remap(t, self.start, self.end, other.start, other.end, clamped)
+    }
+
+    fn expand_to(&mut self, t: fxx) {
+        self.start = self.start.min(t);
+        self.end = self.end.max(t);
     }
 
     fn iter_n_times(&self, steps: usize) -> Self::Iter {

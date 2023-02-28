@@ -8,8 +8,7 @@ use std::ops::Range;
 
 use super::Range1;
 
-/// A two dimentional range.
-/// Can also be interpreted as an axis-aligned rectangle
+/// A 3D range, or axis-aligned box
 pub struct Range3 {
     pub x: Range<fxx>,
     pub y: Range<fxx>,
@@ -37,6 +36,12 @@ impl Range3 {
         !(t.x < self.x.start || t.x > self.x.end ||
           t.y < self.y.start || t.y > self.y.end || 
           t.z < self.z.start || t.z > self.z.end)
+    }
+
+    pub fn expand_to(&mut self, t: Vec3) {
+        self.x.expand_to(t.x);
+        self.y.expand_to(t.y);
+        self.z.expand_to(t.z);
     }
 
     pub fn center(&self) -> Vec3 {
@@ -82,7 +87,7 @@ impl Range3 {
 
     /// iterate through this space
     /// hmmm... this approach is more stable, floating point wise
-    pub fn iter<'a>(&'a self, n_times: UVec3) -> impl Iterator<Item = Vec3> + 'a {
+    pub fn iter(&self, n_times: UVec3) -> impl Iterator<Item = Vec3> + '_ {
         let fcount: Vec3 = uvec3_to_vec3(n_times) + - Vec3::ONE;
         util::iter_xyz_u(n_times).map(move |u| self.lerp(uvec3_to_vec3(u) / fcount))
     }

@@ -10,8 +10,7 @@ use crate::util;
 use std::ops::Range;
 use super::Range1;
 
-/// A two dimentional range.
-/// Can also be interpreted as an axis-aligned rectangle
+/// A 2D range, or axis-aligned rectangle
 pub struct Range2 {
     pub x: Range<fxx>,
     pub y: Range<fxx>,
@@ -32,6 +31,20 @@ impl Range2 {
 
     pub fn from_radius(r: fxx) -> Self {
         Self::from_ranges(-r..r, -r..r)
+    }
+
+    pub fn center(&self) -> Vec2 {
+        self.lerp(Vec2::new(0.5,0.5))
+    }
+    
+    pub fn includes(&self, t: Vec2) -> bool {
+        !(t.x < self.x.start || t.x > self.x.end ||
+          t.y < self.y.start || t.y > self.y.end)
+    }
+
+    pub fn expand_to(&mut self, t: Vec2) {
+        self.x.expand_to(t.x);
+        self.y.expand_to(t.y);
     }
 
     pub fn add(&mut self, rhs: Vec2) {
@@ -96,7 +109,7 @@ impl Range2 {
     }
 
     /// Explained in Range3 
-    pub fn iter<'a>(&'a self, n_times: UVec2) -> impl Iterator<Item = Vec2> + 'a {
+    pub fn iter(&self, n_times: UVec2) -> impl Iterator<Item = Vec2> + '_ {
         let fcount: Vec2 = uvec2_to_vec2(n_times) - Vec2::ONE;
         util::iter_xy_u(n_times).map(move |u| self.lerp(uvec2_to_vec2(u) / fcount))
     }
