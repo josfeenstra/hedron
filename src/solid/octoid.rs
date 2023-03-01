@@ -1,4 +1,4 @@
-use crate::{kernel::{Vec3, fxx}, planar::Polygon};
+use crate::{kernel::{Vec3, fxx}, planar::Polygon, math::{lerp, Range3, Shaper}};
 
 use super::Mesh;
 
@@ -53,40 +53,51 @@ impl Octoid {
     }
 
     /// trilinear interpolation
-    pub fn tri_lerp(&self, point: Vec3) -> Vec3 {
+    pub fn tri_lerp(&self, t: Vec3) -> Vec3 {
 
         // create a z plane from the point z
         let [a, b, c, d, e, f, g, h] = self.verts;
         
-        let za = Vec3::lerp(a, e, point.z);
-        let zb = Vec3::lerp(b, f, point.z);
-        let zc = Vec3::lerp(c, g, point.z);
-        let zd = Vec3::lerp(d, h, point.z);
+        let za = Vec3::lerp(a, e, t.z);
+        let zb = Vec3::lerp(b, f, t.z);
+        let zc = Vec3::lerp(c, g, t.z);
+        let zd = Vec3::lerp(d, h, t.z);
 
-        let ac = Vec3::lerp(za, zc, point.y);
-        let bd = Vec3::lerp(zb, zd, point.y);
+        let ac = Vec3::lerp(za, zc, t.y);
+        let bd = Vec3::lerp(zb, zd, t.y);
 
-        Vec3::lerp(ac, bd, point.x)
+        Vec3::lerp(ac, bd, t.x)
     }
 
-    pub fn tri_lerp_weighted(&self, point: Vec3, weights: [fxx; 8]) -> Vec3 {
+    /// forcedir: 3D Vector in (-1.0..1.0) space, representing a deformation force
+    pub fn tri_lerp_deformed(&self, t: Vec3, force_dir: Vec3, weights: [fxx; 8]) -> Vec3 {
+        let master_weight = tri_lerp_weight_box(t, weights);
+        let moved_t = Range3::UNIT.lerp_shaped(t, (
+            Shaper::BezierMorph(1.0 - 0.5 * force_dir.x), 
+            Shaper::BezierMorph(1.0 - 0.5 * force_dir.y), 
+            Shaper::BezierMorph(1.0 - 0.5 * force_dir.z), 
+        ));
 
-        // create a z plane from the point z
-        let [a, b, c, d, e, f, g, h] = self.verts;
-        
-        let za = Vec3::lerp(a, e, point.z);
-        let zb = Vec3::lerp(b, f, point.z);
-        let zc = Vec3::lerp(c, g, point.z);
-        let zd = Vec3::lerp(d, h, point.z);
-
-        let ac = Vec3::lerp(za, zc, point.y);
-        let bd = Vec3::lerp(zb, zd, point.y);
-
-        Vec3::lerp(ac, bd, point.x)
+        let final_t = Vec3::lerp(t, moved_t, master_weight);
+        self.tri_lerp(final_t)
     }
  
     // /// TODO: add callback (a: Vec3, b: Vec3, f: fxx, ia: usize, ib: usize) -> fxx
     // pub fn tri_lerp_smooth(&self, point: Vec3) -> Vec3 {
     //     // self. (point)
     // }
+}
+
+pub fn tri_lerp_weight_box(t: Vec3, weights: [fxx; 8]) -> fxx {
+    let [a, b, c, d, e, f, g, h] = weights;
+        
+    let za = lerp(t.z, a, e);
+    let zb = lerp(t.z, b, f);
+    let zc = lerp(t.z, c, g);
+    let zd = lerp(t.z, d, h);
+
+    let ac = lerp(t.y, za, zc);
+    let bd = lerp(t.y, zb, zd);
+
+    lerp(t.x, ac, bd)
 }

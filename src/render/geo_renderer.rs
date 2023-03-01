@@ -8,7 +8,6 @@ use crate::{kernel::fxx, core::Geometry};
 use bevy::{prelude::*, render::view::NoFrustumCulling};
 use dynstack::DynStack;
 
-
 #[derive(Resource, Default)]
 pub struct GeoRenderer<M:Material + Default> {
     // to_add: DynStack<(String, Mesh, dyn Material)>,
