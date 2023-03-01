@@ -73,9 +73,9 @@ impl Octoid {
     pub fn tri_lerp_deformed(&self, t: Vec3, force_dir: Vec3, weights: [fxx; 8]) -> Vec3 {
         let master_weight = tri_lerp_weight_box(t, weights);
         let moved_t = Range3::UNIT.lerp_shaped(t, (
-            Shaper::BezierMorph(1.0 - 0.5 * force_dir.x), 
-            Shaper::BezierMorph(1.0 - 0.5 * force_dir.y), 
-            Shaper::BezierMorph(1.0 - 0.5 * force_dir.z), 
+            Shaper::BezierMorph(force_dir.x), 
+            Shaper::BezierMorph(force_dir.y), 
+            Shaper::BezierMorph(force_dir.z), 
         ));
 
         let final_t = Vec3::lerp(t, moved_t, master_weight);
