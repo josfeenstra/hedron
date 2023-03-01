@@ -780,7 +780,7 @@ impl Polyhedron {
             .iter()
             .filter_map(|edges| {
                 let first_edge = edges[0];
-                let verts = self.edges_to_verts(&edges);
+                let verts = self.edges_to_verts(edges);
                 let polygon = Polygon::new(verts);
                 let center = polygon.center();
                 let signed_area = polygon.signed_area_2d();
@@ -860,7 +860,7 @@ impl Polyhedron {
         }
     }
 
-    pub fn edges_to_verts(&self, edges: &Vec<EdgePtr>) -> Vec<Vec3> {
+    pub fn edges_to_verts(&self, edges: &[EdgePtr]) -> Vec<Vec3> {
         edges
             .iter()
             .map(|edgeptr| self.vert(self.edge(*edgeptr).from).pos)
@@ -880,7 +880,7 @@ impl Polyhedron {
     /// returns a list of vertices added at the intersection point
     pub fn cut_edges_with_plane(&mut self, plane: &Pose) -> Vec<VertPtr> {
 
-        let plane_pos = plane.pos.clone();
+        let plane_pos = plane.pos;
         let p2 = plane.transform_point(vec3(1.0,0.0,0.0));
         let p3 = plane.transform_point(vec3(0.0,1.0,0.0));
         let plane_normal = plane.local_z();
@@ -918,7 +918,7 @@ impl Polyhedron {
 }
 
 impl PointBased for Polyhedron {
-    fn mutate_points<'a>(&'a mut self) -> Vec<&'a mut Vec3> {
+    fn mutate_points(&mut self) -> Vec<&mut Vec3> {
         self.verts.iter_mut().map(|v| &mut v.pos).collect()
     }
 }
