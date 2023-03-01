@@ -1,3 +1,5 @@
+#![allow(unused_variables)]
+
 use std::io::Write;
 use std::iter::Rev;
 use std::ops::Range;
@@ -8,7 +10,7 @@ use crate::lines::LineList;
 use crate::srf::{BiSurface, TriSurface, Rectangle3};
 use crate::{core::PointBased, data::Grid2};
 
-use super::{CUBE_FACES, quad_to_tri, Cuboid, Polyhedron, Octoid};
+use super::{CUBE_FACES, quad_to_tri, Polyhedron, Octoid};
 
 /// A dead simple, internal data structure to store meshes. 
 /// Can get confusing in conjunction with bevy's mesh
@@ -26,7 +28,7 @@ impl Mesh {
         Self { verts, tri, uvs, normals}
     }
 
-    pub fn from_bi_surface(srf: BiSurface, u_segments: usize, v_segments: usize) -> Mesh {
+    pub fn from_bi_surface(_srf: BiSurface, _u_segments: usize, _v_segments: usize) -> Mesh {
         // returns vertices & indices of a flat grid
         // let uPoints = u_segments + 1;
         // let vPoints = v_segments + 1;
@@ -718,7 +720,6 @@ mod test {
     use super::Mesh;
     use crate::core::Geometry;
     use crate::kernel::vec3;
-    use std::io::Write;
 
     // #[test]
     // fn write_some_obj() {

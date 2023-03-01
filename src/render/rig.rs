@@ -122,7 +122,7 @@ impl Rig {
     fn update_mouse_controls(
         &mut self,
         key_input: &Input<KeyCode>,
-        dt: fxx,
+        _dt: fxx,
         mouse_input: &Input<MouseButton>,
         mouse_motion_events: &mut EventReader<MouseMotion>,
         mouse_wheel_events: &mut EventReader<MouseWheel>,

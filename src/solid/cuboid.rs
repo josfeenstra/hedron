@@ -1,9 +1,9 @@
-use crate::{core::Pose, kernel::{fxx, Vec3}, math::Range3};
+use crate::{core::Pose, kernel::{fxx}, math::Range3};
 
 // represents a cuboid in 3D space
 pub struct Cuboid {
-    pose: Pose,
-    size: Range3,
+    pub pose: Pose,
+    pub size: Range3,
 }
 
 impl Cuboid {

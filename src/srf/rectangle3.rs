@@ -1,4 +1,4 @@
-use crate::{math::Range2, core::{Pose, PointBased, Geometry}};
+use crate::{math::Range2, core::{Pose, Geometry}};
 use crate::kernel::{Vec3, vec3};
 
 /// a rectangle in 3D space, defined by bounds and a range 2
