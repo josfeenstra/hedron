@@ -28,6 +28,10 @@ impl Range3 {
         Self { x, y, z }
     }
 
+    pub fn splat(r: Range<fxx>) -> Self {
+        Self { x: r.clone(), y: r.clone(), z: r }
+    }
+
     pub fn from_radius(r: fxx) -> Self {
         Self::from_ranges(-r..r, -r..r, -r..r)
     }
@@ -48,6 +52,18 @@ impl Range3 {
         self.lerp(Vec3::new(0.5,0.5,0.5))
     }
     
+    pub fn corners(&self) -> [Vec3; 8] {
+        let mut i = 0;
+        let arr: [Vec3; 8] = [0; 8].map(|_| {
+            let x = if i     % 2 == 0 { self.x.start } else { self.x.end }; 
+            let y = if (i/2) % 2 == 0 { self.y.start } else { self.y.end }; 
+            let z = if (i/4) % 2 == 0 { self.z.start } else { self.z.end }; 
+            i += 1;
+            vec3(x, y, z)
+        });
+        arr
+    }
+
     pub fn normalize(&self, t: Vec3) -> Vec3 {
         Vec3::new(
             self.x.normalize(t.x),

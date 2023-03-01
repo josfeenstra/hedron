@@ -1,4 +1,4 @@
-use crate::{kernel::Vec3, planar::Polygon};
+use crate::{kernel::{Vec3, fxx}, planar::Polygon};
 
 use super::Mesh;
 
@@ -54,6 +54,22 @@ impl Octoid {
 
     /// trilinear interpolation
     pub fn tri_lerp(&self, point: Vec3) -> Vec3 {
+
+        // create a z plane from the point z
+        let [a, b, c, d, e, f, g, h] = self.verts;
+        
+        let za = Vec3::lerp(a, e, point.z);
+        let zb = Vec3::lerp(b, f, point.z);
+        let zc = Vec3::lerp(c, g, point.z);
+        let zd = Vec3::lerp(d, h, point.z);
+
+        let ac = Vec3::lerp(za, zc, point.y);
+        let bd = Vec3::lerp(zb, zd, point.y);
+
+        Vec3::lerp(ac, bd, point.x)
+    }
+
+    pub fn tri_lerp_weighted(&self, point: Vec3, weights: [fxx; 8]) -> Vec3 {
 
         // create a z plane from the point z
         let [a, b, c, d, e, f, g, h] = self.verts;
