@@ -4,14 +4,12 @@
 // from : https://www.youtube.com/watch?v=YJB1QnEmlTs
 ////////////////////////////////////////////////////////////////////////////
 
-use bevy_inspector_egui::Inspectable;
-
 use crate::kernel::{fxx, FRAC_PI_2, Vec2};
 
 use super::lerp;
 
 #[derive(Clone, Debug, PartialEq, Default)]
-#[cfg_attr(feature = "bevy", derive(Inspectable))]
+#[cfg_attr(feature = "bevy", derive(bevy_inspector_egui::Inspectable))]
 pub enum Shaper {
 
     #[default]

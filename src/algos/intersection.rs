@@ -1,4 +1,4 @@
-use crate::{kernel::{fxx, Vec3}, core::Pose};
+use crate::{kernel::{fxx, Vec3}};
 // I like to split away these intersection / geometric predicates stuff from the main code
 
 // simple 2x2
@@ -88,8 +88,6 @@ pub fn line_x_plane(a: Vec3, b: Vec3, plane_pos: Vec3, plane_normal: Vec3) -> Op
 #[cfg(test)]
 mod test {
     use crate::kernel::{vec3};
-    use crate::core::Pose;
-    use crate::kernel::Quat;
     use super::line_x_plane;
 
     #[test]

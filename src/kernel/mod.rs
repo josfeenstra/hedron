@@ -46,6 +46,7 @@ pub mod kernel {
     pub fn as_vec2<I: Into<Vec2>>(some: I) -> Vec2 {
         some.into()
     }
+
     pub fn as_vec3<I: Into<Vec3>>(some: I) -> Vec3 {
         some.into()
     }
@@ -82,6 +83,10 @@ pub mod kernel {
         some.as_dvec3()
     }
 
+    pub fn uvec2_to_vec2(some: glam::UVec2) -> Vec2 {
+        some.as_dvec2()
+    }
+
     pub fn ivec3_to_vec3(some: glam::IVec3) -> Vec3 {
         some.as_dvec3()
     }
@@ -92,6 +97,14 @@ pub mod kernel {
     
     pub fn as_mat4(mat: glam::Mat4) -> Mat4 {
         mat.as_dmat4()
+    }
+
+    pub fn as_vec2<I: Into<Vec2>>(some: I) -> Vec2 {
+        some.into()
+    }
+    
+    pub fn as_vec3<I: Into<Vec3>>(some: I) -> Vec3 {
+        some.into()
     }
 }
 
