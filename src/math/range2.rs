@@ -1,11 +1,7 @@
 use glam::UVec2;
 use rand::distributions::Uniform;
-use rand::prelude::Distribution;
-use rand::rngs::ThreadRng;
 use rand::Rng;
-
 use crate::kernel::{fxx, Vec2, vec2, uvec2_to_vec2};
-use crate::math::quick;
 use crate::util;
 use std::ops::Range;
 use super::Range1;
@@ -107,7 +103,7 @@ impl Range2 {
         let mut points = Vec::new();
         let ux = Uniform::from(self.x.clone());
         let uy = Uniform::from(self.y.clone());
-        for i in 0..count {
+        for _ in 0..count {
             points.push(Vec2::new(rng.sample(ux), rng.sample(uy)));
         }
         points
@@ -142,7 +138,6 @@ impl Range2 {
 #[cfg(test)]
 mod tests {
     use crate::kernel::vec2;
-    use rand::prelude::*;
     use rand_pcg::Pcg64;
     use rand_seeder::Seeder;
     use super::Range2;

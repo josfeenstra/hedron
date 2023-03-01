@@ -10,7 +10,7 @@ use crate::{
     solid::Mesh,
     util::{self, iter_pair_ids},
 };
-use crate::util::{iter_pairs, iter_triplet_ids, iter_triplets};
+use crate::util::iter_pairs;
 
 #[derive(Debug, Clone)]
 pub struct Polygon {
@@ -77,8 +77,6 @@ impl Polygon {
     /// offset the polygon by pretending its 2D, offsetting all line segments,
     /// and calculating the intersection points in an inefficient manner :)
     pub fn offset(mut self, normal: Vec3, distance: fxx) -> Self {
-        let center = Vectors::average(&self.verts);
-
         let count = self.verts.len();
         // let mut line_offsets = vec![Vec3::ZERO; count];
         let mut offset_lines = vec![Line::NAN; count];
@@ -93,8 +91,6 @@ impl Polygon {
 
         // vert I is intersection of line I and line I-1
         for (i_vert_min_one, i_vert) in iter_pair_ids(count) {
-            let vert = self.verts[i_vert];
-
             let one = &offset_lines[i_vert];
             let two = &offset_lines[i_vert_min_one];
 

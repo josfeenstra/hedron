@@ -3,7 +3,7 @@ use rand::Rng;
 use rand::distributions::Uniform;
 
 use crate::kernel::{fxx, Vec3, uvec3_to_vec3, vec3};
-use crate::{math::quick, util};
+use crate::{util};
 use std::ops::Range;
 
 use super::{Range1, Shaper};
@@ -99,7 +99,7 @@ impl Range3 {
         let ux = Uniform::from(self.x.clone());
         let uy = Uniform::from(self.y.clone());
         let uz = Uniform::from(self.z.clone());
-        for i in 0..count {
+        for _ in 0..count {
             points.push(Vec3::new(rng.sample(ux), rng.sample(uy), rng.sample(uz)));
         }
         points
@@ -114,7 +114,7 @@ impl Range3 {
 
     /// same as above. 
     /// Benchmark the fastest approach
-    fn iter_n_times(&self, x_steps: usize, y_steps: usize, z_steps: usize) -> impl Iterator<Item = Vec3> + '_ {
+    pub fn iter_n_times(&self, x_steps: usize, y_steps: usize, z_steps: usize) -> impl Iterator<Item = Vec3> + '_ {
         self.z.iter_n_times(z_steps)
             .flat_map(move |z| self.x.iter_n_times(y_steps)
             .flat_map(move |y| self.x.iter_n_times(x_steps)
@@ -122,7 +122,7 @@ impl Range3 {
         ))
     }
 
-    fn iter_by_delta(&self, delta: Vec3) -> impl Iterator<Item = Vec3> + '_ {
+    pub fn iter_by_delta(&self, delta: Vec3) -> impl Iterator<Item = Vec3> + '_ {
         self.z.iter_by_delta(delta.z)
             .flat_map(move |z| self.x.iter_by_delta(delta.y)
             .flat_map(move |y| self.x.iter_by_delta(delta.x)

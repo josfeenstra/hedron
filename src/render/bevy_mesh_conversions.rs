@@ -4,11 +4,11 @@ use bevy::{
 };
 
 use crate::{
-    core::{PointBased, Pose},
+    core::Pose,
     lines::{Bezier, LineList, LineStrip},
     planar::Polygon,
     pts::Vectors,
-    solid::{Mesh as HMesh, Polyhedron}, kernel::fxx,
+    solid::{Mesh as HMesh, Polyhedron},
 };
 
 // make sure we can easily translate hedron types to bevy types
@@ -62,7 +62,7 @@ impl From<Bezier> for Mesh {
 
 impl From<Transform> for Pose {
     fn from(tf: Transform) -> Self {
-        let scale = Vec3::ZERO;
+        let _scale = Vec3::ZERO;
         // scale: tf.scale,
         Self {
             pos: tf.translation,

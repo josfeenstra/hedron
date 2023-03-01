@@ -1,5 +1,5 @@
 // file containing shape smoothing operators
-use crate::{kernel::{vec3, Vec3, fxx, PI}, pts::Vectors, math::smooth};
+use crate::{kernel::{Vec3, fxx, PI}, pts::Vectors};
 
 // take good care that the quad is in counter-clockwise orientation, with regard to the axis
 pub fn smooth_quad_to_square(quad: &mut[Vec3; 4], axis: Vec3) {

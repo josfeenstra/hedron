@@ -1,12 +1,11 @@
-use std::{collections::HashMap, marker::PhantomData};
+use std::{collections::HashMap};
 
 use super::{
-    extract_vertices, FaceMaterial, InstanceData, InstanceMaterialData, InstanceMaterialPlugin,
+    extract_vertices, FaceMaterial, InstanceData, InstanceMaterialData,
     LineMaterial,
 };
-use crate::{kernel::fxx, core::Geometry};
+use crate::kernel::fxx;
 use bevy::{prelude::*, render::view::NoFrustumCulling};
-use dynstack::DynStack;
 
 #[derive(Resource, Default)]
 pub struct GeoRenderer<M:Material + Default> {

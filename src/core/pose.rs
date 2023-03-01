@@ -46,7 +46,7 @@ impl Pose {
     /// transformation matrix.
     #[inline]
     pub fn from_matrix(matrix: Mat4) -> Self {
-        let (scale, rot, pos) = matrix.to_scale_rotation_translation();
+        let (_, rot, pos) = matrix.to_scale_rotation_translation();
         Self { 
             pos, 
             rot, 
@@ -132,7 +132,7 @@ impl Pose {
     #[inline]
     pub fn compute_affine(&self) -> Affine3 {
         // let scale = self.scale
-        let scale = Vec3::ONE;
+        let _scale = Vec3::ONE;
         Affine3::from_scale_rotation_translation(Vec3::ONE, self.rot, self.pos)
     }
 

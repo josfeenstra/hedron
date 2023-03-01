@@ -4,7 +4,7 @@
 // from : https://www.youtube.com/watch?v=YJB1QnEmlTs
 ////////////////////////////////////////////////////////////////////////////
 
-use crate::kernel::{fxx, FRAC_PI_2, Vec2};
+use crate::kernel::{fxx, FRAC_PI_2};
 
 use super::lerp;
 

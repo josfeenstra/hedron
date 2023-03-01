@@ -1,5 +1,5 @@
 use glam::IVec3;
-use crate::{kernel::{Vec3, ivec3_to_vec3, vec3, fxx}, solid::{Mesh, Octoid}, core::Pose, math::Range3};
+use crate::{kernel::{Vec3, ivec3_to_vec3, vec3}, solid::{Octoid}, math::Range3};
 
 // integer points
 pub fn mask_to_bounding_boxes(from_cells: Vec<IVec3>) -> Vec<Range3> {

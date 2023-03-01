@@ -76,7 +76,7 @@ impl Stat {
         return cov;
     }
 
-    fn eig() {
+    pub fn eig() {
         // mathru
     }
 
@@ -92,7 +92,7 @@ impl Stat {
      * ∑ -> during EVD, these are the eigen values
      * V -> during EVD, the columns are eigen vectors. NOT TRANSPOSED !!!!!
      */
-    fn singular_value_decomposition(m: Matrix) {
+    pub fn singular_value_decomposition(_m: Matrix) {
         // NOTE: this should be outsources
         // mathru
     }
@@ -103,7 +103,7 @@ impl Stat {
      * https://en.wikipedia.org/wiki/Singular_value_decomposition
      * @param A
      */
-    fn pseudo_inverse(m: Matrix) {
+    pub fn pseudo_inverse(_m: Matrix) {
         // TODO
         // mathru
     }

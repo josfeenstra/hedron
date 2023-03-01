@@ -12,7 +12,7 @@ impl Bezier {
         Bezier { verts }
     }
 
-    fn equalize_degrees(mut curves: Vec<Bezier>) -> Vec<Bezier> {
+    pub fn equalize_degrees(mut curves: Vec<Bezier>) -> Vec<Bezier> {
         let max_degree = curves.iter().map(|b| b.degree()).max().unwrap_or(0);
 
         for curve in curves.iter_mut() {
@@ -61,15 +61,14 @@ impl Bezier {
         Bezier::new(verts)
     }
 
-    pub fn split(&self, t: fxx) -> Bezier {
-        let size = self.degree() + 1;
+    pub fn split(&self, _t: fxx) -> Bezier {
+        let _size = self.degree() + 1;
         // let tri =
-
-        Bezier::new(Vec::new())
+        todo!();
     }
 
-    pub fn extend(&self, t: fxx) -> Bezier {
-        Bezier::new(Vec::new())
+    pub fn extend(&self, _t: fxx) -> Bezier {
+        todo!();
     }
 
     pub fn point_at(&self, t: fxx) -> Vec3 {

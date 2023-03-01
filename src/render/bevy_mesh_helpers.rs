@@ -1,6 +1,6 @@
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 
-use crate::{pts::Vectors, kernel::fxx};
+use crate::{pts::Vectors};
 
 // this removes and returns vertices from a mesh
 pub fn extract_vertices(mesh: &mut Mesh) -> Option<Vec<Vec3>> {

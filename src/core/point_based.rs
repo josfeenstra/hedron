@@ -1,7 +1,7 @@
 // TODO create a trait, allowing some struct to be modified by its vertices.
 // it just needs to expose a Iter<&mut Vec3>
 
-use super::{Geometry, Pose};
+use super::{Geometry};
 use crate::kernel::{fxx, Quat, Vec3};
 
 /// If some geometry is ultimately defined in terms of points,

@@ -52,7 +52,7 @@ fn pascal_triangle(size: usize) -> Vec<Vec<usize>> {
 ///  Hovever, this is slower than the PointAt() method.
 ///  useful for:
 ///  Subdividing bezier curves, debugging, and splines
-fn decastejau(verts: Vec<Vec3>, t: fxx) -> Grid2<Vec3> {
+pub fn decastejau(verts: Vec<Vec3>, t: fxx) -> Grid2<Vec3> {
     let count = verts.len();
     let mut tri = Grid2::new(count, count);
 
@@ -75,7 +75,7 @@ fn decastejau(verts: Vec<Vec3>, t: fxx) -> Grid2<Vec3> {
 }
 
 // calculate the decastejau piramid based on extrapolation
-fn decastejau_extrapolate_end(verts: Vec<Vec3>, t: fxx) -> Grid2<Vec3> {
+pub fn decastejau_extrapolate_end(verts: Vec<Vec3>, _t: fxx) -> Grid2<Vec3> {
     let count = verts.len();
 
     let tri = Grid2::new(count, count);
@@ -101,7 +101,7 @@ fn decastejau_extrapolate_end(verts: Vec<Vec3>, t: fxx) -> Grid2<Vec3> {
 ///////////////////////////////////////////////////////////////////////////////
 
 /// TODO: do the coxdeboor things needed for spline curves
-fn coxdeboor() -> fxx {
+pub fn coxdeboor() -> fxx {
     1.0
 }
 

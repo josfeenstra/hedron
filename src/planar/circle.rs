@@ -1,6 +1,6 @@
 use crate::kernel::{fxx, Vec2};
 
 pub struct Circle {
-    center: Vec2,
-    radius: fxx,
+    pub center: Vec2,
+    pub radius: fxx,
 }

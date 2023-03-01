@@ -4,8 +4,8 @@ use super::Mesh;
 use crate::algos::{line_hits_plane, line_x_plane};
 use crate::core::Pose;
 use crate::kernel::{fxx, vec3, Vec3};
-use crate::util::{iter_pairs, iter_triplets};
-use crate::various::{get_smoothers_quad_to_square, get_smoothers_quad_to_square_at_length};
+use crate::util::{iter_triplets};
+
 use crate::{
     core::PointBased,
     data::{Pool, Ptr},
@@ -277,7 +277,7 @@ impl Polyhedron {
         }
 
         println!("   ----------- loops ------------");
-        for (i, my_loop) in self.get_loops().iter().enumerate() {
+        for (_, my_loop) in self.get_loops().iter().enumerate() {
             print!("loop: ");
             for edge in my_loop {
                 print!(" {} ,", edge)
@@ -518,7 +518,7 @@ impl Polyhedron {
         let mut loops = Vec::new();
 
         let mut passed = HashSet::<usize>::new();
-        for (ep, edge) in self.edges.iter_enum() {
+        for (ep, _) in self.edges.iter_enum() {
             if passed.contains(&ep) {
                 continue;
             }
@@ -614,7 +614,6 @@ impl Polyhedron {
     }
 
     pub fn get_vert_neighbors(&self, vp: VertPtr) -> Vec<VertPtr> {
-        let vert = self.vert(vp);
         let disk_edges: Vec<EdgePtr> = self.get_disk(vp);
         let neighbors: Vec<VertPtr> = disk_edges
             .iter()
@@ -701,7 +700,7 @@ impl Polyhedron {
             // we are the first edge to be added to this vertex
             v.edge = Some(ep);
             self.mut_edge(ep_inwards).next = ep;
-        } else if let Some(disk_start) = v.edge {
+        } else if let Some(_) = v.edge {
             let (_, to) = self.edge_verts(ep);
             let Some((ep_nb_inwards, ep_nb_outwards)) = self.get_disk_neighbors_edges(vp, to, normal) else {
                 return;
@@ -769,7 +768,7 @@ impl Polyhedron {
         (vp_new, ep_top_extended, ep_bottom_extended)
     }
 
-    pub fn split_face(&mut self, ep: FacePtr, t: fxx) {
+    pub fn split_face(&mut self, _ep: FacePtr, _t: fxx) {
         todo!()
     }
 
@@ -802,7 +801,7 @@ impl Polyhedron {
         }
 
         // then build new faces
-        for (i, (center, normal, first_edge)) in faces_data.into_iter().enumerate() {
+        for (center, normal, first_edge) in faces_data.into_iter() {
             let vp = self.add_vert(center);
             for edge in self.get_loop(first_edge).iter().skip(1).step_by(2) {
                 // NOTE: we can do this faster and without disk thingies, if we just carefully edit pointers
@@ -909,7 +908,7 @@ impl Polyhedron {
     }
 
     /// returns the ring of edges representing the cut
-    pub fn cut_with_plane(&mut self, plane: &Pose) -> Vec<EdgePtr> {
+    pub fn cut_with_plane(&mut self, _plane: &Pose) -> Vec<EdgePtr> {
         // cut edges 
         // for each face adjacent to cut edges: 
 
@@ -946,10 +945,10 @@ impl Polyhedron {
         None
     }
 
-    pub fn quad_smooth_planar_partition(&mut self, normal: Vec3, length: fxx) {
+    pub fn quad_smooth_planar_partition(&mut self, _normal: Vec3, _length: fxx) {
         
         let loops = self.get_loops();
-        let polygons = loops.iter().map(|lp| 
+        let _polygons = loops.iter().map(|lp| 
             Polygon::new(lp.iter()
                 .map(|ep| self.vert(self.edge(*ep).from).pos)
                 .collect()
@@ -978,7 +977,7 @@ impl Polyhedron {
 
 #[cfg(test)]
 mod tests {
-    use crate::kernel::{vec3, Vec3};
+    use crate::kernel::{vec3};
     use crate::solid::{Polyhedron, VertPtr};
 
     #[test]
@@ -991,10 +990,10 @@ mod tests {
         assert_eq!(b, 1);
         assert_eq!(c, 2);
 
-        const UP: Vec3 = Vec3::Z;
-        let p = ph.add_planar_edge(a, b);
-        let p = ph.add_planar_edge(b, c);
-        let p = ph.add_planar_edge(c, a);
+        // const UP: Vec3 = Vec3::Z;
+        let _p = ph.add_planar_edge(a, b);
+        let _p = ph.add_planar_edge(b, c);
+        let _p = ph.add_planar_edge(c, a);
 
         ph.print_structure();
 

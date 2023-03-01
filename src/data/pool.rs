@@ -20,7 +20,7 @@ impl<T: Clone> Pool<T> {
         let mut mapping = HashMap::new();
         let mut offset = 0;
         for i in 0..self.data.len() {
-            if let Some(item) = self.get(i) {
+            if let Some(_) = self.get(i) {
                 mapping.insert(i, i - offset);
             } else {
                 offset += 1;
@@ -45,7 +45,7 @@ impl<T: Clone> Pool<T> {
         }
 
         // remove the last X items, which should be correctly copied and replaced
-        for i in 0..offset {
+        for _i in 0..offset {
             self.data.pop();
         }
     }
@@ -118,7 +118,7 @@ impl<T> Pool<T> {
     pub fn iter_enum<'a>(&'a self) -> impl Iterator<Item=(usize, &T)> + 'a {
         self.data.iter()
             .enumerate()
-            .filter(|(i, item)| item.is_some())
+            .filter(|(_, item)| item.is_some())
             .map(|(i, item)| (i, item.as_ref().unwrap()))
     }
 
@@ -131,7 +131,7 @@ impl<T> Pool<T> {
     pub fn iter_enum_mut<'a>(&'a mut self) -> impl Iterator<Item=(usize, &T)> + 'a {
         self.data.iter_mut()
             .enumerate()
-            .filter(|(i, item)| item.is_some())
+            .filter(|(_, item)| item.is_some())
             .map(|(i, item)| (i, item.as_ref().unwrap()))
     }
 
@@ -158,8 +158,7 @@ mod tests {
         let henk_ptr = pool.push("henk");
         let blob_ptr = pool.push("blob");
         let kaas_ptr = pool.push("kaas");
-        let piet_ptr = pool.push("piet");
-
+        
         for item in pool.iter() {
             println!("{:?}", item);
         }
@@ -177,9 +176,9 @@ mod tests {
 
         println!("{:?}", pool);
         
-        let muis_ptr = pool.push("muis"); 
-        let puis_ptr = pool.push("puis"); 
-        let duis_ptr = pool.push("duis"); 
+        let _muis_ptr = pool.push("muis"); 
+        let _puis_ptr = pool.push("puis"); 
+        let _duis_ptr = pool.push("duis"); 
         
         assert_eq!(pool.all(), vec![&"penk", &"puis", &"muis", &"piet", &"duis"]);
         
@@ -199,10 +198,10 @@ mod tests {
     #[test]
     fn test_iterations() {
         let mut pool = Pool::new();
-        let henk_ptr = pool.push("henk".to_owned());
-        let blob_ptr = pool.push("blob".to_owned());
-        let kaas_ptr = pool.push("kaas".to_owned());
-        let piet_ptr = pool.push("piet".to_owned());
+        let _henk_ptr = pool.push("henk".to_owned());
+        let _blob_ptr = pool.push("blob".to_owned());
+        let _kaas_ptr = pool.push("kaas".to_owned());
+        let _piet_ptr = pool.push("piet".to_owned());
 
         for item in pool.iter_mut() {
             item.make_ascii_uppercase();

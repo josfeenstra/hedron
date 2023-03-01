@@ -3,11 +3,9 @@
 /// shorthands for a bunch of simple operations
 use crate::kernel::fxx;
 use crate::kernel::Vec3;
-use crate::kernel::FRAC_PI_2;
+
 use crate::kernel::PI;
-use crate::kernel::vec2;
 use num_traits::float::Float;
-use std::ops::Range;
 
 /// TODO add this to a vector / points area when we get it
 /// convert a spherical coordinate to a cartesian one
