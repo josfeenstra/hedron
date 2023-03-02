@@ -1,5 +1,5 @@
 # Hedron
-An all-in-one 3D modelling crate, written in Rust!
+An all-in-one 3D modelling & procedural generation crate
 
 ## What it contains (or will contain)
 - A full set of **geometry** models:
