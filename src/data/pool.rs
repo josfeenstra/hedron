@@ -29,25 +29,36 @@ impl<T: Clone> Pool<T> {
         mapping
     }
 
-    /// clean up all empty spots within the vector
+    /// clean up all empty spots within the vector by copying in-place
     /// WARNING: this invalidates all externally stored pointers!
-    
     pub fn refactor(&mut self) {
         
         self.freed_ids.clear();
         let mut offset = 0;
         for i in 0..self.data.len() {
-            if let Some(item) = self.get(i) {
-                self.set(i - offset, item.clone())
-            } else {
+
+            // every hole we step over increases the offset
+            let Some(item) = self.get(i) else {
                 offset += 1;
+                continue;
+            };
+                
+            // setting without offset is useless
+            if offset == 0 {
+                continue;
             }
+            self.set(i - offset, item.clone())
         }
 
-        // remove the last X items, which should be correctly copied and replaced
+        // remove the last X items
         for _i in 0..offset {
             self.data.pop();
         }
+    }
+
+
+    pub fn is_fragmented(&self) -> bool {
+        self.freed_ids.len() > 0
     }
 }
 
@@ -106,6 +117,10 @@ impl<T> Pool<T> {
     pub fn get_mut(&mut self, ptr: Ptr) -> Option<&mut T> {
         let res = self.data.get_mut(ptr)?;
         res.as_mut()
+    }
+
+    pub fn swap(&mut self, a: Ptr, b: Ptr) {
+        self.data.swap(a, b);
     }
 
     pub fn iter<'a>(&'a self) -> impl Iterator<Item=&T> + 'a {

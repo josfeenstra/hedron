@@ -2,7 +2,7 @@ use rand::seq::SliceRandom;
 
 use super::Mesh;
 use crate::algos::{line_hits_plane, line_x_plane};
-use crate::core::Pose;
+use crate::core::{Pose, Geometry};
 use crate::kernel::{fxx, vec3, Vec3};
 use crate::util::{iter_triplets};
 
@@ -12,11 +12,21 @@ use crate::{
     planar::Polygon,
     pts::Vectors,
 };
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
+use std::error::Error;
+use std::fmt;
 
 pub type VertPtr = Ptr;
 pub type EdgePtr = Ptr;
 pub type FacePtr = Ptr;
+
+#[derive(Debug)]
+pub enum PtrKind {
+    Vert,
+    Edge,
+    Face
+}
+
 
 /// A vertex of the graph
 #[derive(Default, Debug, Clone)]
@@ -67,6 +77,26 @@ pub struct Polyhedron {
     pub verts: Pool<Vert>,
     pub edges: Pool<HalfEdge>,
     pub faces: Pool<Face>, 
+}
+
+#[derive(Debug)]
+pub struct PtrError {
+    pub kind: PtrKind,
+    pub expected: usize,
+}
+
+impl PtrError {
+    pub fn new(kind: PtrKind, expected: usize) -> Self {
+        Self { kind, expected }
+    }
+}
+
+impl Error for PtrError {}
+
+impl fmt::Display for PtrError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Polyhedron ptr error: {:?} ptr expected: {}", self.kind, self.expected)
+    }
 }
 
 impl Polyhedron {
@@ -451,11 +481,155 @@ impl Polyhedron {
 
     /////////////////////////////////////////////////////////////// Complex Transactions & Traversals
 
-    pub fn refactor(&mut self) {
-        // refactor the internal data pools, and update all internal pointers
-        // Pool::refactor(pool)
-        todo!();
+    /// return true if the internal data structures are 'clean'
+    pub fn data_is_fragmented(&self) -> bool {
+        return self.verts.is_fragmented() || self.edges.is_fragmented() || self.faces.is_fragmented();
     }
+
+    
+    #[must_use]
+    pub fn refactor(mut self) -> Result<Self, PtrError> {
+
+        // see if this action is unnecessary
+        if !self.data_is_fragmented() {
+            return Ok(self);
+        }
+
+        let re_verts = self.verts.get_refactor_mapping();
+        let re_edges = self.edges.get_refactor_mapping();
+        let re_faces = self.faces.get_refactor_mapping();
+        
+        self.verts.refactor();
+        self.edges.refactor();
+        self.faces.refactor();
+
+        // written in a way so that newly introduced pointers will generate errors here, as a reminder to add them 
+        // to the refactor logic
+        for vert in self.verts.iter_mut() {
+            *vert = Vert {
+                pos: vert.pos,
+                edge: match vert.edge {
+                    Some(e) => {
+                        let ptr = re_edges.get(&e).ok_or(PtrError::new(PtrKind::Edge, e))?;    
+                        Some(*ptr)
+                    },
+                    None => None,
+                } 
+            };
+        }
+        
+        for edge in self.edges.iter_mut() {
+            *edge = HalfEdge {
+                from: *re_verts.get(&edge.from).ok_or(PtrError::new(PtrKind::Vert, edge.from))?,
+                next: *re_edges.get(&edge.next).ok_or(PtrError::new(PtrKind::Edge, edge.next))?,
+                twin: *re_edges.get(&edge.twin).ok_or(PtrError::new(PtrKind::Edge, edge.twin))?,
+                face: match edge.face {
+                    Some(f) => {
+                        let ptr = re_faces.get(&f).ok_or(PtrError::new(PtrKind::Face, f))?;    
+                        Some(*ptr)
+                    },
+                    None => None,
+                }, 
+            };
+        }
+        
+        for face in self.faces.iter_mut() {
+            *face = Face {
+                edge: *re_edges.get(&face.edge).ok_or(PtrError::new(PtrKind::Edge, face.edge))?,
+                center: face.center,
+                normal: face.normal,
+            };
+        }
+        
+        Ok(self)
+    }
+
+
+    // flip the full polyhedron inside out
+    // achieve this by swapping all twins, and all pointers leading to twins
+    // this reverses disk direction, loop direction, and everything. 
+    #[must_use]
+    pub fn flip(mut self) -> Result<Self, PtrError> {
+        
+        // get twin swap map
+        let twin_remap = self.edges.iter_enum().map(|(i, e)| {
+            (i, e.twin)
+        }).collect::<HashMap<_, _>>();
+        
+        // swap twins
+        for (a, b) in twin_remap.iter() {
+            self.edges.swap(*a, *b);
+        }
+
+        // swap data
+        for vert in self.verts.iter_mut() {
+            vert.edge = match vert.edge {
+                Some(e) => {
+                    let ptr = twin_remap.get(&e).ok_or(PtrError::new(PtrKind::Edge, e))?;    
+                    Some(*ptr)
+                },
+                None => None,
+            } 
+        }
+        
+        for edge in self.edges.iter_mut() {
+            edge.next = *twin_remap.get(&edge.next).ok_or(PtrError::new(PtrKind::Edge, edge.next))?;
+            edge.twin = *twin_remap.get(&edge.twin).ok_or(PtrError::new(PtrKind::Edge, edge.twin))?;
+        }
+        
+        for face in self.faces.iter_mut() {
+            face.edge = *twin_remap.get(&face.edge).ok_or(PtrError::new(PtrKind::Edge, face.edge))?;
+            face.normal = face.normal * -1.0;
+        }
+
+        Ok(self)
+    }
+
+    /// add two graphs.
+    /// performs refactor if the data is fragmented.
+    pub fn add(mut self, mut other: Self) -> Result<Self, PtrError> {
+        
+        // refactor both sides
+        if self.data_is_fragmented() {
+            self = self.refactor()?;
+        }
+
+        if other.data_is_fragmented() {
+            other = other.refactor()?;
+        }
+
+        let vert_offset = self.verts.len();
+        let edge_offset = self.edges.len();
+        let face_offset = self.faces.len();
+
+        // add data from `other` to `self`, applying offsets
+        for vert in other.verts.iter_mut() {
+            self.verts.push(Vert {
+                pos: vert.pos,
+                edge: vert.edge.map(|e| e + edge_offset),
+            });
+        }
+        
+        for edge in other.edges.iter_mut() {
+            self.edges.push(HalfEdge {
+                from: edge.from + vert_offset,
+                next: edge.next + edge_offset,
+                twin: edge.twin + edge_offset,
+                face: edge.face.map(|f| f + face_offset)
+            });
+        }
+        
+        for face in other.faces.iter_mut() {
+            self.faces.push(Face {
+                edge: face.edge + face_offset,
+                center: face.center,
+                normal: face.normal,
+            });
+        }
+
+        Ok(self)
+    } 
+
 
     /// get the geometry of a face of the dual grid, which corresponds to a vertex of this grid
     /// like always, VertPtr must be valid 
@@ -875,9 +1049,14 @@ impl Polyhedron {
     pub fn triangulate_faces(&self) {
         todo!()
     }
+}
+
+/// true modelling methods
+impl Polyhedron {
 
     /// cut edges using a plane, splting the edges at the intersection point 
     /// returns a list of vertices added at the intersection point
+    /// This does not cut faces
     pub fn cut_edges_with_plane(&mut self, plane: &Pose) -> Vec<VertPtr> {
 
         let plane_pos = plane.pos;
@@ -909,12 +1088,42 @@ impl Polyhedron {
 
     /// returns the ring of edges representing the cut
     pub fn cut_with_plane(&mut self, _plane: &Pose) -> Vec<EdgePtr> {
+        
+        debug_assert!(!self.data_is_fragmented());
+
+        
         // cut edges 
         // for each face adjacent to cut edges: 
 
         Vec::new()
     }
 
+
+    pub fn extrude(mut self, vector: Vec3) -> Result<Self, PtrError> {
+
+        // 1. refactor self
+        self = self.refactor()?;
+        let vert_offset = self.verts.len();
+        let other = self.clone().flip()?;
+        let other = other.mv(vector);
+
+        // 2. add flipped duplicate. 
+        let mut joined = self.add(other)?;
+
+        // 3. add loop edges & faces? 
+        for i in joined.edges.iter_enum().map(|(i, _)| i).collect::<Vec<_>>() {
+            
+            // NOTE: this is not needed. We know what the vertex order should look like 
+            let cross = Vec3::ZERO;
+            joined.add_edge(i, i + vert_offset, cross, cross);
+        }
+
+        // - Keep in mind vert offset
+        // 3. flip normals of duplicate faces
+        // 4. add edges of corresponding faces
+
+        Ok(joined)
+    }
 }
 
 impl PointBased for Polyhedron {

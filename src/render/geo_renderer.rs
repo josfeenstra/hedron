@@ -61,6 +61,7 @@ impl<M:Material + Default> GeoRenderer<M> {
         mut c: Commands,
         mut gr: ResMut<GeoRenderer<M>>,
         mut meshes: ResMut<Assets<Mesh>>,
+        mut _materials: ResMut<Assets<StandardMaterial>>,
         mut l_materials: ResMut<Assets<LineMaterial>>,
         mut f_materials: ResMut<Assets<FaceMaterial>>,
     ) {
@@ -134,6 +135,13 @@ impl<M:Material + Default> GeoRenderer<M> {
                             MaterialMeshBundle {
                                 mesh: meshes.add(mesh),
                                 material: f_materials.add(FaceMaterial { color }),
+                                // material: materials.add(StandardMaterial {
+                                //     base_color: color,
+                                //     unlit: true,
+                                //     alpha_mode: AlphaMode::Opaque,
+                                //     depth_bias: -1.0,
+                                //     ..default()
+                                // }),
                                 ..default()
                             },
                             Name::new(id.clone()),
