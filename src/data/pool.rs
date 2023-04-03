@@ -173,7 +173,8 @@ mod tests {
         let henk_ptr = pool.push("henk");
         let blob_ptr = pool.push("blob");
         let kaas_ptr = pool.push("kaas");
-        
+        pool.push("piet");
+          
         for item in pool.iter() {
             println!("{:?}", item);
         }

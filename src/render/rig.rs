@@ -3,7 +3,7 @@
 use bevy::{
     input::mouse::{MouseMotion, MouseWheel}, prelude::{Component, Input, EventReader, MouseButton, KeyCode, Res, Query, Transform, Camera, With, default}, time::Time, window::CursorMoved,
 };
-use bevy_inspector_egui::Inspectable;
+use bevy_inspector_egui::InspectorOptions;
 use crate::{math::spherical_to_cartesian, smoothing::Dropoff, kernel::{fxx, PI, FRAC_PI_2, Vec3, Vec2}};
 
 const SPEED: fxx = 10.0;
@@ -15,7 +15,7 @@ const LERP_TOLERANCE: fxx = 0.001;
 const MOUSE_ROTATE_POWER: fxx = 0.0015;
 const MOUSE_SCROLL_POWER: fxx = 0.04;
 
-#[derive(Component, Inspectable, Debug)]
+#[derive(Component, InspectorOptions, Debug)]
 pub struct Rig {
     pub pos: Vec3,
     pub dis: Dropoff<fxx>,
@@ -24,8 +24,8 @@ pub struct Rig {
     pub has_updated: bool,
     pub controls_active: bool,
 
-    mouse_x: fxx,
-    mouse_y: fxx,
+    pub mouse_x: fxx,
+    pub mouse_y: fxx,
 }
 
 impl Default for Rig {

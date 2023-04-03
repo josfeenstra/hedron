@@ -1,4 +1,4 @@
-use glam::IVec3;
+use bevy_math::IVec3;
 
 /**
 A discrete, protected 3D data structure

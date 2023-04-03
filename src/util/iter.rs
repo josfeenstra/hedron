@@ -1,4 +1,4 @@
-use glam::{UVec2, UVec3};
+use bevy_math::{UVec2, UVec3};
 
 #[inline]
 pub fn iter_xy_u<'a>(count: UVec2) -> impl Iterator<Item = UVec2> + 'a {

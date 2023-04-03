@@ -1,10 +1,10 @@
-use bevy_inspector_egui::Inspectable;
+use bevy_inspector_egui::{InspectorOptions};
 
 use super::{Smoothable, State};
 use crate::kernel::fxx;
 
 // this is a smooth dropoff
-#[derive(Inspectable, Debug)]
+#[derive(InspectorOptions, Debug)]
 pub struct Dropoff<T> {
     // from: T,
     t: T,

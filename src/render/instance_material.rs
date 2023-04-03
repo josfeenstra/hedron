@@ -11,56 +11,32 @@ use bevy::{
         mesh::{GpuBufferInfo, MeshVertexBufferLayout},
         render_asset::RenderAssets,
         render_phase::{
-            AddRenderCommand, DrawFunctions, EntityRenderCommand, RenderCommandResult, RenderPhase,
-            SetItemPipeline, TrackedRenderPass,
+            AddRenderCommand, DrawFunctions, RenderCommandResult, RenderPhase,
+            SetItemPipeline, TrackedRenderPass, RenderCommand, PhaseItem,
         },
         render_resource::*,
         renderer::RenderDevice,
         view::ExtractedView,
-        RenderApp, RenderStage,
+        RenderApp, RenderSet,
     },
 };
 use bytemuck::{Pod, Zeroable};
 use crate::kernel::fxx;
 
-/// Example usage:
-/// ```
-/// fn main() {
-///     App::new()
-///         .add_plugins(DefaultPlugins)
-///         .add_plugin(InstanceMaterialPlugin)
-///         .add_startup_system(setup)
-///         .run();
-/// }
-/// fn setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
-///     commands.spawn((
-///         meshes.add(Mesh::from(shape::Cube { size: 0.5 })),
-///         SpatialBundle::VISIBLE_IDENTITY,
-///         InstanceMaterialData(
-///             (1..=10)
-///                 .flat_map(|x| (1..=10).map(move |y| (x as fxx / 10.0, y as fxx / 10.0)))
-///                 .map(|(x, y)| InstanceData {
-///                     position: Vec3::new(x * 10.0 - 5.0, y * 10.0 - 5.0, 0.0),
-///                     scale: 1.0,
-///                     color: Color::hsla(x * 360., y, 0.5, 1.0).as_rgba_fxx(),
-///                 })
-///                 .collect(),
-///         ),
-///         NoFrustumCulling,
-///     ));
-///     commands.spawn(Camera3dBundle {
-///         transform: Transform::from_xyz(0.0, 0.0, 15.0).looking_at(Vec3::ZERO, Vec3::Y),
-///         ..default()
-///     });
-/// }
-/// ```
-/// NOTE: Frustum culling is done based on the Aabb of the Mesh and the GlobalTransform.
-/// As the cube is at the origin, if its Aabb moves outside the view frustum, all the
-/// instanced cubes will be culled.
-/// The InstanceMaterialData contains the 'GlobalTransform' information for this custom
-/// instancing, and that is not taken into account with the built-in frustum culling.
-/// We must disable the built-in frustum culling by adding the `NoFrustumCulling` marker
-/// component to avoid incorrect culling.
+
+#[derive(Component, Deref)]
+pub struct InstanceMaterialData(pub Vec<InstanceData>);
+
+impl ExtractComponent for InstanceMaterialData {
+    type Query = &'static InstanceMaterialData;
+    type Filter = ();
+    type Out = Self;
+
+    fn extract_component(item: QueryItem<'_, Self::Query>) -> Option<Self> {
+        Some(InstanceMaterialData(item.0.clone()))
+    }
+}
+
 pub struct InstanceMaterialPlugin;
 
 impl Plugin for InstanceMaterialPlugin {
@@ -68,10 +44,10 @@ impl Plugin for InstanceMaterialPlugin {
         app.add_plugin(ExtractComponentPlugin::<InstanceMaterialData>::default());
         app.sub_app_mut(RenderApp)
             .add_render_command::<Transparent3d, DrawCustom>()
-            .init_resource::<CustomPipeline>()
-            .init_resource::<SpecializedMeshPipelines<CustomPipeline>>()
-            .add_system_to_stage(RenderStage::Queue, queue_custom)
-            .add_system_to_stage(RenderStage::Prepare, prepare_instance_buffers);
+            .init_resource::<InstanceMaterialPipeline>()
+            .init_resource::<SpecializedMeshPipelines<InstanceMaterialPipeline>>()
+            .add_system(queue_custom.in_set(RenderSet::Queue))
+            .add_system(prepare_instance_buffers.in_set(RenderSet::Prepare));
     }
 }
 
@@ -83,35 +59,20 @@ pub struct InstanceData {
     pub color: [fxx; 4],
 }
 
-#[derive(Component, Deref)]
-pub struct InstanceMaterialData(pub Vec<InstanceData>);
-
-impl ExtractComponent for InstanceMaterialData {
-    type Query = &'static InstanceMaterialData;
-    type Filter = ();
-
-    fn extract_component(item: QueryItem<'_, Self::Query>) -> Self {
-        InstanceMaterialData(item.0.clone())
-    }
-}
-
 #[allow(clippy::too_many_arguments)]
 fn queue_custom(
     transparent_3d_draw_functions: Res<DrawFunctions<Transparent3d>>,
-    custom_pipeline: Res<CustomPipeline>,
+    custom_pipeline: Res<InstanceMaterialPipeline>,
     msaa: Res<Msaa>,
-    mut pipelines: ResMut<SpecializedMeshPipelines<CustomPipeline>>,
-    mut pipeline_cache: ResMut<PipelineCache>,
+    mut pipelines: ResMut<SpecializedMeshPipelines<InstanceMaterialPipeline>>,
+    pipeline_cache: Res<PipelineCache>,
     meshes: Res<RenderAssets<Mesh>>,
     material_meshes: Query<(Entity, &MeshUniform, &Handle<Mesh>), With<InstanceMaterialData>>,
     mut views: Query<(&ExtractedView, &mut RenderPhase<Transparent3d>)>,
 ) {
-    let draw_custom = transparent_3d_draw_functions
-        .read()
-        .get_id::<DrawCustom>()
-        .unwrap();
+    let draw_custom = transparent_3d_draw_functions.read().id::<DrawCustom>();
 
-    let msaa_key = MeshPipelineKey::from_msaa_samples(msaa.samples);
+    let msaa_key = MeshPipelineKey::from_msaa_samples(msaa.samples());
 
     for (view, mut transparent_phase) in &mut views {
         let view_key = msaa_key | MeshPipelineKey::from_hdr(view.hdr);
@@ -121,7 +82,7 @@ fn queue_custom(
                 let key =
                     view_key | MeshPipelineKey::from_primitive_topology(mesh.primitive_topology);
                 let pipeline = pipelines
-                    .specialize(&mut pipeline_cache, &custom_pipeline, key, &mesh.layout)
+                    .specialize(&pipeline_cache, &custom_pipeline, key, &mesh.layout)
                     .unwrap();
                 transparent_phase.add(Transparent3d {
                     entity,
@@ -135,7 +96,7 @@ fn queue_custom(
 }
 
 #[derive(Component)]
-struct InstanceBuffer {
+pub struct InstanceBuffer {
     buffer: Buffer,
     length: usize,
 }
@@ -159,26 +120,26 @@ fn prepare_instance_buffers(
 }
 
 #[derive(Resource)]
-struct CustomPipeline {
+pub struct InstanceMaterialPipeline {
     shader: Handle<Shader>,
     mesh_pipeline: MeshPipeline,
 }
 
-impl FromWorld for CustomPipeline {
+impl FromWorld for InstanceMaterialPipeline {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
-        let shader = asset_server.load("shaders/instance_material.wgsl");
+        let shader = asset_server.load("shaders/instancing.wgsl");
 
         let mesh_pipeline = world.resource::<MeshPipeline>();
 
-        CustomPipeline {
+        InstanceMaterialPipeline {
             shader,
             mesh_pipeline: mesh_pipeline.clone(),
         }
     }
 }
 
-impl SpecializedMeshPipeline for CustomPipeline {
+impl SpecializedMeshPipeline for InstanceMaterialPipeline {
     type Key = MeshPipelineKey;
 
     fn specialize(
@@ -205,11 +166,6 @@ impl SpecializedMeshPipeline for CustomPipeline {
             ],
         });
         descriptor.fragment.as_mut().unwrap().shader = self.shader.clone();
-        descriptor.layout = Some(vec![
-            self.mesh_pipeline.view_layout.clone(),
-            self.mesh_pipeline.mesh_layout.clone(),
-        ]);
-
         Ok(descriptor)
     }
 }
@@ -221,24 +177,21 @@ type DrawCustom = (
     DrawMeshInstanced,
 );
 
-struct DrawMeshInstanced;
+pub struct DrawMeshInstanced;
 
-impl EntityRenderCommand for DrawMeshInstanced {
-    type Param = (
-        SRes<RenderAssets<Mesh>>,
-        SQuery<Read<Handle<Mesh>>>,
-        SQuery<Read<InstanceBuffer>>,
-    );
+impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
+    type Param = SRes<RenderAssets<Mesh>>;
+    type ViewWorldQuery = ();
+    type ItemWorldQuery = (Read<Handle<Mesh>>, Read<InstanceBuffer>);
+
     #[inline]
     fn render<'w>(
-        _view: Entity,
-        item: Entity,
-        (meshes, mesh_query, instance_buffer_query): SystemParamItem<'w, '_, Self::Param>,
+        _item: &P,
+        _view: (),
+        (mesh_handle, instance_buffer): (&'w Handle<Mesh>, &'w InstanceBuffer),
+        meshes: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        let mesh_handle = mesh_query.get(item).unwrap();
-        let instance_buffer = instance_buffer_query.get_inner(item).unwrap();
-
         let gpu_mesh = match meshes.into_inner().get(mesh_handle) {
             Some(gpu_mesh) => gpu_mesh,
             None => return RenderCommandResult::Failure,

@@ -1,8 +1,8 @@
 use super::{Smoothable, State};
-use bevy_inspector_egui::Inspectable;
+use bevy_inspector_egui::InspectorOptions;
 use crate::kernel::fxx;
 
-#[derive(Inspectable, Debug)]
+#[derive(InspectorOptions, Debug)]
 pub struct Smooth<T> {
     // from: T,
     b: T,

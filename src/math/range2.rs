@@ -1,4 +1,4 @@
-use glam::UVec2;
+use bevy_math::UVec2;
 use rand::distributions::Uniform;
 use rand::Rng;
 use crate::kernel::{fxx, Vec2, vec2, uvec2_to_vec2};

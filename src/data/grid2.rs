@@ -1,5 +1,5 @@
 use crate::{kernel::fxx, util};
-use glam::IVec2;
+use bevy_math::IVec2;
 
 /**
 A grid data structure

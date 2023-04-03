@@ -1,4 +1,4 @@
-use glam::IVec2;
+use bevy_math::IVec2;
 
 use crate::kernel::{fxx, Vec2, TAU, ivec2_to_vec2};
 

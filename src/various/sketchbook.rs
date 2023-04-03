@@ -1,4 +1,4 @@
-use glam::IVec3;
+use bevy_math::IVec3;
 use crate::{kernel::{Vec3, ivec3_to_vec3, vec3}, solid::{Octoid}, math::Range3};
 
 // integer points

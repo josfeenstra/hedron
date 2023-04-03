@@ -1,4 +1,4 @@
-use glam::{UVec3};
+use bevy_math::{UVec3};
 use rand::Rng;
 use rand::distributions::Uniform;
 

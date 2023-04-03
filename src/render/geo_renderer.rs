@@ -1,5 +1,4 @@
 use std::{collections::HashMap};
-
 use super::{
     extract_vertices, FaceMaterial, InstanceData, InstanceMaterialData,
     LineMaterial,
@@ -79,12 +78,18 @@ impl<M:Material + Default> GeoRenderer<M> {
                     // lets use instanced rendering
                     // This is slightly inefficient, because we now needlessly translate back from a mesh
                     let points = extract_vertices(&mut mesh).expect("points lists should verts");
+                    // let mesh: Mesh = ico.into();
+                    
+                    let Result::Ok(mesh) = Mesh::try_from(shape::Icosphere {
+                        radius: 0.1,
+                        subdivisions: 1,
+                    }) else {
+                       continue; 
+                    }; 
+
                     c.spawn((
-                        meshes.add(Mesh::from(shape::Icosphere {
-                            radius: 0.1,
-                            subdivisions: 1,
-                        })),
-                        SpatialBundle::VISIBLE_IDENTITY,
+                        meshes.add(mesh),
+                        SpatialBundle::INHERITED_IDENTITY,
                         InstanceMaterialData(
                             points
                                 .iter()
@@ -97,8 +102,7 @@ impl<M:Material + Default> GeoRenderer<M> {
                         ),
                         NoFrustumCulling,
                         Name::new(id.clone()),
-                    ))
-                    .id()
+                    )).id()
                 }
                 bevy::render::render_resource::PrimitiveTopology::LineList => c
                     .spawn((

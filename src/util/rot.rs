@@ -1,5 +1,5 @@
 use crate::kernel::{fxx, PI};
-use glam::IVec3;
+use bevy_math::IVec3;
 
 // just a basic representation of orthogonal rotations
 #[derive(Clone, Copy, PartialEq, Default)]
