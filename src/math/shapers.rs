@@ -8,8 +8,8 @@ use crate::kernel::{fxx, FRAC_PI_2};
 
 use super::lerp;
 
-#[cfg_attr(feature = "bevy", derive(bevy_inspector_egui::InspectorOptions))]
 #[derive(Clone, Debug, PartialEq, Default)]
+#[cfg_attr(feature = "bevy", derive(bevy::prelude::Reflect, bevy_inspector_egui::InspectorOptions))]
 pub enum Shaper {
     #[default]
     Linear,
