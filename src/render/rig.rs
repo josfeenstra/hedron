@@ -13,7 +13,7 @@ const LERP_TOLERANCE: fxx = 0.001;
 // const ROT_DELTA_DROPOFF:  fxx = 0.89;
 
 const MOUSE_ROTATE_POWER: fxx = 0.0015;
-const MOUSE_SCROLL_POWER: fxx = 0.04;
+const MOUSE_SCROLL_POWER: fxx = 0.01;
 
 #[derive(Component, InspectorOptions, Debug)]
 pub struct Rig {
