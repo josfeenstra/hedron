@@ -23,7 +23,6 @@ categories = [
 
 [dependencies]
 bevy_math = "0.10.1"
-# glam = {version = "0.23.0", features = ["rand"] }
 bytemuck = "1.12.3"
 serde = "1.0.143"
 rand = "0.8.5"
