@@ -31,7 +31,7 @@ impl<M:Material + Default> GeoRenderer<M> {
         // check if it hasnt been set twice
         if self.to_add.iter().any(|(existing_key, _, _, _, _)| existing_key == key) {
             // TODO this only goes wrong if the 'update_system' is too late.
-            // println!("WARN: we are re-adding things");
+            println!("WARN: we are re-adding things");
             return;
         }
 

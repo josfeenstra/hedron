@@ -128,7 +128,7 @@ pub struct InstanceMaterialPipeline {
 impl FromWorld for InstanceMaterialPipeline {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.resource::<AssetServer>();
-        let shader = asset_server.load("shaders/instancing.wgsl");
+        let shader = asset_server.load("shaders/instance_material.wgsl");
 
         let mesh_pipeline = world.resource::<MeshPipeline>();
 
