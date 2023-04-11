@@ -49,6 +49,17 @@ pub fn fact(n: usize) -> usize {
     product
 }
 
+/// also negatively wraps around: 
+/// -2 turns into max-2
+/// The range is assumed to be `[0..max)`
+pub fn wrap_around(i: i32, max: usize) -> usize {
+    if i < 0 {
+        max - (((i.abs() - 1) as usize) % max) - 1
+    } else {
+        (i as usize) % max
+    }
+}
+
 /// Factorial but addition, don't know what it is called
 /// ex: 3 = 1 + 2 + 3 = 6
 #[inline]
