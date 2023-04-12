@@ -4,7 +4,7 @@ use super::{
     LineMaterial,
 };
 use crate::kernel::fxx;
-use bevy::{prelude::*, render::view::NoFrustumCulling};
+use bevy::{prelude::*, render::view::NoFrustumCulling, ecs::schedule::FreeSystemSet};
 
 #[derive(Resource, Default)]
 pub struct GeoRenderer<M:Material + Default> {
@@ -31,7 +31,7 @@ impl<M:Material + Default> GeoRenderer<M> {
         // check if it hasnt been set twice
         if self.to_add.iter().any(|(existing_key, _, _, _, _)| existing_key == key) {
             // TODO this only goes wrong if the 'update_system' is too late.
-            println!("WARN: we are re-adding things");
+            warn!("we are re-adding things");
             return;
         }
 
@@ -196,13 +196,23 @@ impl<M:Material + Default> GeoRenderer<M> {
 }
 
 #[derive(Default)]
-pub struct GeoRendererPlugin<M> {
-    pub dummy: M // this is weird, dont look at it
+pub struct GeoRendererPlugin<M, T> {
+    pub dummy: M, // this is weird, don't look at it
+    pub phase: T,
 }
 
-impl<M: Material + Default> Plugin for GeoRendererPlugin<M> {
+impl<M: Material + Default, T: FreeSystemSet + Clone> GeoRendererPlugin<M, T> {
+    pub fn new(phase: T) -> Self {
+        Self {
+            dummy: M::default(),
+            phase,
+        }
+    }    
+}
+
+impl<M: Material + Default, T: FreeSystemSet + Clone> Plugin for GeoRendererPlugin<M, T> {
     fn build(&self, app: &mut App) {
         app.insert_resource(GeoRenderer::<M>::default());
-        app.add_system(GeoRenderer::<M>::update_system);
+        app.add_system(GeoRenderer::<M>::update_system.in_set(self.phase.clone()));
     }
 }
