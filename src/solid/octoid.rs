@@ -1,4 +1,4 @@
-use crate::{kernel::{Vec3, fxx}, planar::Polygon, math::{lerp, Range3, Shaper}};
+use crate::{kernel::{Vec3, fxx}, planar::Polygon, math::{lerp, Range3, Shaper}, core::PointBased};
 
 use super::Mesh;
 
@@ -22,6 +22,16 @@ use super::Mesh;
 #[derive(Debug)]
 pub struct Octoid {
     pub verts: [Vec3; 8]
+}
+
+impl PointBased for Octoid {
+    fn mutate_points<'a>(&'a mut self) -> Vec<&'a mut Vec3> {
+        let mut vec = vec![];
+        for vert in &mut self.verts {
+            vec.push(vert)
+        }
+        vec
+    }
 }
 
 impl Octoid {

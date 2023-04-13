@@ -1,5 +1,6 @@
 use bevy::{
     prelude::*,
+    render::mesh::Mesh as BevyMesh,
     render::{mesh::Indices, render_resource::PrimitiveTopology},
 };
 
@@ -8,13 +9,13 @@ use crate::{
     lines::{Bezier, LineList, LineStrip},
     planar::Polygon,
     pts::Vectors,
-    solid::{Mesh as HMesh, Polyhedron},
+    solid::{Mesh as HedronMesh, Polyhedron},
 };
 
 // make sure we can easily translate hedron types to bevy types
 
-impl From<HMesh> for Mesh {
-    fn from(hmesh: HMesh) -> Self {
+impl From<HedronMesh> for Mesh {
+    fn from(hmesh: HedronMesh) -> Self {
         let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
         let verts = Vectors::new(hmesh.verts).to_vec_of_arrays();
         let normals = Vectors::new(hmesh.normals).to_vec_of_arrays();
@@ -36,6 +37,10 @@ impl From<HMesh> for Mesh {
         mesh
     }
 }
+
+// TODO translate all of these into hedron mesh, and translate that to a bevy mesh.
+// These shouldnt exist here
+// On second thought, the PrimitiveTopology property makes this translation fine i guess
 
 impl From<Vectors> for Mesh {
     fn from(points: Vectors) -> Self {
@@ -117,13 +122,13 @@ impl From<LineStrip> for Mesh {
 
 impl From<Polygon> for Mesh {
     fn from(p: Polygon) -> Self {
-        HMesh::from(p).into()
+        HedronMesh::from(p).into()
     }
 }
 
 impl From<Polyhedron> for Mesh {
     fn from(p: Polyhedron) -> Self {
-        HMesh::from_join(
+        HedronMesh::from_join(
             p.all_cww_loops_as_polygons()
                 .into_iter()
                 .map(|pg| pg.offset(Vec3::Z, 0.02).triangulate_naive())

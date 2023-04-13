@@ -708,7 +708,7 @@ impl Mesh {
 
 
 impl Mesh {
-    pub fn tri_lerp_to_oct(mut self, oct: Octoid) -> Self {
+    pub fn tri_lerp_to_oct(mut self, oct: &Octoid) -> Self {
         for vert in &mut self.verts {
             *vert = oct.tri_lerp(*vert)
         }   
