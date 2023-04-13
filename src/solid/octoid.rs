@@ -19,6 +19,7 @@ use super::Mesh;
 ///  |/                  |/
 /// (a) --------------- (b)
 /// ```
+#[derive(Debug)]
 pub struct Octoid {
     pub verts: [Vec3; 8]
 }
@@ -82,6 +83,11 @@ impl Octoid {
         self.tri_lerp(final_t)
     }
  
+    pub fn tri_lerp_normal(&self, t: Vec3) -> Vec3 {
+        // TODO figure this out
+        self.tri_lerp(t)
+    }
+
     // /// TODO: add callback (a: Vec3, b: Vec3, f: fxx, ia: usize, ib: usize) -> fxx
     // pub fn tri_lerp_smooth(&self, point: Vec3) -> Vec3 {
     //     // self. (point)
