@@ -53,18 +53,21 @@ pub trait Geometry: Sized {
 
     fn scale_u(self, scale: fxx) -> Self;
 
+    /// rotate around x axis
     #[inline]
     #[must_use]
     fn rot_x(self, angle: fxx) -> Self {
         self.rot(&Quat::from_rotation_x(angle))
     }
 
+    /// rotate around y axis
     #[inline]
     #[must_use]
     fn rot_y(self, angle: fxx) -> Self {
         self.rot(&Quat::from_rotation_y(angle))
     }
 
+    /// rotate around z axis
     #[inline]
     #[must_use]
     fn rot_z(self, angle: fxx) -> Self {
@@ -73,7 +76,7 @@ pub trait Geometry: Sized {
 
     #[inline]
     #[must_use]
-    // apply a transformation
+    /// apply a transformation
     fn tf(self, tf: &Pose) -> Self {
         // scale(tf.scale)
         self.rot(&tf.rot).mv(tf.pos)
