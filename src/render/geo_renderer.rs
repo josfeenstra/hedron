@@ -71,6 +71,7 @@ impl<M:Material + Default> GeoRenderer<M> {
 
         // ADD
         while let Some((id, mut mesh, color, width, use_custom_material)) = gr.to_add.pop() {
+
             // spawn something different based on the type of mesh
             let entity = match mesh.primitive_topology() {
                 bevy::render::render_resource::PrimitiveTopology::PointList => {

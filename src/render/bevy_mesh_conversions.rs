@@ -1,6 +1,6 @@
 use bevy::{
     prelude::*,
-    render::mesh::Mesh as BevyMesh,
+    render::mesh::{Mesh as BevyMesh, VertexAttributeValues},
     render::{mesh::Indices, render_resource::PrimitiveTopology},
 };
 
@@ -135,5 +135,23 @@ impl From<Polyhedron> for Mesh {
                 .collect(),
         )
         .into()
+    }
+}
+
+pub fn borrow_verts<'a>(mesh: &'a Mesh) -> Option<&'a Vec<[f32; 3]>>  {
+    let verts = mesh.attribute(Mesh::ATTRIBUTE_POSITION)?;
+    if let VertexAttributeValues::Float32x3(vector) = verts {
+        Some(vector)   
+    } else {
+        None
+    }
+}
+
+pub fn borrow_normals<'a>(mesh: &'a Mesh) -> Option<&'a Vec<[f32; 3]>>  {
+    let verts = mesh.attribute(Mesh::ATTRIBUTE_POSITION)?;
+    if let VertexAttributeValues::Float32x3(vector) = verts {
+        Some(vector)   
+    } else {
+        None
     }
 }
