@@ -12,6 +12,17 @@ pub enum D4 {
     Up,
 }
 
+// sides of a cube
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum D6 {
+    Left,
+    Down,
+    Right,
+    Up,
+    Lower,
+    Raise,
+}
+
 /**
  * General purpose direction
  */

@@ -55,8 +55,8 @@ pub fn fact(n: usize) -> usize {
     product
 }
 
-/// also negatively wraps around: 
 /// -2 turns into max-2
+/// also negatively wraps around: 
 /// The range is assumed to be `[0..max)`
 pub fn wrap_around(i: i32, max: usize) -> usize {
     if i < 0 {

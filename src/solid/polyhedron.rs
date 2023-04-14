@@ -4,6 +4,7 @@ use super::Mesh;
 use crate::algos::{line_hits_plane, line_x_plane};
 use crate::core::{Pose, Geometry};
 use crate::kernel::{fxx, vec3, Vec3};
+use crate::math::wrap_around;
 use crate::util::{iter_triplets};
 
 use crate::{
@@ -1181,6 +1182,23 @@ impl Polyhedron {
         //         self.mut_vert(self.edge(*edge).from).pos += smoother;
         //     } 
         // }
+    }
+}
+
+impl Polyhedron {
+    
+    /// A method for wandering the graph, by going to the 'next' or 'previous' vertex on a disk 
+    /// ```
+    /// pos: the disk vertex
+    /// from: the position on the disk from where we orient
+    /// offset: the offset on the disk, relative to `from`. 
+    /// ```
+    pub fn next_on_disk(&self, disk: VertPtr, from: VertPtr, offset: i32) -> Option<VertPtr> {
+        let nbs = self.get_vert_neighbors(disk);
+        let count = nbs.len();
+        let index = nbs.iter().position(|nb| *nb == from)? as i32;
+        let next_index = wrap_around(index + offset, count);
+        nbs.get(next_index as usize).map(|nb| nb.clone())
     }
 }
 
