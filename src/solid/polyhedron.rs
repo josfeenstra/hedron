@@ -841,7 +841,7 @@ impl Polyhedron {
     }
 
     /// get the edges, lined as a disk around a vertex.
-    /// starts with the outgoing edge the vertex points to
+    /// starts with the outgoing edge the vertex points to.
     /// With the half-edge loops being counter clockwise, disk ordering is always clockwise
     fn get_disk(&self, vp: VertPtr) -> Vec<EdgePtr> {
         let Some(start) = self.vert(vp).edge else {

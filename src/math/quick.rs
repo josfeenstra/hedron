@@ -1,10 +1,11 @@
+use std::f32::consts::PI;
+
+use crate::kernel::Vec2;
 /// math::quick
 /// -----------
 /// shorthands for a bunch of simple operations
 use crate::kernel::fxx;
 use crate::kernel::Vec3;
-
-use crate::kernel::PI;
 use num_traits::float::Float;
 
 /// TODO add this to a vector / points area when we get it
@@ -15,6 +16,11 @@ pub fn spherical_to_cartesian(inclination: fxx, azimuthal: fxx) -> Vec3 {
     let (sin_a, cos_a) = azimuthal.sin_cos();
     Vec3::new(sin_a * sin_i, cos_a * sin_i, cos_i)
 }
+
+/// computes the angle in radians with respect to the positive x-axis
+pub fn vector_to_angle(vec: Vec2) -> fxx {
+    fxx::atan2(-vec.y, -vec.x) + PI
+} 
 
 /// roughly equals, for when dealing with floating point equality
 #[inline]
