@@ -1,6 +1,6 @@
 use bevy::{
     prelude::*,
-    render::mesh::{Mesh as BevyMesh, VertexAttributeValues},
+    render::mesh::{VertexAttributeValues},
     render::{mesh::Indices, render_resource::PrimitiveTopology},
 };
 
