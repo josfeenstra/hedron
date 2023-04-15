@@ -23,6 +23,30 @@ pub enum D6 {
     Raise,
 }
 
+impl D6 {
+
+    // TODO: check left-right correctness!!
+    pub fn is_other_the_right_of_me(&self, other: Self) -> bool {
+        match (self, other) {
+            (D6::Up, D6::Left) => true,
+            (D6::Left, D6::Down) => true,
+            (D6::Down, D6::Right) => true,
+            (D6::Right, D6::Up) => true,
+            _ => false,
+        }
+    }
+    
+    pub fn is_other_the_left_of_me(&self, other: Self) -> bool {
+        match (self, other) {
+            (D6::Up, D6::Right) => true,
+            (D6::Right, D6::Down) => true,
+            (D6::Down, D6::Left) => true,
+            (D6::Left, D6::Up) => true,
+            _ => false,
+        }
+    }
+}
+
 /**
  * General purpose direction
  */
@@ -160,4 +184,11 @@ impl Distribution<D8> for Standard {
             _ => D8::DownLeft,
         }
     }
+}
+
+pub enum D4Traverse {
+    Forward,
+    RotLeft,
+    RotRight,
+    Reverse,
 }
