@@ -1,10 +1,10 @@
 use std::f32::consts::PI;
 
-use crate::kernel::Vec2;
 /// math::quick
 /// -----------
 /// shorthands for a bunch of simple operations
 use crate::kernel::fxx;
+use crate::kernel::Vec2;
 use crate::kernel::Vec3;
 use num_traits::float::Float;
 
@@ -20,7 +20,7 @@ pub fn spherical_to_cartesian(inclination: fxx, azimuthal: fxx) -> Vec3 {
 /// computes the angle in radians with respect to the positive x-axis
 pub fn vector_to_angle(vec: Vec2) -> fxx {
     fxx::atan2(-vec.y, -vec.x) + PI
-} 
+}
 
 /// roughly equals, for when dealing with floating point equality
 #[inline]
@@ -56,7 +56,7 @@ pub fn fact(n: usize) -> usize {
 }
 
 /// -2 turns into max-2
-/// also negatively wraps around: 
+/// also negatively wraps around:
 /// The range is assumed to be `[0..max)`
 pub fn wrap_around(i: i32, max: usize) -> usize {
     if i < 0 {
@@ -75,6 +75,19 @@ pub fn stack_sum(n: usize) -> usize {
         sum += i;
     }
     sum
+}
+
+/// uses wrap_around
+/// displace all items in a list / vec by offset, and by wrapping around any out of bounds index.
+/// `[1,2,3,4,5], offset=2` -> ` [3,4,5,1,2]`  
+pub fn cycle_offset<T: Clone>(list: Vec<T>, offset: i32) -> Vec<T> {
+    let len = list.len();
+    let mut result = Vec::with_capacity(len);
+    for i in 0..len as i32 {
+        let item = list[wrap_around(i + offset, len)].clone();
+        result.push(item);
+    }
+    result
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -133,7 +146,14 @@ pub fn normalize(t: fxx, start: fxx, end: fxx) -> fxx {
 }
 
 #[inline]
-pub fn remap(t: fxx, from_start: fxx, from_end: fxx, to_start: fxx, to_end: fxx, clamped: bool) -> fxx {
+pub fn remap(
+    t: fxx,
+    from_start: fxx,
+    from_end: fxx,
+    to_start: fxx,
+    to_end: fxx,
+    clamped: bool,
+) -> fxx {
     let mut norm = normalize(t, from_start, from_end);
     if clamped {
         norm = fxx::clamp(norm, 0.0, 1.0);
@@ -148,7 +168,7 @@ pub fn iter_n_times(start: fxx, end: fxx, steps: usize) -> impl Iterator<Item = 
     thing
 }
 
-/// 
+///
 #[inline]
 pub fn iter_by_delta(start: fxx, end: fxx, delta: fxx) -> impl Iterator<Item = fxx> {
     let steps = ((end - start) / delta).floor() as usize + 1;
