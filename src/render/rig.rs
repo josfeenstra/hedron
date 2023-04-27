@@ -1,10 +1,20 @@
+use crate::{
+    kernel::{fxx, Vec2, Vec3, FRAC_PI_2, PI},
+    math::spherical_to_cartesian,
+    smoothing::Dropoff,
+};
 /// A rig to be used with the camera,
 /// Using two angles to deal with latitude (up/down) and longiture (left/right) rotations
 use bevy::{
-    input::mouse::{MouseMotion, MouseWheel}, prelude::{Component, Input, EventReader, MouseButton, KeyCode, Res, Query, Transform, Camera, With, default}, time::Time, window::CursorMoved,
+    input::mouse::{MouseMotion, MouseWheel},
+    prelude::{
+        default, Camera, Component, EventReader, Input, KeyCode, MouseButton, Query, Res,
+        Transform, With,
+    },
+    time::Time,
+    window::CursorMoved,
 };
 use bevy_inspector_egui::InspectorOptions;
-use crate::{math::spherical_to_cartesian, smoothing::Dropoff, kernel::{fxx, PI, FRAC_PI_2, Vec3, Vec2}};
 
 const SPEED: fxx = 10.0;
 const EPSILON: fxx = 0.0001;
@@ -22,7 +32,8 @@ pub struct Rig {
     pub rot_x: Dropoff<fxx>, // incl, azi
     pub rot_y: Dropoff<fxx>, // incl, azi
     pub has_updated: bool,
-    pub controls_active: bool,
+    pub active_look_controls: bool, // allow 'looking around' from the position of the rig (rotation and zooming)
+    pub active_move_controls: bool, // allow movement of the rig
 
     pub mouse_x: fxx,
     pub mouse_y: fxx,
@@ -36,7 +47,8 @@ impl Default for Rig {
             rot_x: Dropoff::new(PI * 0.85, 0.0, 0.0, LERP_TOLERANCE),
             rot_y: Dropoff::new(PI * 0.40, EPSILON, PI - EPSILON, LERP_TOLERANCE),
             has_updated: false,
-            controls_active: true,
+            active_look_controls: true,
+            active_move_controls: false,
 
             mouse_x: 0.0,
             mouse_y: 0.0,
@@ -73,49 +85,56 @@ impl Rig {
     fn update_key_controls(&mut self, key_input: &Input<KeyCode>, dt: fxx) -> bool {
         // movement
         let mut changed = false;
-        if key_input.pressed(KeyCode::A) {
-            self.pos += self.rel_x() * SPEED * dt;
-            changed = true;
+        if self.active_move_controls {
+            if key_input.pressed(KeyCode::A) {
+                self.pos += self.rel_x() * SPEED * dt;
+                changed = true;
+            }
+            if key_input.pressed(KeyCode::D) {
+                self.pos -= self.rel_x() * SPEED * dt;
+                changed = true;
+            }
+            if key_input.pressed(KeyCode::S) {
+                self.pos += self.rel_y() * SPEED * dt;
+                changed = true;
+            }
+            if key_input.pressed(KeyCode::W) {
+                self.pos -= self.rel_y() * SPEED * dt;
+                changed = true;
+            }
+            if key_input.pressed(KeyCode::Q) {
+                self.pos.z -= SPEED * dt;
+                changed = true;
+            }
+            if key_input.pressed(KeyCode::E) {
+                self.pos.z += SPEED * dt;
+                changed = true;
+            }
         }
-        if key_input.pressed(KeyCode::D) {
-            self.pos -= self.rel_x() * SPEED * dt;
-            changed = true;
-        }
-        if key_input.pressed(KeyCode::S) {
-            self.pos += self.rel_y() * SPEED * dt;
-            changed = true;
-        }
-        if key_input.pressed(KeyCode::W) {
-            self.pos -= self.rel_y() * SPEED * dt;
-            changed = true;
-        }
-        if key_input.pressed(KeyCode::Q) {
-            self.pos.z -= SPEED * dt;
-            changed = true;
-        }
-        if key_input.pressed(KeyCode::E) {
-            self.pos.z += SPEED * dt;
-            changed = true;
+
+        let rot_speed = 1.;
+
+        if self.active_look_controls {
+            if key_input.pressed(KeyCode::Down) {
+                self.rot_y.set_delta(-rot_speed * dt);
+                changed = true;
+            }
+            if key_input.pressed(KeyCode::Up) {
+                self.rot_y.set_delta(rot_speed * dt);
+                changed = true;
+            }
+            if key_input.pressed(KeyCode::Left) {
+                self.rot_x.set_delta(-rot_speed * dt);
+                changed = true;
+            }
+            if key_input.pressed(KeyCode::Right) {
+                self.rot_x.set_delta(rot_speed * dt);
+                changed = true;
+            }
         }
 
         // rotation
-        let rot_speed = 1.;
-        if key_input.pressed(KeyCode::Down) {
-            self.rot_y.set_delta(-rot_speed * dt);
-            changed = true;
-        }
-        if key_input.pressed(KeyCode::Up) {
-            self.rot_y.set_delta(rot_speed * dt);
-            changed = true;
-        }
-        if key_input.pressed(KeyCode::Left) {
-            self.rot_x.set_delta(-rot_speed * dt);
-            changed = true;
-        }
-        if key_input.pressed(KeyCode::Right) {
-            self.rot_x.set_delta(rot_speed * dt);
-            changed = true;
-        }
+
         changed
     }
 
@@ -127,19 +146,20 @@ impl Rig {
         mouse_motion_events: &mut EventReader<MouseMotion>,
         mouse_wheel_events: &mut EventReader<MouseWheel>,
     ) -> bool {
-
         // modifiers
         let control = key_input.any_pressed([KeyCode::LControl, KeyCode::RControl]);
-        
-        if control && mouse_input.pressed(MouseButton::Right) || mouse_input.pressed(MouseButton::Middle) {
+
+        if self.active_look_controls && control && mouse_input.pressed(MouseButton::Right)
+            || mouse_input.pressed(MouseButton::Middle)
+        {
             // rotate
             let mut delta = Vec2::ZERO;
             for event in mouse_motion_events.iter() {
                 delta += event.delta;
             }
             self.set_rot_delta(delta.x * MOUSE_ROTATE_POWER, -delta.y * MOUSE_ROTATE_POWER);
-        } else if control && mouse_input.pressed(MouseButton::Left) {
-             // pan
+        } else if self.active_move_controls && control && mouse_input.pressed(MouseButton::Left) {
+            // pan
             let mut delta = Vec2::ZERO;
             for event in mouse_motion_events.iter() {
                 delta += event.delta;
@@ -152,10 +172,12 @@ impl Rig {
         }
 
         // zooming
-        for event in mouse_wheel_events.iter() {
-            let y_normalized = if event.y > EPSILON { 1.0 } else { -1.0 };
-            self.dis
-                .set_delta(self.dis.get() * y_normalized * -MOUSE_SCROLL_POWER);
+        if self.active_look_controls {
+            for event in mouse_wheel_events.iter() {
+                let y_normalized = if event.y > EPSILON { 1.0 } else { -1.0 };
+                self.dis
+                    .set_delta(self.dis.get() * y_normalized * -MOUSE_SCROLL_POWER);
+            }
         }
 
         false
@@ -198,16 +220,15 @@ impl Rig {
             // }
 
             // detect changes based on input
-            if rig.controls_active {
-                let _change_keys = rig.update_key_controls(&key_input, dt);
-                let _change_mouse = rig.update_mouse_controls(
-                    &key_input,
-                    dt,
-                    &mouse_input,
-                    &mut mouse_motion_events,
-                    &mut mouse_wheel_events,
-                );
-            }
+
+            let _change_keys = rig.update_key_controls(&key_input, dt);
+            let _change_mouse = rig.update_mouse_controls(
+                &key_input,
+                dt,
+                &mouse_input,
+                &mut mouse_motion_events,
+                &mut mouse_wheel_events,
+            );
 
             // if changes have occurred, recalculate the transform of the camera
             let mut vec = spherical_to_cartesian(*rig.rot_y.get(), *rig.rot_x.get());
