@@ -20,7 +20,7 @@ pub mod kernel {
     pub const FRAC_PI_2: f32 = std::f32::consts::FRAC_PI_2;
     pub const EPSILON: f32 = std::f32::EPSILON;
 
-    pub const SQRT_OF_3: f32 = 1.7320508075688772;
+    pub const SQRT_OF_3: f32 = 1.732_050_8;
 
     pub const INFINITY: f32 = std::f32::INFINITY;
     pub const NEG_INFINITY: f32 = std::f32::NEG_INFINITY;

@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use std::{collections::{HashMap, hash_map::Entry}};
 use super::{
     extract_vertices, FaceMaterial, InstanceData, InstanceMaterialData,
     LineMaterial,
@@ -163,11 +163,11 @@ impl<M:Material + Default> GeoRenderer<M> {
                     ))
                     .id(),
             };
-            if gr.rendered.contains_key(&id) {
-                println!("key already exists! update scheduling mistake occurred");
-            } else {
-                gr.rendered.insert(id, entity);
-            }
+            if let Entry::Vacant(e) = gr.rendered.entry(id) {
+                 e.insert(entity);
+             } else {
+                 println!("key already exists! update scheduling mistake occurred");
+             }
         }
 
         // TODO: This makes updates more efficient

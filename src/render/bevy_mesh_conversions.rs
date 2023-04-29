@@ -1,6 +1,6 @@
 use bevy::{
     prelude::*,
-    render::mesh::{VertexAttributeValues},
+    render::mesh::VertexAttributeValues,
     render::{mesh::Indices, render_resource::PrimitiveTopology},
 };
 
@@ -28,11 +28,11 @@ impl From<HedronMesh> for Mesh {
 
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, verts);
         if !normals.is_empty() {
-            mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);  
-        } 
+            mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
+        }
         if !uvs.is_empty() {
-            mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);  
-        } 
+            mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
+        }
         mesh.set_indices(Some(Indices::U32(ids)));
         mesh
     }
@@ -138,19 +138,19 @@ impl From<Polyhedron> for Mesh {
     }
 }
 
-pub fn borrow_verts<'a>(mesh: &'a Mesh) -> Option<&'a Vec<[f32; 3]>>  {
+pub fn borrow_verts(mesh: &Mesh) -> Option<&Vec<[f32; 3]>> {
     let verts = mesh.attribute(Mesh::ATTRIBUTE_POSITION)?;
     if let VertexAttributeValues::Float32x3(vector) = verts {
-        Some(vector)   
+        Some(vector)
     } else {
         None
     }
 }
 
-pub fn borrow_normals<'a>(mesh: &'a Mesh) -> Option<&'a Vec<[f32; 3]>>  {
+pub fn borrow_normals(mesh: &Mesh) -> Option<&Vec<[f32; 3]>> {
     let verts = mesh.attribute(Mesh::ATTRIBUTE_POSITION)?;
     if let VertexAttributeValues::Float32x3(vector) = verts {
-        Some(vector)   
+        Some(vector)
     } else {
         None
     }

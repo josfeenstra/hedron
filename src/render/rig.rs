@@ -206,7 +206,7 @@ impl Rig {
         time: Res<Time>,
         mut query: Query<(&mut Transform, &mut Rig), With<Camera>>,
     ) {
-        let dt = time.delta_seconds().into();
+        let dt = time.delta_seconds();
 
         for (mut tf, mut rig) in &mut query {
             // first, update x and y
@@ -228,7 +228,7 @@ impl Rig {
             // if changes have occurred, recalculate the transform of the camera
             let mut vec = spherical_to_cartesian(*rig.rot_y.get(), *rig.rot_x.get());
             vec = rig.pos + (vec * *rig.dis.get());
-            tf.translation = vec.into();
+            tf.translation = vec;
             tf.look_at(rig.pos, Vec3::Z);
             rig.update_smooths(dt);
         }

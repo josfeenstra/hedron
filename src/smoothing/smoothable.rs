@@ -1,6 +1,6 @@
 // a lerp abstraction
-use bevy_inspector_egui::InspectorOptions;
 use crate::kernel::fxx;
+use bevy_inspector_egui::InspectorOptions;
 
 #[derive(InspectorOptions, Debug, Copy, Clone, PartialEq)]
 pub enum State {
@@ -16,7 +16,7 @@ pub trait Smoothable {
     fn mul(self, rhs: fxx) -> Self;
     fn add_clamped(self, rhs: Self, min: Self, max: Self) -> Self;
     fn get(self) -> fxx;
-    fn is_negative(self) -> bool;
+    fn is_negative(&self) -> bool;
 }
 
 impl Smoothable for fxx {
@@ -45,19 +45,11 @@ impl Smoothable for fxx {
     }
 
     fn tol_equals(&self, other: &Self, tolerance: fxx) -> bool {
-        if (self - other).abs() < tolerance {
-            true
-        } else {
-            false
-        }
+        (self - other).abs() < tolerance
     }
 
-    fn is_negative(self) -> bool {
-        if self < 0.0 {
-            true
-        } else {
-            false
-        }
+    fn is_negative(&self) -> bool {
+        *self < 0.0
     }
 }
 

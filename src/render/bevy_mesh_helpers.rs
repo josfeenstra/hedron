@@ -1,6 +1,6 @@
 use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 
-use crate::{pts::Vectors};
+use crate::pts::Vectors;
 
 // this removes and returns vertices from a mesh
 pub fn extract_vertices(mesh: &mut Mesh) -> Option<Vec<Vec3>> {
@@ -20,9 +20,7 @@ pub fn set_vertices(mesh: &mut Mesh, pts: Vectors) {
 pub fn flip_normals(mesh: &mut Mesh) -> Option<()> {
     fn swap_ids<T: Copy>(vec: &mut Vec<T>) {
         for i in (1..vec.len()).step_by(3) {
-            let temp = vec[i - 1];
-            vec[i - 1] = vec[i];
-            vec[i] = temp;
+            vec.swap(i - 1, i);
         }
     }
 
