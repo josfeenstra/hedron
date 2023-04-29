@@ -53,8 +53,8 @@ pub fn decastejau(verts: Vec<Vec3>, t: fxx) -> Grid2<Vec3> {
     let mut tri = Grid2::new(count, count);
 
     // copy paste the first row
-    for x in 0..count {
-        tri.set(x, 0, verts[x]);
+    for (i, vert) in verts.iter().enumerate() {
+        tri.set(i, 0, *vert);
     }
 
     // // iterate over this triangle, starting at the base + 1
@@ -74,7 +74,7 @@ pub fn decastejau(verts: Vec<Vec3>, t: fxx) -> Grid2<Vec3> {
 pub fn decastejau_extrapolate_end(verts: Vec<Vec3>, _t: fxx) -> Grid2<Vec3> {
     let count = verts.len();
 
-    let tri = Grid2::new(count, count);
+    // let tri = Grid2::new(count, count);
 
     // copy paste the first row
     // for x in 0..count {
@@ -91,7 +91,8 @@ pub fn decastejau_extrapolate_end(verts: Vec<Vec3>, _t: fxx) -> Grid2<Vec3> {
     //     }
     // }
     // result
-    tri
+
+    Grid2::new(count, count)
 }
 
 ///////////////////////////////////////////////////////////////////////////////

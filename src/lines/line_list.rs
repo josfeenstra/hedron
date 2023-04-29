@@ -16,7 +16,7 @@ impl LineList {
     }
 
     pub fn new_join(mut line_lists: Vec<LineList>) -> Self {
-        if line_lists.len() == 0 {
+        if line_lists.is_empty() {
             return Self::new_empty();
         }
 
@@ -38,9 +38,9 @@ impl LineList {
         const POS: fxx = 1.0;
         const NEG: fxx = -1.0;
         let mut corners = Vec::with_capacity(CORNERS_CUBE);
-        for x in vec![NEG, POS] {
-            for y in vec![NEG, POS] {
-                for z in vec![NEG, POS] {
+        for x in [NEG, POS] {
+            for y in [NEG, POS] {
+                for z in [NEG, POS] {
                     corners.push(center + size * Vec3::new(x, y, z));
                 }
             }
@@ -48,10 +48,10 @@ impl LineList {
 
         let mut verts: Vec<Vec3> = Vec::with_capacity(EDGES_CUBE * 2);
         for i in 0..CORNERS_CUBE {
-            for j in vec![1, 2, 4] {
+            for j in [1, 2, 4] {
                 if i + j < CORNERS_CUBE {
-                    verts.push(corners[i].clone());
-                    verts.push(corners[i + j].clone());
+                    verts.push(corners[i]);
+                    verts.push(corners[i + j]);
                 }
             }
         }

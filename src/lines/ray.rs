@@ -31,6 +31,6 @@ impl Ray {
     pub fn x_plane(&self, plane: &Plane) -> fxx {
         // let t = plane.
         let pn = plane.normal().truncate();
-        return -(self.origin.dot(pn) + plane.d()) / self.normal.dot(pn);
+        -(self.origin.dot(pn) + plane.d()) / self.normal.dot(pn)
     }
 }

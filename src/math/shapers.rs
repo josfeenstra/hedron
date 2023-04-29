@@ -9,7 +9,10 @@ use crate::kernel::{fxx, FRAC_PI_2};
 use super::lerp;
 
 #[derive(Clone, Debug, PartialEq, Default)]
-#[cfg_attr(feature = "bevy", derive(bevy::prelude::Reflect, bevy_inspector_egui::InspectorOptions))]
+#[cfg_attr(
+    feature = "bevy",
+    derive(bevy::prelude::Reflect, bevy_inspector_egui::InspectorOptions)
+)]
 pub enum Shaper {
     #[default]
     Linear,
@@ -63,7 +66,7 @@ pub fn quad_in(t: fxx) -> fxx {
 #[inline]
 pub fn quad_out(t: fxx) -> fxx {
     // (1.0 - t) * (1.0 - t)
-    1.0 - (t * t) 
+    1.0 - (t * t)
 }
 
 #[inline]
@@ -76,20 +79,21 @@ pub fn parabola(t: fxx, k: i32) -> fxx {
 //     let [p0, p1, p2] = [0.0, w_start, 1.0 - w_end, 1.0];
 // }
 
-/// bezier-interpolate 
-/// with w_start, w_end, and t in [0..1], create a 2D unit bezier curve as (0,0), (start, 0), (1 - end,1), (1,1). 
+/// bezier-interpolate
+/// with w_start, w_end, and t in [0..1], create a 2D unit bezier curve as (0,0), (start, 0), (1 - end,1), (1,1).
 /// interpolate this bezier using t, then return the x of this bezier
-/// TODO: currenty, this is the opposite of what we want: speed at the edges, smooth in the middle... 
+/// TODO: currenty, this is the opposite of what we want: speed at the edges, smooth in the middle...
+#[rustfmt::skip]
 pub fn cubic_bezier(t: fxx, w_start: fxx, w_end: fxx) -> fxx {
     let [p0, p1, p2, p3] = [0.0, w_start, w_end, 1.0];
-    
+
     // TODO: rewrite: so that we get a regular curve in the shape of y = ... polynomial
     let l = 1.0 - t;
-    let param = p0 * l.powi(3) + 
-                p1 * 3.0 * l.powi(2) * t + 
-                p2 * 3.0 * l * t.powi(2) + 
-                p3 * t.powi(3);
-    param
+
+    p0 * l.powi(3)
+        + p1 * 3.0 * l.powi(2) * t
+        + p2 * 3.0 * l * t.powi(2)
+        + p3 * t.powi(3)
 }
 
 // shape using a cubic bezier.
@@ -99,7 +103,7 @@ pub fn cubic_bezier(t: fxx, w_start: fxx, w_end: fxx) -> fxx {
 // (-1.0) => x completely bend to the start, y linear
 pub fn bezier_morph(t: fxx, morpher: fxx) -> fxx {
     let delta = fxx::min(1.0 - morpher, morpher) * 0.3;
-    cubic_bezier(t, morpher- delta, morpher + delta)
+    cubic_bezier(t, morpher - delta, morpher + delta)
 }
 
 #[inline]
@@ -133,7 +137,6 @@ mod test {
     use crate::kernel::fxx;
 
     use super::cubic_bezier;
-
 
     #[test]
     fn test_bezier_int() {

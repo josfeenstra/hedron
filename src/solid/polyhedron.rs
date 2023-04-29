@@ -130,7 +130,7 @@ impl Polyhedron {
 
         for line in string.lines().map(|l| l.trim()) {
             let parts: Vec<_> = line.split_whitespace().collect();
-            if parts.len() == 0 {
+            if parts.is_empty() {
                 continue;
             }
             match parts[0] {
@@ -216,11 +216,11 @@ impl Polyhedron {
             // go through [0, 4, 8]
 
             let inext = (i + 4) % 12;
-            add_edge(&mut graph, &vecs, i + 0, i + 1);
-            add_edge(&mut graph, &vecs, i + 0, inext + 2);
-            add_edge(&mut graph, &vecs, i + 0, inext + 0);
+            add_edge(&mut graph, &vecs, i, i + 1);
+            add_edge(&mut graph, &vecs, i, inext + 2);
+            add_edge(&mut graph, &vecs, i, inext);
             add_edge(&mut graph, &vecs, i + 1, inext + 2);
-            add_edge(&mut graph, &vecs, i + 1, inext + 0);
+            add_edge(&mut graph, &vecs, i + 1, inext);
 
             add_edge(&mut graph, &vecs, i + 2, i + 3);
             add_edge(&mut graph, &vecs, i + 2, inext + 3);
@@ -259,7 +259,7 @@ impl Polyhedron {
             let face_normal = (b.pos - a.pos).cross(c.pos - a.pos).normalize();
 
             // add half edges in accordance with this normal
-            for [from, to] in vec![[ia, ib], [ib, ic], [ic, ia]] {
+            for [from, to] in [[ia, ib], [ib, ic], [ic, ia]] {
                 // println!("adding edge between: {from} and {to}");
                 hedron.add_edge(from, to, face_normal, face_normal);
             }
@@ -314,7 +314,7 @@ impl Polyhedron {
             for edge in my_loop {
                 print!(" {} ,", edge)
             }
-            print!("\n")
+            println!()
         }
     }
 
@@ -434,10 +434,10 @@ impl Polyhedron {
         let vert_b = self.edge(ep).from;
 
         // FIRST take care of faces
-        if self.edge(ep).face != None {
+        if self.edge(ep).face.is_some() {
             todo!();
         }
-        if self.edge(twin).face != None {
+        if self.edge(twin).face.is_some() {
             todo!();
         }
 
@@ -487,12 +487,9 @@ impl Polyhedron {
 
     /// return true if the internal data structures are 'clean'
     pub fn data_is_fragmented(&self) -> bool {
-        return self.verts.is_fragmented()
-            || self.edges.is_fragmented()
-            || self.faces.is_fragmented();
+        self.verts.is_fragmented() || self.edges.is_fragmented() || self.faces.is_fragmented()
     }
 
-    #[must_use]
     pub fn refactor(mut self) -> Result<Self, PtrError> {
         // see if this action is unnecessary
         if !self.data_is_fragmented() {
@@ -559,7 +556,6 @@ impl Polyhedron {
     // flip the full polyhedron inside out
     // achieve this by swapping all twins, and all pointers leading to twins
     // this reverses disk direction, loop direction, and everything.
-    #[must_use]
     pub fn flip(mut self) -> Result<Self, PtrError> {
         // get twin swap map
         let twin_remap = self
@@ -597,7 +593,7 @@ impl Polyhedron {
             face.edge = *twin_remap
                 .get(&face.edge)
                 .ok_or(PtrError::new(PtrKind::Edge, face.edge))?;
-            face.normal = face.normal * -1.0;
+            face.normal *= -1.0;
         }
 
         Ok(self)
@@ -605,7 +601,7 @@ impl Polyhedron {
 
     /// add two graphs.
     /// performs refactor if the data is fragmented.
-    pub fn add(mut self, mut other: Self) -> Result<Self, PtrError> {
+    pub fn try_add(mut self, mut other: Self) -> Result<Self, PtrError> {
         // refactor both sides
         if self.data_is_fragmented() {
             self = self.refactor()?;
@@ -830,12 +826,7 @@ impl Polyhedron {
     ) -> Option<(EdgePtr, EdgePtr)> {
         let vert = self.vert(vp);
         let disk_edges: Vec<EdgePtr> = self.get_disk(vp);
-        let inc_disk_edges: Vec<EdgePtr> = disk_edges
-            .iter()
-            .skip(1)
-            .step_by(2)
-            .map(|u| u.clone())
-            .collect();
+        let inc_disk_edges: Vec<EdgePtr> = disk_edges.iter().skip(1).step_by(2).copied().collect();
         let neighbors = inc_disk_edges
             .iter()
             .map(|ep| self.vert(self.edge(*ep).from).pos)
@@ -896,7 +887,7 @@ impl Polyhedron {
             // we are the first edge to be added to this vertex
             v.edge = Some(ep);
             self.mut_edge(ep_inwards).next = ep;
-        } else if let Some(_) = v.edge {
+        } else if v.edge.is_some() {
             let (_, to) = self.edge_verts(ep);
             let Some((ep_nb_inwards, ep_nb_outwards)) = self.get_disk_neighbors_edges(vp, to, normal) else {
                 return;
@@ -1130,7 +1121,7 @@ impl Polyhedron {
         let other = other.mv(vector);
 
         // 2. add flipped duplicate.
-        let mut joined = self.add(other)?;
+        let mut joined = self.try_add(other)?;
 
         // 3. add loop edges & faces?
         for i in joined.edges.iter_enum().map(|(i, _)| i).collect::<Vec<_>>() {
@@ -1227,7 +1218,7 @@ impl Polyhedron {
         let count = nbs.len();
         let index = nbs.iter().position(|nb| *nb == from)? as i32;
         let next_index = wrap_around(index + offset, count);
-        nbs.get(next_index as usize).map(|nb| *nb)
+        nbs.get(next_index).copied()
     }
 }
 

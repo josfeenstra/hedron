@@ -39,7 +39,7 @@ impl<T: Clone + Copy + Default> Grid2<T> {
 
     // ASSUMES a uniformly stacked Vec!!!
     pub fn from_stacked_columns(stacked: Vec<Vec<T>>) -> Grid2<T> {
-        assert!(stacked.len() > 0);
+        assert!(!stacked.is_empty());
         Self {
             width: stacked.len(),
             height: stacked[0].len(),
@@ -48,11 +48,12 @@ impl<T: Clone + Copy + Default> Grid2<T> {
     }
 
     pub fn from_stacked_rows(stacked: &Vec<Vec<T>>) -> Grid2<T> {
-        assert!(stacked.len() > 0);
+        assert!(!stacked.is_empty());
         let width = stacked[0].len();
         let height = stacked.len();
         let mut grid = Grid2::new(width, height);
 
+        #[allow(clippy::needless_range_loop)]
         for x in 0..width {
             for y in 0..height {
                 grid.set(x, y, stacked[y][x]);
@@ -63,11 +64,12 @@ impl<T: Clone + Copy + Default> Grid2<T> {
     }
 
     pub fn from_stacked_rows_flipped(stacked: &Vec<Vec<T>>) -> Grid2<T> {
-        assert!(stacked.len() > 0);
+        assert!(!stacked.is_empty());
         let width = stacked.len();
         let height = stacked[0].len();
         let mut grid = Grid2::new(width, height);
 
+        #[allow(clippy::needless_range_loop)]
         for x in 0..width {
             for y in 0..height {
                 grid.set(x, y, stacked[x][y]);
@@ -128,7 +130,7 @@ impl<T: Clone + Copy + Default> Grid2<T> {
         if x >= self.width || y >= self.height {
             None
         } else {
-            Some((y as usize * self.width) + x as usize)
+            Some((y * self.width) + x)
         }
     }
 
@@ -140,21 +142,21 @@ impl<T: Clone + Copy + Default> Grid2<T> {
 
     pub fn get_column(&self, x: usize) -> Vec<T> {
         let mut v = vec![T::default(); self.height];
-        for y in 0..self.height {
-            v[y] = self.get(x, y).unwrap();
+        for (y, item) in v.iter_mut().enumerate() {
+            *item = self.get(x, y).unwrap();
         }
         v
     }
 
     pub fn get_row(&self, y: usize) -> Vec<T> {
         let mut v = vec![T::default(); self.width];
-        for x in 0..self.width {
-            v[x] = self.get(x, y).unwrap();
+        for (x, item) in v.iter_mut().enumerate() {
+            *item = self.get(x, y).unwrap();
         }
         v
     }
 
-    pub fn iter_wh<'a>(&'a self) -> impl Iterator<Item = (usize, usize)> + 'a {
+    pub fn iter_wh(&self) -> impl Iterator<Item = (usize, usize)> {
         util::iter_xy((self.width, self.height))
     }
 

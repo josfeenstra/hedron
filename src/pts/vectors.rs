@@ -2,7 +2,7 @@
 
 use crate::{
     core::PointBased,
-    kernel::{fxx, Vec3, TAU, Quat, Vec2},
+    kernel::{fxx, Quat, Vec2, Vec3, TAU},
 };
 
 // abstraction around a list of vectors.
@@ -22,6 +22,10 @@ impl Vectors {
 
     pub fn len(&self) -> usize {
         self.data.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
     }
 
     pub fn from_vec_of_arrays(vec: Vec<[fxx; 3]>) -> Vec<Vec3> {
@@ -102,7 +106,7 @@ impl Vectors {
     pub fn rotate_axis_angle(axis: Vec3, angle: fxx, vector: Vec3) -> Vec3 {
         Quat::from_axis_angle(axis, angle).mul_vec3(vector)
     }
-    
+
     /// rotate a point using an axis and an angle
     pub fn rotate_pt_axis_angle(center: Vec3, axis: Vec3, angle: fxx, pt: Vec3) -> Vec3 {
         let norm = -center + pt;
@@ -114,7 +118,7 @@ impl Vectors {
 }
 
 impl PointBased for Vectors {
-    fn mutate_points<'a>(&'a mut self) -> Vec<&'a mut Vec3> {
+    fn mutate_points(&mut self) -> Vec<&mut Vec3> {
         self.data.iter_mut().collect()
     }
 }
@@ -139,7 +143,9 @@ impl From<Vec<Vec3>> for Vectors {
 
 impl From<Vec<Vec2>> for Vectors {
     fn from(data: Vec<Vec2>) -> Self {
-        Vectors { data: data.iter().map(|v| v.extend(0.0)).collect::<Vec<_>>() }
+        Vectors {
+            data: data.iter().map(|v| v.extend(0.0)).collect::<Vec<_>>(),
+        }
     }
 }
 

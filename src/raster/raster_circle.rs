@@ -1,6 +1,6 @@
 use bevy_math::IVec2;
 
-use crate::kernel::{fxx, Vec2, TAU, ivec2_to_vec2};
+use crate::kernel::{fxx, ivec2_to_vec2, Vec2, TAU};
 
 /// represents a circle on the grid
 pub struct ICircle {
@@ -79,7 +79,7 @@ impl ICircle {
     /// - we do stupid things with the angles, not foolproof
     pub fn to_grid_arc(&self, from: fxx, to: fxx) -> Vec<IVec2> {
         let circle = self.to_grid_edge();
-        let arc = circle
+        circle
             .into_iter()
             .filter(|p| {
                 let angle = ivec2_to_vec2(*p - self.center).angle_between(Vec2::X);
@@ -87,7 +87,6 @@ impl ICircle {
                     || from < angle + TAU && angle + TAU <= to
                     || from < angle - TAU && angle - TAU <= to
             })
-            .collect();
-        arc
+            .collect()
     }
 }

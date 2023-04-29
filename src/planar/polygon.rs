@@ -1,8 +1,9 @@
 use crate::algos::signed_volume;
 use crate::core::{Plane, Pose};
-use crate::kernel::{fxx, Vec3, FRAC_PI_2, TAU, EPSILON, Vec2};
+use crate::kernel::{fxx, Vec2, Vec3, EPSILON, FRAC_PI_2, TAU};
 
 use crate::lines::Ray;
+use crate::util::iter_pairs;
 use crate::{
     core::PointBased,
     lines::{Line, LineStrip},
@@ -10,7 +11,6 @@ use crate::{
     solid::Mesh,
     util::{self, iter_pair_ids},
 };
-use crate::util::iter_pairs;
 
 #[derive(Debug, Clone)]
 pub struct Polygon {
@@ -101,12 +101,11 @@ impl Polygon {
             // let l_two = Line::new(vert + two, vert + two + two.cross(normal));
 
             // TODO INTERSECT IN THE NORMAL PLANE BY PLANARIZING THE 3D LINES THEN DOING THIS PROPERLY
-            let intersection =
-                if (one.to - one.from).angle_between(two.to - two.from) < EPSILON {
-                    one.from
-                } else {
-                    one.intersect_2d(&two)
-                };
+            let intersection = if (one.to - one.from).angle_between(two.to - two.from) < EPSILON {
+                one.from
+            } else {
+                one.intersect_2d(two)
+            };
 
             self.verts[i_vert].x = intersection.x;
             self.verts[i_vert].y = intersection.y;
@@ -122,7 +121,10 @@ impl Polygon {
     }
 
     pub fn estimate_pose(&self) -> Pose {
-        assert!(!(self.verts.len() < 3), "we need at least 3 vertices to estimate a normal");
+        assert!(
+            self.verts.len() >= 3,
+            "we need at least 3 vertices to estimate a normal"
+        );
         let center = self.center();
         let normal = self.average_normal();
         let first = self.verts.first().unwrap();
@@ -133,7 +135,10 @@ impl Polygon {
     /// calculate the normalized vertices using the estimated pose
     pub fn planarized_verts(&self) -> Vec<Vec2> {
         let pose = self.estimate_pose();
-        self.verts.iter().map(|vert| pose.transform_point_inv(*vert).truncate()).collect()
+        self.verts
+            .iter()
+            .map(|vert| pose.transform_point_inv(*vert).truncate())
+            .collect()
     }
 
     pub fn signed_area_planar(&self) -> fxx {
@@ -151,7 +156,11 @@ impl Polygon {
         if self.intersect_ray(ray) {
             return None;
         }
-        let t = ray.x_plane(&Plane::from_pts(self.verts[0], self.verts[1], self.verts[2]));
+        let t = ray.x_plane(&Plane::from_pts(
+            self.verts[0],
+            self.verts[1],
+            self.verts[2],
+        ));
         Some(t)
     }
 
@@ -168,10 +177,13 @@ impl Polygon {
         true
     }
 
-    /// there are better ways of doing this, 
+    /// there are better ways of doing this,
     /// TODO: principle component analysis ? overkill ?
     pub fn average_normal(&self) -> Vec3 {
-        assert!(!(self.verts.len() < 3), "we need at least three vertices to calculate a valid cross product");
+        assert!(
+            self.verts.len() >= 3,
+            "we need at least three vertices to calculate a valid cross product"
+        );
         let center = self.center();
         let mut normals = Vec::new();
         for (a, b) in iter_pairs(&self.verts) {
@@ -179,11 +191,11 @@ impl Polygon {
         }
 
         Vectors::average(&normals).normalize()
-    } 
+    }
 }
 
 impl PointBased for Polygon {
-    fn mutate_points<'a>(&'a mut self) -> Vec<&'a mut Vec3> {
+    fn mutate_points(&mut self) -> Vec<&mut Vec3> {
         self.verts.iter_mut().collect()
     }
 }

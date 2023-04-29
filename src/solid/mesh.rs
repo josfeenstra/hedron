@@ -4,15 +4,15 @@ use std::io::Write;
 use std::iter::Rev;
 use std::ops::Range;
 
-use crate::kernel::{fxx, vec2, vec3, Vec2, Vec3, kernel};
+use crate::kernel::{fxx, kernel, vec2, vec3, Vec2, Vec3};
 
 use crate::lines::LineList;
-use crate::srf::{BiSurface, TriSurface, Rectangle3};
+use crate::srf::{BiSurface, Rectangle3, TriSurface};
 use crate::{core::PointBased, data::Grid2};
 
-use super::{CUBE_FACES, quad_to_tri, Polyhedron, Octoid};
+use super::{quad_to_tri, Octoid, Polyhedron, CUBE_FACES};
 
-/// A dead simple, internal data structure to store meshes. 
+/// A dead simple, internal data structure to store meshes.
 /// Can get confusing in conjunction with bevy's mesh
 #[derive(Default, Debug, Clone)]
 pub struct Mesh {
@@ -23,9 +23,13 @@ pub struct Mesh {
 }
 
 impl Mesh {
-
     pub fn new(verts: Vec<Vec3>, tri: Vec<usize>, uvs: Vec<Vec2>, normals: Vec<Vec3>) -> Self {
-        Self { verts, tri, uvs, normals}
+        Self {
+            verts,
+            tri,
+            uvs,
+            normals,
+        }
     }
 
     pub fn from_bi_surface(_srf: BiSurface, _u_segments: usize, _v_segments: usize) -> Mesh {
@@ -82,9 +86,8 @@ impl Mesh {
     /// will only convert triangular faces
     /// cap / triangulate before running this
     pub fn from_polyhedron(graph: Polyhedron) -> Mesh {
-        
         let mut mesh = Mesh::default();
-        
+
         let remapper = graph.verts.get_refactor_mapping();
         for v in graph.verts.iter() {
             mesh.verts.push(v.pos);
@@ -94,30 +97,35 @@ impl Mesh {
             if lp.len() != 3 {
                 continue;
             }
-            
+
             for edge in lp {
-                let id = remapper.get(&graph.edge(edge).from).expect("not a valid vert id");
+                let id = remapper
+                    .get(&graph.edge(edge).from)
+                    .expect("not a valid vert id");
                 mesh.tri.push(*id);
-            }       
+            }
         }
 
         mesh
     }
 
     pub fn new_triangle(verts: [Vec3; 3]) -> Self {
-        Self::new(verts.to_vec(), [0,1,2].to_vec(), vec!(), vec!())
+        Self::new(verts.to_vec(), [0, 1, 2].to_vec(), vec![], vec![])
     }
 
     pub fn new_quad(verts: [Vec3; 4]) -> Self {
-        Self::new(verts.to_vec(), [0,1 ,2, 0, 2, 3].to_vec(), vec!(), vec!())
+        Self::new(verts.to_vec(), [0, 1, 2, 0, 2, 3].to_vec(), vec![], vec![])
     }
 
     pub fn new_oct(verts: [Vec3; 8]) -> Self {
         let ids = CUBE_FACES
             .into_iter()
-            .map(|face| quad_to_tri(face))
-            .fold(Vec::new(), |mut tris, idset| {tris.extend(idset); tris });
-        Self::new(verts.to_vec(), ids, vec!(), vec!())
+            .map(quad_to_tri)
+            .fold(Vec::new(), |mut tris, idset| {
+                tris.extend(idset);
+                tris
+            });
+        Self::new(verts.to_vec(), ids, vec![], vec![])
     }
 
     pub fn from_octoid(oct: Octoid) -> Self {
@@ -375,12 +383,9 @@ impl Mesh {
     //     let mesh = Mesh.new(verts, links, uvs, normals);
     //     return mesh;
     // }
-
-
 }
 
-
-// more convoluted and specific constructors 
+// more convoluted and specific constructors
 impl Mesh {
     // Get a grid mesh from weaving vertices of a grid.
     // The grid can deal with holes, use None vertices to indicate holes
@@ -403,8 +408,8 @@ impl Mesh {
             let (x, y) = verts.to_xy(i);
             match res {
                 Some((pos, uv)) => {
-                    mesh.verts.push(pos.clone());
-                    mesh.uvs.push(uv.clone());
+                    mesh.verts.push(*pos);
+                    mesh.uvs.push(*uv);
                 }
                 None => {
                     mesh.verts.push(vec3(0., 0., 0.));
@@ -503,22 +508,22 @@ impl Mesh {
         mesh
     }
 
-    // create a mesh as a hexagonal 
+    // create a mesh as a hexagonal
     pub fn new_hexagrid(radius: fxx, divisions: usize) -> Self {
-        let mut mesh = Self::default();        
+        let mut mesh = Self::default();
 
         // get some ranges / iterations right
         let min_count = 2 + divisions;
         let max_count = min_count + 2 + divisions;
 
         let upper: Range<usize> = min_count..max_count;
-        let lower: Rev<Range<usize>> = (min_count..max_count-1).rev();
-        let range: Vec<usize> = upper.clone().chain(lower.clone()).collect();
-        
+        let lower: Rev<Range<usize>> = (min_count..max_count - 1).rev();
+        let range: Vec<usize> = upper.clone().chain(lower).collect();
+
         // get some counters right for spawning the right grid of points
-        let y_count = 3 + 2 * divisions; 
+        let y_count = 3 + 2 * divisions;
         let y_offset = 1 + divisions;
-        
+
         let dx = radius / (divisions as fxx + 1.0) * 2.0;
         let dy = dx * kernel::SQRT_OF_3;
 
@@ -537,22 +542,21 @@ impl Mesh {
         let last = mesh.verts.len() - 1;
         let mut i = 0;
         let upper_steps: Vec<_> = upper.collect();
-        for steps in min_count..max_count-1 {
+        for steps in min_count..max_count - 1 {
             for step in 0..steps {
-
                 let a = i;
                 let b = i + 1;
                 let c = i + steps;
                 let d = i + steps + 1;
-                
+
                 // radial mirror on the opposite side
                 let aa = last - a;
                 let bb = last - b;
                 let cc = last - c;
                 let dd = last - d;
-       
+
                 // only one triangle at te last segment of the strip
-                if step > (steps-2) {
+                if step > (steps - 2) {
                     mesh.tri.append(&mut vec![a, d, c]);
                     mesh.tri.append(&mut vec![aa, dd, cc]);
                 } else {
@@ -561,9 +565,9 @@ impl Mesh {
                     mesh.tri.append(&mut vec![a, d, c]);
                     mesh.tri.append(&mut vec![aa, dd, cc]);
                 }
-                
+
                 i += 1;
-            } 
+            }
         }
 
         mesh
@@ -571,7 +575,6 @@ impl Mesh {
 }
 
 impl Mesh {
-    
     pub fn get_triangles(&self) -> Vec<(usize, usize, usize)> {
         let mut data = Vec::new();
         assert!(self.tri.len() % 3 == 0);
@@ -593,7 +596,6 @@ impl Mesh {
     }
 
     pub fn to_lines(&self) -> LineList {
-        
         let mut lines = Vec::new();
 
         for edge in self.get_edges() {
@@ -601,7 +603,7 @@ impl Mesh {
             lines.push(self.verts[a]);
             lines.push(self.verts[b]);
         }
-        
+
         LineList::new(lines)
     }
 
@@ -614,7 +616,7 @@ impl Mesh {
 
     pub fn write_obj(&self, path: &str) -> Result<(), std::io::Error> {
         let obj = self.gen_obj_buffer("obj generated by Hedron", None, None)?;
-        let mut obj_file = std::fs::File::create(&path)?;
+        let mut obj_file = std::fs::File::create(path)?;
         obj_file.write_all(&obj)?;
         Ok(())
     }
@@ -661,9 +663,9 @@ impl Mesh {
         writeln!(&mut mtl, "d 1.000000")?;
         writeln!(&mut mtl, "illum 2")?;
         if let Some(path) = texture_path {
-            writeln!(&mut mtl, "{}", format!("map_Ka {}", texture_path.unwrap()))?;
-            writeln!(&mut mtl, "{}", format!("map_Kd {}", texture_path.unwrap()))?;
-            writeln!(&mut mtl, "{}", format!("map_Ks {}", texture_path.unwrap()))?;
+            writeln!(&mut mtl, "map_Ka {}", texture_path.unwrap())?;
+            writeln!(&mut mtl, "map_Kd {}", texture_path.unwrap())?;
+            writeln!(&mut mtl, "map_Ks {}", texture_path.unwrap())?;
         }
         Ok(mtl)
     }
@@ -705,14 +707,12 @@ impl Mesh {
     }
 }
 
-
-
 impl Mesh {
     pub fn tri_lerp_to_oct(mut self, oct: &Octoid) -> Self {
         for vert in &mut self.verts {
             *vert = oct.tri_lerp(*vert)
-        }   
-        
+        }
+
         for normal in &mut self.normals {
             *normal = oct.tri_lerp_normal(*normal)
         }
@@ -720,14 +720,11 @@ impl Mesh {
     }
 }
 
-
-
-
 ///////////////////////////////////////////////////////////////////////////////
 
 impl PointBased for Mesh {
     // TODO how to IntoIterator, so we don't have to iter / collect
-    fn mutate_points<'a>(&'a mut self) -> Vec<&'a mut Vec3> {
+    fn mutate_points(&mut self) -> Vec<&mut Vec3> {
         self.verts.iter_mut().collect() // its a bit sad we have to do this.
     }
 }
@@ -746,7 +743,6 @@ mod test {
     //         .expect("something went wrong!");
     // }
 
-    
     #[test]
     fn test_hexagrid() {
         let mesh = Mesh::new_hexagrid(2.0, 1);

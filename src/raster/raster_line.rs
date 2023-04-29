@@ -21,8 +21,8 @@ impl ILine {
         let x_count = delta.x.abs();
         let y_count = delta.y.abs();
 
-        let mut cursor = self.from.clone();
-        cover.push(cursor.clone());
+        let mut cursor = self.from;
+        cover.push(cursor);
 
         let mut xi = 0;
         let mut yi = 0;
@@ -39,7 +39,7 @@ impl ILine {
                 xi += 1;
                 cursor.x += x_step;
             }
-            cover.push(cursor.clone());
+            cover.push(cursor);
         }
         // util::print(&format!("length: {}", cover.len()));
         cover

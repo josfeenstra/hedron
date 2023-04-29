@@ -4,11 +4,11 @@ use crate::{data::Matrix, kernel::fxx};
 pub struct Stat {}
 
 impl Stat {
-    pub fn sum(x: &Vec<fxx>) -> fxx {
+    pub fn sum(x: &[fxx]) -> fxx {
         x.iter().sum()
     }
 
-    pub fn mean(x: &Vec<fxx>) -> fxx {
+    pub fn mean(x: &[fxx]) -> fxx {
         Stat::sum(x) / (x.len() as fxx)
     }
 
@@ -28,23 +28,23 @@ impl Stat {
         Ok(sum / sumweight)
     }
 
-    pub fn variance(x: &Vec<fxx>) -> fxx {
+    pub fn variance(x: &[fxx]) -> fxx {
         let n = x.len();
         let avr = Stat::mean(x);
 
         let mut sum = 0.0;
-        for i in 0..n {
-            sum += (x[i] - avr).powi(2);
+        for item in x.iter() {
+            sum += (item - avr).powi(2);
         }
 
         sum / ((n - 1) as fxx) // losing one degree of freedom
     }
 
-    pub fn deviation(arr: &Vec<fxx>) -> fxx {
-        Stat::variance(&arr).powf(0.5)
+    pub fn deviation(arr: &[fxx]) -> fxx {
+        Stat::variance(arr).powf(0.5)
     }
 
-    pub fn covariance(x: &Vec<fxx>, y: &Vec<fxx>) -> Result<fxx, &'static str> {
+    pub fn covariance(x: &[fxx], y: &[fxx]) -> Result<fxx, &'static str> {
         if x.len() != y.len() {
             return Err("values & weights need same length");
         }
@@ -73,7 +73,7 @@ impl Stat {
                 cov.set(j, i, value);
             }
         }
-        return cov;
+        cov
     }
 
     pub fn eig() {

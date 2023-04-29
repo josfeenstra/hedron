@@ -86,14 +86,13 @@ pub trait Geometry: Sized {
     #[must_use]
     // apply the inverse of a transformation
     fn tf_inv(self, tf: &Pose) -> Self {
-        self.mv(-tf.pos)
-            .rot(&tf.rot.inverse())
-            // .scale(1.0 / tf.scale)
+        self.mv(-tf.pos).rot(&tf.rot.inverse())
+        // .scale(1.0 / tf.scale)
     }
 
     #[must_use]
     fn reorient(self, from: &Pose, to: &Pose) -> Self {
-        self.tf_inv(&from).tf(&to)
+        self.tf_inv(from).tf(to)
     }
 }
 

@@ -3,8 +3,8 @@ use std::collections::HashMap;
 /// A dumb pointer
 pub type Ptr = usize;
 
-/// A data pool. 
-/// If you desire a Vec, and ID's pointing to that vec, 
+/// A data pool.
+/// If you desire a Vec, and ID's pointing to that vec,
 /// PLUS delete functionality, this is the data type to use
 #[derive(Default, Debug, Clone)]
 pub struct Pool<T> {
@@ -13,14 +13,13 @@ pub struct Pool<T> {
 }
 
 impl<T: Clone> Pool<T> {
-    
     /// Returns a list which maps the old indices to their new indices
     /// Get this before actual remapping.
     pub fn get_refactor_mapping(&self) -> HashMap<usize, usize> {
         let mut mapping = HashMap::new();
         let mut offset = 0;
         for i in 0..self.data.len() {
-            if let Some(_) = self.get(i) {
+            if self.get(i).is_some() {
                 mapping.insert(i, i - offset);
             } else {
                 offset += 1;
@@ -32,17 +31,15 @@ impl<T: Clone> Pool<T> {
     /// clean up all empty spots within the vector by copying in-place
     /// WARNING: this invalidates all externally stored pointers!
     pub fn refactor(&mut self) {
-        
         self.freed_ids.clear();
         let mut offset = 0;
         for i in 0..self.data.len() {
-
             // every hole we step over increases the offset
             let Some(item) = self.get(i) else {
                 offset += 1;
                 continue;
             };
-                
+
             // setting without offset is useless
             if offset == 0 {
                 continue;
@@ -56,14 +53,12 @@ impl<T: Clone> Pool<T> {
         }
     }
 
-
     pub fn is_fragmented(&self) -> bool {
-        self.freed_ids.len() > 0
+        !self.freed_ids.is_empty()
     }
 }
 
 impl<T> Pool<T> {
-
     pub fn new() -> Self {
         Self {
             data: Vec::new(),
@@ -94,8 +89,7 @@ impl<T> Pool<T> {
             ptr
         } else {
             self.data.push(Some(item));
-            let ptr = self.data.len() - 1;
-            ptr
+            self.data.len() - 1
         }
     }
 
@@ -123,28 +117,25 @@ impl<T> Pool<T> {
         self.data.swap(a, b);
     }
 
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item=&T> + 'a {
-        self.data.iter()
-            .filter(|i| i.is_some())
-            .map(|i| i.as_ref().unwrap())
-        
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.data.iter().filter_map(|i| i.as_ref())
     }
 
-    pub fn iter_enum<'a>(&'a self) -> impl Iterator<Item=(usize, &T)> + 'a {
-        self.data.iter()
+    pub fn iter_enum(&self) -> impl Iterator<Item = (usize, &T)> {
+        self.data
+            .iter()
             .enumerate()
             .filter(|(_, item)| item.is_some())
             .map(|(i, item)| (i, item.as_ref().unwrap()))
     }
 
-    pub fn iter_mut<'a>(&'a mut self) -> impl Iterator<Item=&mut T> + 'a {
-        self.data.iter_mut()
-            .filter(|i| i.is_some())
-            .map(|i| i.as_mut().unwrap())
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
+        self.data.iter_mut().filter_map(|i| i.as_mut())
     }
 
-    pub fn iter_enum_mut<'a>(&'a mut self) -> impl Iterator<Item=(usize, &T)> + 'a {
-        self.data.iter_mut()
+    pub fn iter_enum_mut(&mut self) -> impl Iterator<Item = (usize, &T)> {
+        self.data
+            .iter_mut()
             .enumerate()
             .filter(|(_, item)| item.is_some())
             .map(|(i, item)| (i, item.as_ref().unwrap()))
@@ -158,7 +149,6 @@ impl<T> Pool<T> {
         self.iter_enum().map(|(ptr, _)| ptr).collect()
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -174,7 +164,7 @@ mod tests {
         let blob_ptr = pool.push("blob");
         let kaas_ptr = pool.push("kaas");
         pool.push("piet");
-          
+
         for item in pool.iter() {
             println!("{:?}", item);
         }
@@ -185,32 +175,32 @@ mod tests {
         pool.delete(kaas_ptr);
 
         assert_eq!(pool.all(), vec![&"henk", &"piet"]);
-        
+
         pool.set(henk_ptr, "penk");
 
         assert_eq!(pool.all(), vec![&"penk", &"piet"]);
 
         println!("{:?}", pool);
-        
-        let _muis_ptr = pool.push("muis"); 
-        let _puis_ptr = pool.push("puis"); 
-        let _duis_ptr = pool.push("duis"); 
-        
-        assert_eq!(pool.all(), vec![&"penk", &"puis", &"muis", &"piet", &"duis"]);
-        
+
+        let _muis_ptr = pool.push("muis");
+        let _puis_ptr = pool.push("puis");
+        let _duis_ptr = pool.push("duis");
+
+        assert_eq!(
+            pool.all(),
+            vec![&"penk", &"puis", &"muis", &"piet", &"duis"]
+        );
+
         pool.delete(1);
         pool.delete(3);
-        
+
         println!("{:?}", pool);
         pool.refactor();
         println!("{:?}", pool);
-        
-        assert_eq!(pool.all(), vec![&"penk", &"muis", &"duis"]);
 
-        
+        assert_eq!(pool.all(), vec![&"penk", &"muis", &"duis"]);
     }
-    
-    
+
     #[test]
     fn test_iterations() {
         let mut pool = Pool::new();
@@ -222,7 +212,10 @@ mod tests {
         for item in pool.iter_mut() {
             item.make_ascii_uppercase();
         }
-        
-        assert_eq!(pool.iter().map(|s| s.as_str()).collect::<Vec<_>>(), vec!["HENK", "BLOB", "KAAS", "PIET"]);
+
+        assert_eq!(
+            pool.iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+            vec!["HENK", "BLOB", "KAAS", "PIET"]
+        );
     }
 }

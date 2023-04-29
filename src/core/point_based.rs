@@ -1,7 +1,7 @@
 // TODO create a trait, allowing some struct to be modified by its vertices.
 // it just needs to expose a Iter<&mut Vec3>
 
-use super::{Geometry};
+use super::Geometry;
 use crate::kernel::{fxx, Quat, Vec3};
 
 /// If some geometry is ultimately defined in terms of points,
@@ -13,7 +13,7 @@ pub trait PointBased: Sized + Geometry {
     // scale from
 
     // fn mutate_points<'a>(&'a mut self) -> &'a mut Vec<Vec3>;
-    fn mutate_points<'a>(&'a mut self) -> Vec<&'a mut Vec3>;
+    fn mutate_points(&mut self) -> Vec<&mut Vec3>;
 
     /// scale from a certain position.
     fn scale_from(mut self, pos: Vec3, factor: fxx) -> Self {
@@ -37,11 +37,10 @@ pub trait PointBased: Sized + Geometry {
 }
 
 impl<T: PointBased> Geometry for T {
-
     /// TODO: rename this to `trans`?
     fn mv(mut self, mv: Vec3) -> Self {
         for v in self.mutate_points() {
-            *v = *v + mv;
+            *v += mv;
         }
         self
     }

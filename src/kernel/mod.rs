@@ -1,6 +1,7 @@
 // The Floating-point precision is globally configurable using the "f32" feature
 
 #[cfg(feature = "f32")]
+#[allow(clippy::module_inception)]
 pub mod kernel {
     #[allow(non_camel_case_types)]
     pub type fxx = f32;
@@ -53,6 +54,7 @@ pub mod kernel {
 }
 
 #[cfg(not(feature = "f32"))]
+#[allow(clippy::module_inception)]
 pub mod kernel {
     #[allow(non_camel_case_types)]
     pub type fxx = f64;
@@ -78,7 +80,6 @@ pub mod kernel {
     pub use bevy_math::dvec2 as vec2;
     pub use bevy_math::dvec3 as vec3;
 
-
     pub fn uvec3_to_vec3(some: bevy_math::UVec3) -> Vec3 {
         some.as_dvec3()
     }
@@ -94,7 +95,7 @@ pub mod kernel {
     pub fn ivec2_to_vec2(some: bevy_math::IVec2) -> Vec2 {
         some.as_dvec2()
     }
-    
+
     pub fn as_mat4(mat: bevy_math::Mat4) -> Mat4 {
         mat.as_dmat4()
     }
@@ -102,7 +103,7 @@ pub mod kernel {
     pub fn as_vec2<I: Into<Vec2>>(some: I) -> Vec2 {
         some.into()
     }
-    
+
     pub fn as_vec3<I: Into<Vec3>>(some: I) -> Vec3 {
         some.into()
     }

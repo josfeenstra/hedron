@@ -127,7 +127,7 @@ pub fn between(t: fxx, data: Vec<fxx>) -> (usize, usize) {
             break;
         }
     }
-    return (start, end);
+    (start, end)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -161,8 +161,7 @@ pub fn remap(
 #[inline]
 pub fn iter_n_times(start: fxx, end: fxx, steps: usize) -> impl Iterator<Item = fxx> {
     let delta = (end - start) / (steps - 1) as fxx;
-    let thing = (0..steps).map(move |i| start + delta * i as fxx);
-    thing
+    (0..steps).map(move |i| start + delta * i as fxx)
 }
 
 ///
