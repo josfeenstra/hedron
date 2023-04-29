@@ -2,10 +2,10 @@ use rand::seq::SliceRandom;
 
 use super::Mesh;
 use crate::algos::{line_hits_plane, line_x_plane};
-use crate::core::{Pose, Geometry};
+use crate::core::{Geometry, Pose};
 use crate::kernel::{fxx, vec3, Vec3};
 use crate::math::wrap_around;
-use crate::util::{iter_triplets};
+use crate::util::iter_triplets;
 
 use crate::{
     core::PointBased,
@@ -13,7 +13,7 @@ use crate::{
     planar::Polygon,
     pts::Vectors,
 };
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::fmt;
 
@@ -25,9 +25,8 @@ pub type FacePtr = Ptr;
 pub enum PtrKind {
     Vert,
     Edge,
-    Face
+    Face,
 }
-
 
 /// A vertex of the graph
 #[derive(Default, Debug, Clone)]
@@ -77,7 +76,7 @@ pub struct Face {
 pub struct Polyhedron {
     pub verts: Pool<Vert>,
     pub edges: Pool<HalfEdge>,
-    pub faces: Pool<Face>, 
+    pub faces: Pool<Face>,
 }
 
 #[derive(Debug)]
@@ -96,7 +95,11 @@ impl Error for PtrError {}
 
 impl fmt::Display for PtrError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Polyhedron ptr error: {:?} ptr expected: {}", self.kind, self.expected)
+        write!(
+            f,
+            "Polyhedron ptr error: {:?} ptr expected: {}",
+            self.kind, self.expected
+        )
     }
 }
 
@@ -209,15 +212,15 @@ impl Polyhedron {
         //     graph.addEdge(a, b);
         // };
         // for (let i = 0; i < 12; i += 4) {
-        for i in (0..12).step_by(4) { // go through [0, 4, 8]
-            
+        for i in (0..12).step_by(4) {
+            // go through [0, 4, 8]
+
             let inext = (i + 4) % 12;
             add_edge(&mut graph, &vecs, i + 0, i + 1);
             add_edge(&mut graph, &vecs, i + 0, inext + 2);
             add_edge(&mut graph, &vecs, i + 0, inext + 0);
             add_edge(&mut graph, &vecs, i + 1, inext + 2);
             add_edge(&mut graph, &vecs, i + 1, inext + 0);
-
 
             add_edge(&mut graph, &vecs, i + 2, i + 3);
             add_edge(&mut graph, &vecs, i + 2, inext + 3);
@@ -245,18 +248,16 @@ impl Polyhedron {
         }
 
         for (ia, ib, ic) in mesh.get_triangles().into_iter() {
-            
             let (a, b, c) = (
                 hedron.verts.get(ia).expect("the mesh pointers should work"),
                 hedron.verts.get(ib).expect("the mesh pointers should work"),
                 hedron.verts.get(ic).expect("the mesh pointers should work"),
             );
             // get triangle normal
-            
+
             // assume counter clockwise CHECK THIS rotation
             let face_normal = (b.pos - a.pos).cross(c.pos - a.pos).normalize();
-            
-            
+
             // add half edges in accordance with this normal
             for [from, to] in vec![[ia, ib], [ib, ic], [ic, ia]] {
                 // println!("adding edge between: {from} and {to}");
@@ -418,7 +419,9 @@ impl Polyhedron {
     /// NOTE: A - B is a different half edge than B - A.
     fn has_half_edge(&self, start: VertPtr, end: VertPtr) -> bool {
         // println!("edges around {start} are {:?}", self.get_disk(start));
-        self.get_disk(start).iter().any(|ep| self.edge(*ep).from == end) // these are checked twice as many times as needed
+        self.get_disk(start)
+            .iter()
+            .any(|ep| self.edge(*ep).from == end) // these are checked twice as many times as needed
     }
 
     /// delete an half-edge and its twin
@@ -433,19 +436,19 @@ impl Polyhedron {
         // FIRST take care of faces
         if self.edge(ep).face != None {
             todo!();
-        } 
+        }
         if self.edge(twin).face != None {
             todo!();
-        } 
+        }
 
         // SECOND: take care of vertex ptrs
         if ep_next == twin {
-            self.mut_vert(vert_a).edge = None;  // vert a will become a dangling vertex 
+            self.mut_vert(vert_a).edge = None; // vert a will become a dangling vertex
         } else {
             self.mut_vert(vert_a).edge = Some(ep_next); // vert must not point to the edge about to be deleted
         }
         if twin_next == ep {
-            self.mut_vert(vert_b).edge = None; // vert a will become a dangling vertex 
+            self.mut_vert(vert_b).edge = None; // vert a will become a dangling vertex
         } else {
             self.mut_vert(vert_b).edge = Some(twin_next); // vert must not point to the edge about to be deleted
         }
@@ -454,14 +457,14 @@ impl Polyhedron {
         let mut a_replaced = false;
         let mut b_replaced = false;
         for disk_edge in self.get_disk(vert_a) {
-            if self.edge(disk_edge).next == twin { 
+            if self.edge(disk_edge).next == twin {
                 a_replaced = true;
                 self.mut_edge(disk_edge).next = ep_next;
                 break;
             }
         }
         for disk_edge in self.get_disk(vert_b) {
-            if self.edge(disk_edge).next == ep { 
+            if self.edge(disk_edge).next == ep {
                 b_replaced = true;
                 self.mut_edge(disk_edge).next = twin_next;
                 break;
@@ -484,13 +487,13 @@ impl Polyhedron {
 
     /// return true if the internal data structures are 'clean'
     pub fn data_is_fragmented(&self) -> bool {
-        return self.verts.is_fragmented() || self.edges.is_fragmented() || self.faces.is_fragmented();
+        return self.verts.is_fragmented()
+            || self.edges.is_fragmented()
+            || self.faces.is_fragmented();
     }
 
-    
     #[must_use]
     pub fn refactor(mut self) -> Result<Self, PtrError> {
-
         // see if this action is unnecessary
         if !self.data_is_fragmented() {
             return Ok(self);
@@ -499,64 +502,72 @@ impl Polyhedron {
         let re_verts = self.verts.get_refactor_mapping();
         let re_edges = self.edges.get_refactor_mapping();
         let re_faces = self.faces.get_refactor_mapping();
-        
+
         self.verts.refactor();
         self.edges.refactor();
         self.faces.refactor();
 
-        // written in a way so that newly introduced pointers will generate errors here, as a reminder to add them 
+        // written in a way so that newly introduced pointers will generate errors here, as a reminder to add them
         // to the refactor logic
         for vert in self.verts.iter_mut() {
             *vert = Vert {
                 pos: vert.pos,
                 edge: match vert.edge {
                     Some(e) => {
-                        let ptr = re_edges.get(&e).ok_or(PtrError::new(PtrKind::Edge, e))?;    
+                        let ptr = re_edges.get(&e).ok_or(PtrError::new(PtrKind::Edge, e))?;
                         Some(*ptr)
-                    },
+                    }
                     None => None,
-                } 
+                },
             };
         }
-        
+
         for edge in self.edges.iter_mut() {
             *edge = HalfEdge {
-                from: *re_verts.get(&edge.from).ok_or(PtrError::new(PtrKind::Vert, edge.from))?,
-                next: *re_edges.get(&edge.next).ok_or(PtrError::new(PtrKind::Edge, edge.next))?,
-                twin: *re_edges.get(&edge.twin).ok_or(PtrError::new(PtrKind::Edge, edge.twin))?,
+                from: *re_verts
+                    .get(&edge.from)
+                    .ok_or(PtrError::new(PtrKind::Vert, edge.from))?,
+                next: *re_edges
+                    .get(&edge.next)
+                    .ok_or(PtrError::new(PtrKind::Edge, edge.next))?,
+                twin: *re_edges
+                    .get(&edge.twin)
+                    .ok_or(PtrError::new(PtrKind::Edge, edge.twin))?,
                 face: match edge.face {
                     Some(f) => {
-                        let ptr = re_faces.get(&f).ok_or(PtrError::new(PtrKind::Face, f))?;    
+                        let ptr = re_faces.get(&f).ok_or(PtrError::new(PtrKind::Face, f))?;
                         Some(*ptr)
-                    },
+                    }
                     None => None,
-                }, 
+                },
             };
         }
-        
+
         for face in self.faces.iter_mut() {
             *face = Face {
-                edge: *re_edges.get(&face.edge).ok_or(PtrError::new(PtrKind::Edge, face.edge))?,
+                edge: *re_edges
+                    .get(&face.edge)
+                    .ok_or(PtrError::new(PtrKind::Edge, face.edge))?,
                 center: face.center,
                 normal: face.normal,
             };
         }
-        
+
         Ok(self)
     }
 
-
     // flip the full polyhedron inside out
     // achieve this by swapping all twins, and all pointers leading to twins
-    // this reverses disk direction, loop direction, and everything. 
+    // this reverses disk direction, loop direction, and everything.
     #[must_use]
     pub fn flip(mut self) -> Result<Self, PtrError> {
-        
         // get twin swap map
-        let twin_remap = self.edges.iter_enum().map(|(i, e)| {
-            (i, e.twin)
-        }).collect::<HashMap<_, _>>();
-        
+        let twin_remap = self
+            .edges
+            .iter_enum()
+            .map(|(i, e)| (i, e.twin))
+            .collect::<HashMap<_, _>>();
+
         // swap twins
         for (a, b) in twin_remap.iter() {
             self.edges.swap(*a, *b);
@@ -566,20 +577,26 @@ impl Polyhedron {
         for vert in self.verts.iter_mut() {
             vert.edge = match vert.edge {
                 Some(e) => {
-                    let ptr = twin_remap.get(&e).ok_or(PtrError::new(PtrKind::Edge, e))?;    
+                    let ptr = twin_remap.get(&e).ok_or(PtrError::new(PtrKind::Edge, e))?;
                     Some(*ptr)
-                },
+                }
                 None => None,
-            } 
+            }
         }
-        
+
         for edge in self.edges.iter_mut() {
-            edge.next = *twin_remap.get(&edge.next).ok_or(PtrError::new(PtrKind::Edge, edge.next))?;
-            edge.twin = *twin_remap.get(&edge.twin).ok_or(PtrError::new(PtrKind::Edge, edge.twin))?;
+            edge.next = *twin_remap
+                .get(&edge.next)
+                .ok_or(PtrError::new(PtrKind::Edge, edge.next))?;
+            edge.twin = *twin_remap
+                .get(&edge.twin)
+                .ok_or(PtrError::new(PtrKind::Edge, edge.twin))?;
         }
-        
+
         for face in self.faces.iter_mut() {
-            face.edge = *twin_remap.get(&face.edge).ok_or(PtrError::new(PtrKind::Edge, face.edge))?;
+            face.edge = *twin_remap
+                .get(&face.edge)
+                .ok_or(PtrError::new(PtrKind::Edge, face.edge))?;
             face.normal = face.normal * -1.0;
         }
 
@@ -589,7 +606,6 @@ impl Polyhedron {
     /// add two graphs.
     /// performs refactor if the data is fragmented.
     pub fn add(mut self, mut other: Self) -> Result<Self, PtrError> {
-        
         // refactor both sides
         if self.data_is_fragmented() {
             self = self.refactor()?;
@@ -610,16 +626,16 @@ impl Polyhedron {
                 edge: vert.edge.map(|e| e + edge_offset),
             });
         }
-        
+
         for edge in other.edges.iter_mut() {
             self.edges.push(HalfEdge {
                 from: edge.from + vert_offset,
                 next: edge.next + edge_offset,
                 twin: edge.twin + edge_offset,
-                face: edge.face.map(|f| f + face_offset)
+                face: edge.face.map(|f| f + face_offset),
             });
         }
-        
+
         for face in other.faces.iter_mut() {
             self.faces.push(Face {
                 edge: face.edge + face_offset,
@@ -629,13 +645,13 @@ impl Polyhedron {
         }
 
         Ok(self)
-    } 
-
+    }
 
     /// get the geometry of a face of the dual grid, which corresponds to a vertex of this grid
-    /// like always, VertPtr must be valid 
+    /// like always, VertPtr must be valid
     pub fn dual_face(&self, vp: VertPtr, offset: fxx) -> Polygon {
-        let face_centers = self.get_disk(vp)
+        let face_centers = self
+            .get_disk(vp)
             .into_iter()
             .step_by(2)
             .filter_map(|ep| self.edge(ep).face)
@@ -652,18 +668,17 @@ impl Polyhedron {
         };
         let a = self.face(fp_a).center + self.face(fp_a).normal * offset;
         let b = self.face(fp_b).center + self.face(fp_b).normal * offset;
-        Some((a , b))
+        Some((a, b))
     }
 
     /// NOTE: does not produce faces as of yet
     pub fn dual_graph(&self) -> Self {
         let mut dual = Self::new();
-     
-        // this maps face ids to face ids stacked side by side. 
+
+        // this maps face ids to face ids stacked side by side.
         // that is the same as the vertices we will create in the contragrid
         let face_to_vert = self.faces.get_refactor_mapping();
         let face_loops = self.get_face_loops();
-
 
         for face in self.faces.iter() {
             dual.add_vert(face.center);
@@ -678,7 +693,10 @@ impl Polyhedron {
                 let (Some(vert_a), Some(vert_b)) = (face_to_vert.get(&fa), face_to_vert.get(&fb)) else {
                     panic!("found an unlisted face!");
                 };
-                let (norm_a, norm_b) = (self.faces.get(fa).unwrap().normal, self.faces.get(fb).unwrap().normal);
+                let (norm_a, norm_b) = (
+                    self.faces.get(fa).unwrap().normal,
+                    self.faces.get(fb).unwrap().normal,
+                );
                 dual.add_edge(*vert_a, *vert_b, norm_a, norm_b); // TODO face normals
             }
         }
@@ -712,7 +730,10 @@ impl Polyhedron {
     }
 
     pub fn get_face_loops(&self) -> Vec<Vec<EdgePtr>> {
-        self.faces.iter().map(|face| self.get_loop(face.edge)).collect()
+        self.faces
+            .iter()
+            .map(|face| self.get_loop(face.edge))
+            .collect()
     }
 
     /// get the loop asociated with a certain half-edge, by continuously following 'next'
@@ -990,8 +1011,8 @@ impl Polyhedron {
     pub fn cap(&mut self, planar: bool) {
         self.add_faces_at_holes(planar)
     }
-    
-    /// if `rel_planar` is true, we calculate the area using the relative planar orientation of a face. 
+
+    /// if `rel_planar` is true, we calculate the area using the relative planar orientation of a face.
     fn add_faces_at_holes(&mut self, planar: bool) {
         let loops = self.get_loops();
         for lp in loops {
@@ -1017,20 +1038,27 @@ impl Polyhedron {
             // this is a warning assert statement
             for edge in lp.iter().skip(1) {
                 if self.edge(*edge).face != current_face_slot {
-                    println!("WARN: existing face loops are inconsistent! found {:?}, expected {:?}", 
-                        self.edge(*edge).face, current_face_slot);
-                }   
+                    println!(
+                        "WARN: existing face loops are inconsistent! found {:?}, expected {:?}",
+                        self.edge(*edge).face,
+                        current_face_slot
+                    );
+                }
             }
 
             // don't cap existing holes
             if current_face_slot.is_some() {
                 continue;
-            }   
+            }
 
-            // create and set a new face 
-            let face = self.faces.push(Face { edge: lp[0], normal, center });
+            // create and set a new face
+            let face = self.faces.push(Face {
+                edge: lp[0],
+                normal,
+                center,
+            });
             for edge in lp {
-                self.mut_edge(edge).face = Some(face); 
+                self.mut_edge(edge).face = Some(face);
             }
         }
     }
@@ -1054,23 +1082,20 @@ impl Polyhedron {
 
 /// true modelling methods
 impl Polyhedron {
-
-    /// cut edges using a plane, splting the edges at the intersection point 
+    /// cut edges using a plane, splting the edges at the intersection point
     /// returns a list of vertices added at the intersection point
     /// This does not cut faces
     pub fn cut_edges_with_plane(&mut self, plane: &Pose) -> Vec<VertPtr> {
-
         let plane_pos = plane.pos;
-        let p2 = plane.transform_point(vec3(1.0,0.0,0.0));
-        let p3 = plane.transform_point(vec3(0.0,1.0,0.0));
+        let p2 = plane.transform_point(vec3(1.0, 0.0, 0.0));
+        let p3 = plane.transform_point(vec3(0.0, 1.0, 0.0));
         let plane_normal = plane.local_z();
 
         // intersect edges
-        let mut new_verts = Vec::new(); 
+        let mut new_verts = Vec::new();
         for edge in self.all_unique_edges() {
-            
             let (l1, l2) = self.edge_verts(edge);
-            
+
             if !line_hits_plane(l1, l2, plane_pos, p2, p3) {
                 continue;
             }
@@ -1089,32 +1114,27 @@ impl Polyhedron {
 
     /// returns the ring of edges representing the cut
     pub fn cut_with_plane(&mut self, _plane: &Pose) -> Vec<EdgePtr> {
-        
         debug_assert!(!self.data_is_fragmented());
 
-        
-        // cut edges 
-        // for each face adjacent to cut edges: 
+        // cut edges
+        // for each face adjacent to cut edges:
 
         Vec::new()
     }
 
-
     pub fn extrude(mut self, vector: Vec3) -> Result<Self, PtrError> {
-
         // 1. refactor self
         self = self.refactor()?;
         let vert_offset = self.verts.len();
         let other = self.clone().flip()?;
         let other = other.mv(vector);
 
-        // 2. add flipped duplicate. 
+        // 2. add flipped duplicate.
         let mut joined = self.add(other)?;
 
-        // 3. add loop edges & faces? 
+        // 3. add loop edges & faces?
         for i in joined.edges.iter_enum().map(|(i, _)| i).collect::<Vec<_>>() {
-            
-            // NOTE: this is not needed. We know what the vertex order should look like 
+            // NOTE: this is not needed. We know what the vertex order should look like
             let cross = Vec3::ZERO;
             joined.add_edge(i, i + vert_offset, cross, cross);
         }
@@ -1135,17 +1155,19 @@ impl PointBased for Polyhedron {
 
 /// Here I put very specific polyhedron operations
 impl Polyhedron {
-
-    /// return the number of iterations upon exhaustion, or None if max_iterations was reached 
+    /// return the number of iterations upon exhaustion, or None if max_iterations was reached
     pub fn make_random_quads(&mut self) -> Option<usize> {
-        let mut rng = rand::thread_rng(); 
+        let mut rng = rand::thread_rng();
         for i in 0..1_000_000 {
             let edges = self.edges.all_ids();
-            let edges_between_triangles: Vec<_> = edges.into_iter().filter(|ep| {
-                let twin = self.edge(*ep).twin;
-                // `ep < twin` to filter out half the half edges
-                *ep < twin && self.get_loop(*ep).len() == 3 && self.get_loop(twin).len() == 3    
-            }).collect();
+            let edges_between_triangles: Vec<_> = edges
+                .into_iter()
+                .filter(|ep| {
+                    let twin = self.edge(*ep).twin;
+                    // `ep < twin` to filter out half the half edges
+                    *ep < twin && self.get_loop(*ep).len() == 3 && self.get_loop(twin).len() == 3
+                })
+                .collect();
 
             let Some(ep) = edges_between_triangles.choose(&mut rng) else {
                 return Some(i);
@@ -1156,18 +1178,26 @@ impl Polyhedron {
     }
 
     pub fn quad_smooth_planar_partition(&mut self, _normal: Vec3, _length: fxx) {
-        
         let loops = self.get_loops();
-        let _polygons = loops.iter().map(|lp| 
-            Polygon::new(lp.iter()
-                .map(|ep| self.vert(self.edge(*ep).from).pos)
-                .collect()
-            )).collect::<Vec<_>>();
+        let _polygons = loops
+            .iter()
+            .map(|lp| {
+                Polygon::new(
+                    lp.iter()
+                        .map(|ep| self.vert(self.edge(*ep).from).pos)
+                        .collect(),
+                )
+            })
+            .collect::<Vec<_>>();
         // let bad_apples = polygons.iter().map(|p| p.signed_area() > 0.0);
 
         // TODO uphold edge length by pushing out elastically on neighboring verts
         for vp in self.verts.all_ids() {
-            let nbs_pos = self.get_vert_neighbors(vp).iter().map(|nb| self.vert(*nb).pos).collect();
+            let nbs_pos = self
+                .get_vert_neighbors(vp)
+                .iter()
+                .map(|nb| self.vert(*nb).pos)
+                .collect();
             let avg = Vectors::average(&nbs_pos);
             self.mut_vert(vp).pos = avg;
         }
@@ -1180,31 +1210,30 @@ impl Polyhedron {
         //     // let smoothers = get_smoothers_quad_to_square_at_length(&quad, normal, length);
         //     for (edge, smoother) in lp.iter().zip(smoothers) {
         //         self.mut_vert(self.edge(*edge).from).pos += smoother;
-        //     } 
+        //     }
         // }
     }
 }
 
 impl Polyhedron {
-    
-    /// A method for wandering the graph, by going to the 'next' or 'previous' vertex on a disk 
+    /// A method for wandering the graph, by going to the 'next' or 'previous' vertex on a disk
     /// ```
     /// pos: the disk vertex
     /// from: the position on the disk from where we orient
-    /// offset: the offset on the disk, relative to `from`. 
+    /// offset: the offset on the disk, relative to `from`.
     /// ```
     pub fn next_on_disk(&self, disk: VertPtr, from: VertPtr, offset: i32) -> Option<VertPtr> {
         let nbs = self.get_vert_neighbors(disk);
         let count = nbs.len();
         let index = nbs.iter().position(|nb| *nb == from)? as i32;
         let next_index = wrap_around(index + offset, count);
-        nbs.get(next_index as usize).map(|nb| nb.clone())
+        nbs.get(next_index as usize).map(|nb| *nb)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::kernel::{vec3};
+    use crate::kernel::vec3;
     use crate::solid::{Polyhedron, VertPtr};
 
     #[test]

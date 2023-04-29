@@ -1,5 +1,6 @@
-
-pub const OBJ: &'static str = "
+//! not sure what this is, but useful for debugging
+//! This should probably live somewhere else, in an assets folder or something
+pub const OBJ: &str = "
     v 0.000000 -0.000000 1.116051
     v 1.000000 -0.000000 -0.612978
     v -1.000000 -0.000000 -0.612978

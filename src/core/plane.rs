@@ -11,6 +11,14 @@ pub struct Plane {
     mat: Mat4,
 }
 
+impl Default for Plane {
+    fn default() -> Self {
+        Self {
+            mat: Mat4::IDENTITY,
+        }
+    }
+}
+
 impl Plane {
     pub const WORLD_XY: Self = Self::new(Mat4::from_cols(Vec4::X, Vec4::Y, Vec4::Z, Vec4::W));
     pub const WORLD_YZ: Self = Self::new(Mat4::from_cols(
@@ -25,12 +33,6 @@ impl Plane {
         Vec4::Y, /* * -1? */
         Vec4::W,
     ));
-
-    pub fn default() -> Self {
-        Self {
-            mat: Mat4::IDENTITY,
-        }
-    }
 
     pub const fn new(mat: Mat4) -> Self {
         Self { mat }

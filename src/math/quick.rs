@@ -1,12 +1,9 @@
-use std::f32::consts::PI;
-
-/// math::quick
-/// -----------
-/// shorthands for a bunch of simple operations
-use crate::kernel::fxx;
-use crate::kernel::Vec2;
-use crate::kernel::Vec3;
+use crate::kernel::*;
 use num_traits::float::Float;
+
+///! math::quick
+///! -----------
+///! shorthands for a bunch of simple operations
 
 /// TODO add this to a vector / points area when we get it
 /// convert a spherical coordinate to a cartesian one

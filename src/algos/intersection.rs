@@ -1,5 +1,5 @@
-use crate::{kernel::{fxx, Vec3}};
-// I like to split away these intersection / geometric predicates stuff from the main code
+//! I like to split away these intersection / geometric predicates stuff from the main code
+use crate::kernel::{fxx, Vec3};
 
 // simple 2x2
 #[inline]
@@ -10,6 +10,7 @@ pub fn det(a: fxx, b: fxx, c: fxx, d: fxx) -> fxx {
 /// yay wikipedia
 #[rustfmt::skip]
 #[inline]
+#[allow(clippy::too_many_arguments)]
 pub fn line_line_2d(
     x1: fxx,
     y1: fxx,
@@ -59,11 +60,7 @@ pub fn line_hits_plane(l1: Vec3, l2: Vec3, p1: Vec3, p2: Vec3, p3: Vec3) -> bool
 
     // we ignore the null case (the case where the line touches the plane)
     // left.abs() < fxx::EPSILON || right.abs() < fxx::EPSILON
-    if (left > 0.0 && right > 0.0) || (left < 0.0 && right < 0.0) {
-        false
-    } else {
-        true
-    }
+    !((left > 0.0 && right > 0.0) || (left < 0.0 && right < 0.0))
 }
 
 pub fn signed_volume(a: Vec3, b: Vec3, c: Vec3, d: Vec3) -> fxx {
@@ -72,7 +69,6 @@ pub fn signed_volume(a: Vec3, b: Vec3, c: Vec3, d: Vec3) -> fxx {
 
 /// don't know if this works
 pub fn line_x_plane(a: Vec3, b: Vec3, plane_pos: Vec3, plane_normal: Vec3) -> Option<fxx> {
-
     let ba = a - b;
     let cross = plane_normal;
     let top = cross.dot(a - plane_pos);
@@ -81,32 +77,32 @@ pub fn line_x_plane(a: Vec3, b: Vec3, plane_pos: Vec3, plane_normal: Vec3) -> Op
         return None;
     }
     let t = top / bot;
-    Some(t)    
+    Some(t)
 }
-
 
 #[cfg(test)]
 mod test {
-    use crate::kernel::{vec3};
     use super::line_x_plane;
+    use crate::kernel::vec3;
 
     #[test]
     fn test() {
-        assert_eq!(line_x_plane(
-            vec3(-1.0, -1.0, -1.0), 
-            vec3(1.0, 1.0, 1.0), 
-            vec3(0.0, 0.0, 0.0), 
-            vec3(0.0, 0.0, 1.0)
-        ), Some(0.5));
+        assert_eq!(
+            line_x_plane(
+                vec3(-1.0, -1.0, -1.0),
+                vec3(1.0, 1.0, 1.0),
+                vec3(0.0, 0.0, 0.0),
+                vec3(0.0, 0.0, 1.0)
+            ),
+            Some(0.5)
+        );
 
         let res = line_x_plane(
-            vec3(1.0, -1.0, -2.0), 
-            vec3(-1.0, 1.0, 3.0), 
-            vec3(0.0, 0.0, 0.0), 
-            vec3(1.0, 0.0, 0.0)
-        );  
+            vec3(1.0, -1.0, -2.0),
+            vec3(-1.0, 1.0, 3.0),
+            vec3(0.0, 0.0, 0.0),
+            vec3(1.0, 0.0, 0.0),
+        );
         dbg!(res);
-
     }
-
 }

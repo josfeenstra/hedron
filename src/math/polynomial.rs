@@ -1,10 +1,6 @@
-// author: Jos Feenstra
-/// purpose: polynomial math needed for curves & surfaces
-/// note: uses a hardcoded pascal's triangle for performance reasons
-/// notes:   based upon the excellent explanations from Prof. C.-K. Shene: https://pages.mtu.edu/~shene/COURSES/cs3621/NOTES/
-///
-/// TODO: precalculate pascals triangle
-///  
+//! purpose: polynomial math needed for curves & surfaces
+//! note:    uses a hardcoded pascal's triangle for performance reasons
+//! notes:   based upon the excellent explanations from Prof. C.-K. Shene: https://pages.mtu.edu/~shene/COURSES/cs3621/NOTES/
 use super::fact;
 use crate::data::Grid2;
 use crate::kernel::{fxx, Vec3};
@@ -21,7 +17,7 @@ lazy_static! {
 /// precalculated Pascal's triangle for a bit more efficiency
 #[inline]
 pub fn bernstein(t: fxx, i: usize, n: usize) -> fxx {
-    return (get_bicoef(n, i) as fxx) * t.powi(i as i32) * (1.0 - t).powi((n - i) as i32);
+    (get_bicoef(n, i) as fxx) * t.powi(i as i32) * (1.0 - t).powi((n - i) as i32)
 }
 
 /// Binomial Coefficient
@@ -32,7 +28,7 @@ fn get_bicoef(n: usize, i: usize) -> usize {
 /// Binomial Coefficient
 fn calc_bicoef(n: usize, i: usize) -> usize {
     // let f = crate::math::quick::fact;
-    return fact(n) / (fact(i) * fact(n - i));
+    fact(n) / (fact(i) * fact(n - i))
 }
 
 /// calculate pascals triangle from top to bottom
