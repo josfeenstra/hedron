@@ -3,7 +3,7 @@ use std::ops::Mul;
 use crate::kernel::{fxx, Affine3, Mat3, Mat4, Quat, Vec3};
 
 /// TODO: Merge Pose with Plane
-/// Strictly speaking, a pose should not have a scale. 
+/// Strictly speaking, a pose should not have a scale.
 /// Its the difference between a 'transform' and a 'scale'
 #[derive(Debug)]
 pub struct Pose {
@@ -25,13 +25,13 @@ impl Pose {
     pub const WORLD_YZ: Self = Self {
         pos: Vec3::ZERO,
         rot: Quat::IDENTITY, // TODO
-        // scale: Vec3::ONE,
+                             // scale: Vec3::ONE,
     };
 
     pub const WORLD_ZX: Self = Self {
         pos: Vec3::ZERO,
         rot: Quat::IDENTITY, // TODO
-        // scale: Vec3::ONE,
+                             // scale: Vec3::ONE,
     };
 
     /// Creates a new [`Pose`] at the position `(x, y, z)`. In 2d, the `z` component
@@ -47,10 +47,10 @@ impl Pose {
     #[inline]
     pub fn from_matrix(matrix: Mat4) -> Self {
         let (_, rot, pos) = matrix.to_scale_rotation_translation();
-        Self { 
-            pos, 
-            rot, 
-            // scale 
+        Self {
+            pos,
+            rot,
+            // scale
         }
     }
 
@@ -285,8 +285,10 @@ impl Pose {
         let pos = self.transform_point(pose.pos);
         let rot = self.rot * pose.rot;
         // let scale = self.scale * pose.scale;
-        Pose { pos, rot, 
-            // scale 
+        Pose {
+            pos,
+            rot,
+            // scale
         }
     }
 

@@ -2,7 +2,7 @@
 
 use bevy::prelude::*;
 
-use super::{FaceMaterial, LineMaterial, InstanceMaterialPlugin};
+use super::{FaceMaterial, InstanceMaterialPlugin, LineMaterial};
 
 pub struct HedronMaterialPlugin;
 

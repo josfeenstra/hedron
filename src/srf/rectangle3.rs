@@ -1,5 +1,8 @@
-use crate::{math::Range2, core::{Pose, Geometry}};
-use crate::kernel::{Vec3, vec3};
+use crate::kernel::{vec3, Vec3};
+use crate::{
+    core::{Geometry, Pose},
+    math::Range2,
+};
 
 /// a rectangle in 3D space, defined by bounds and a range 2
 pub struct Rectangle3 {
@@ -8,7 +11,6 @@ pub struct Rectangle3 {
 }
 
 impl Rectangle3 {
-
     pub fn new(pose: Pose, bounds: Range2) -> Self {
         Self { pose, bounds }
     }
@@ -25,7 +27,6 @@ impl Rectangle3 {
             self.pose.transform_point(vec3(xe, ye, 0.0)),
         ]
     }
-
 }
 
 impl Geometry for Rectangle3 {
@@ -39,13 +40,13 @@ impl Geometry for Rectangle3 {
         self
     }
 
-    // this scales the bound, NOT the pose 
+    // this scales the bound, NOT the pose
     fn scale(mut self, scale: crate::kernel::Vec3) -> Self {
         self.bounds.scale(scale.truncate());
         self
     }
 
-    // this scales the bound, NOT the pose 
+    // this scales the bound, NOT the pose
     fn scale_u(mut self, scale: crate::kernel::fxx) -> Self {
         self.bounds.scale_u(scale);
         self

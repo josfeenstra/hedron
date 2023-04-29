@@ -2,8 +2,8 @@
 // I think this is way more elegant for negative / counting down ranges
 
 /**
- Start, Stop, Step
- */
+Start, Stop, Step
+*/
 pub struct SimpleStepRange(pub isize, pub isize, pub isize);
 
 impl Iterator for SimpleStepRange {

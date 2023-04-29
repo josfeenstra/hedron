@@ -1,4 +1,4 @@
-use bevy_inspector_egui::{InspectorOptions};
+use bevy_inspector_egui::InspectorOptions;
 
 use super::{Smoothable, State};
 use crate::kernel::fxx;

@@ -20,7 +20,7 @@ pub const CUBE_FACES: [[usize; 4]; 6] = [
     [5, 4, 6, 7], // back
 ];
 
-pub const CUBE_UVS: [[fxx; 2]; 24]= [
+pub const CUBE_UVS: [[fxx; 2]; 24] = [
     [0.0, 0.0],
     [1.0, 0.0],
     [0.0, 1.0],

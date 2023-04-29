@@ -6,23 +6,22 @@ use super::*;
 
 // add some of these functions to std range
 pub trait Range1 {
-    type Iter: Iterator<Item=fxx>;
+    type Iter: Iterator<Item = fxx>;
 
     fn normalize(&self, t: fxx) -> fxx;
     fn norm_clamp(&self, t: fxx) -> fxx;
     fn lerp(&self, t: fxx) -> fxx;
     fn remap(&self, other: &Range<fxx>, n: fxx, clamped: bool) -> fxx;
 
-    fn iter_n_times(&self, steps: usize) -> Self::Iter; 
-    fn iter_by_delta(&self, delta: fxx) -> Self::Iter; 
+    fn iter_n_times(&self, steps: usize) -> Self::Iter;
+    fn iter_by_delta(&self, delta: fxx) -> Self::Iter;
     fn expand_to(&mut self, t: fxx);
     fn lerp_shaped(&self, t: fxx, shaper: &Shaper) -> fxx;
 }
 
 impl Range1 for Range<fxx> {
-    
     // type Iter = Iterator<fxx>;
-    type Iter = Box<dyn Iterator<Item=fxx>>;
+    type Iter = Box<dyn Iterator<Item = fxx>>;
 
     fn normalize(&self, t: fxx) -> fxx {
         normalize(t, self.start, self.end)
@@ -57,4 +56,3 @@ impl Range1 for Range<fxx> {
         Box::new(iter_by_delta(self.start, self.end, delta))
     }
 }
-

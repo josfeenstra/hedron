@@ -1,10 +1,10 @@
+use super::Range1;
+use crate::kernel::{fxx, uvec2_to_vec2, vec2, Vec2};
+use crate::util;
 use bevy_math::UVec2;
 use rand::distributions::Uniform;
 use rand::Rng;
-use crate::kernel::{fxx, Vec2, vec2, uvec2_to_vec2};
-use crate::util;
 use std::ops::Range;
-use super::Range1;
 
 /// A 2D range, or axis-aligned rectangle
 #[derive(Debug)]
@@ -35,12 +35,11 @@ impl Range2 {
     }
 
     pub fn center(&self) -> Vec2 {
-        self.lerp(Vec2::new(0.5,0.5))
+        self.lerp(Vec2::new(0.5, 0.5))
     }
-    
+
     pub fn includes(&self, t: Vec2) -> bool {
-        !(t.x < self.x.start || t.x > self.x.end ||
-          t.y < self.y.start || t.y > self.y.end)
+        !(t.x < self.x.start || t.x > self.x.end || t.y < self.y.start || t.y > self.y.end)
     }
 
     pub fn expand_to(&mut self, t: Vec2) {
@@ -50,16 +49,16 @@ impl Range2 {
 
     pub fn add(&mut self, rhs: Vec2) {
         self.x.start += rhs.x;
-        self.x.end   += rhs.x;
+        self.x.end += rhs.x;
         self.y.start += rhs.y;
-        self.y.end   += rhs.y;
+        self.y.end += rhs.y;
     }
 
     pub fn scale(&mut self, rhs: Vec2) {
         self.x.start *= rhs.x;
-        self.x.end   *= rhs.x;
+        self.x.end *= rhs.x;
         self.y.start *= rhs.y;
-        self.y.end   *= rhs.y;
+        self.y.end *= rhs.y;
     }
 
     pub fn scale_u(&mut self, scalar: fxx) {
@@ -67,17 +66,11 @@ impl Range2 {
     }
 
     pub fn normalize(&self, t: Vec2) -> Vec2 {
-        Vec2::new(
-            self.x.normalize(t.x),
-            self.y.normalize(t.y),
-        )
+        Vec2::new(self.x.normalize(t.x), self.y.normalize(t.y))
     }
 
     pub fn lerp(&self, t: Vec2) -> Vec2 {
-        Vec2::new(
-            self.x.lerp(t.x),
-            self.y.lerp(t.y),
-        )
+        Vec2::new(self.x.lerp(t.x), self.y.lerp(t.y))
     }
 
     /// remap from self to other
@@ -90,10 +83,12 @@ impl Range2 {
 
     // Produces a continuous random generator.
     // This code works, but we have to clone thread rng. not nice if we are dealing with a seeded random
-    // requires `with_chunks::2<>` to properly fix things 
+    // requires `with_chunks::2<>` to properly fix things
     pub fn gen<'a, RNG: Rng + Clone>(&self, rng: &'a mut RNG) -> impl Iterator<Item = Vec2> + 'a {
         // let vec = rng.gen::<Vec2>();
-        let dist_x = rng.clone().sample_iter(Uniform::new(self.x.start, self.x.end));
+        let dist_x = rng
+            .clone()
+            .sample_iter(Uniform::new(self.x.start, self.x.end));
         let dist_y = rng.sample_iter(Uniform::new(self.y.start, self.y.end));
         dist_x.zip(dist_y).map(|(x, y)| Vec2::new(x, y))
     }
@@ -109,7 +104,7 @@ impl Range2 {
         points
     }
 
-    /// Explained in Range3 
+    /// Explained in Range3
     pub fn iter(&self, n_times: UVec2) -> impl Iterator<Item = Vec2> + '_ {
         let fcount: Vec2 = uvec2_to_vec2(n_times) - Vec2::ONE;
         util::iter_xy_u(n_times).map(move |u| self.lerp(uvec2_to_vec2(u) / fcount))
@@ -117,17 +112,17 @@ impl Range2 {
 
     /// duplicate, but different implementation. Well see which one sticks...
     pub fn iter_n_times(&self, times: UVec2) -> impl Iterator<Item = Vec2> + '_ {
-        self.y.iter_n_times(times.y as usize)
-            .flat_map(move |y| self.x.iter_n_times(times.x as usize)
-            .map(move |x| vec2(x, y))
-        )
+        self.y.iter_n_times(times.y as usize).flat_map(move |y| {
+            self.x
+                .iter_n_times(times.x as usize)
+                .map(move |x| vec2(x, y))
+        })
     }
 
     pub fn iter_by_delta(&self, delta: Vec2) -> impl Iterator<Item = Vec2> + '_ {
-        self.y.iter_by_delta(delta.y)
-            .flat_map(move |y| self.x.iter_by_delta(delta.x)
-            .map(move |x| vec2(x, y))
-        )
+        self.y
+            .iter_by_delta(delta.y)
+            .flat_map(move |y| self.x.iter_by_delta(delta.x).map(move |x| vec2(x, y)))
     }
 
     // fn iter_by_delta(&self, delta: fxx) -> Self::Iter {
@@ -137,14 +132,14 @@ impl Range2 {
 
 #[cfg(test)]
 mod tests {
+    use super::Range2;
     use crate::kernel::vec2;
     use rand_pcg::Pcg64;
     use rand_seeder::Seeder;
-    use super::Range2;
 
     #[test]
     fn test_random_sampling() {
-        let rect = Range2::new(vec2(0.5, -0.5), vec2(10.,15.));
+        let rect = Range2::new(vec2(0.5, -0.5), vec2(10., 15.));
         let mut rng: Pcg64 = Seeder::from("stripy zebra").make_rng();
         // let mut rng = rand::thread_rng();
         println!("gen:");

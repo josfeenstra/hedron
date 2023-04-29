@@ -1,13 +1,10 @@
-use std::{collections::{HashMap, hash_map::Entry}};
-use super::{
-    extract_vertices, FaceMaterial, InstanceData, InstanceMaterialData,
-    LineMaterial,
-};
+use super::{extract_vertices, FaceMaterial, InstanceData, InstanceMaterialData, LineMaterial};
 use crate::kernel::fxx;
-use bevy::{prelude::*, render::view::NoFrustumCulling, ecs::schedule::FreeSystemSet};
+use bevy::{ecs::schedule::FreeSystemSet, prelude::*, render::view::NoFrustumCulling};
+use std::collections::{hash_map::Entry, HashMap};
 
 #[derive(Resource, Default)]
-pub struct GeoRenderer<M:Material + Default> {
+pub struct GeoRenderer<M: Material + Default> {
     // to_add: DynStack<(String, Mesh, dyn Material)>,
     to_add: Vec<(String, Mesh, Color, fxx, bool)>,
     to_remove: Vec<Entity>,
@@ -16,26 +13,37 @@ pub struct GeoRenderer<M:Material + Default> {
 }
 
 // a simple (debug) renderer for geometry.
-impl<M:Material + Default> GeoRenderer<M> {
-    
+impl<M: Material + Default> GeoRenderer<M> {
     pub fn new() -> Self {
         Self { ..default() }
     }
 
     // TODO add with key, to make it replaceable
-    pub fn set<Meshable: Into<Mesh>>(&mut self, key: &str, meshable: Meshable, color: Color, width: fxx, custom: bool) {
+    pub fn set<Meshable: Into<Mesh>>(
+        &mut self,
+        key: &str,
+        meshable: Meshable,
+        color: Color,
+        width: fxx,
+        custom: bool,
+    ) {
         if self.rendered.get(key).is_some() {
             self.delete(key);
         }
 
         // check if it hasnt been set twice
-        if self.to_add.iter().any(|(existing_key, _, _, _, _)| existing_key == key) {
+        if self
+            .to_add
+            .iter()
+            .any(|(existing_key, _, _, _, _)| existing_key == key)
+        {
             // TODO this only goes wrong if the 'update_system' is too late.
             warn!("we are re-adding things");
             return;
         }
 
-        self.to_add.push((key.to_owned(), meshable.into(), color, width, custom));
+        self.to_add
+            .push((key.to_owned(), meshable.into(), color, width, custom));
     }
 
     pub fn set_mat(&mut self, mat: Handle<M>) {
@@ -71,7 +79,6 @@ impl<M:Material + Default> GeoRenderer<M> {
 
         // ADD
         while let Some((id, mut mesh, color, width, use_custom_material)) = gr.to_add.pop() {
-
             // spawn something different based on the type of mesh
             let entity = match mesh.primitive_topology() {
                 bevy::render::render_resource::PrimitiveTopology::PointList => {
@@ -80,13 +87,13 @@ impl<M:Material + Default> GeoRenderer<M> {
                     // This is slightly inefficient, because we now needlessly translate back from a mesh
                     let points = extract_vertices(&mut mesh).expect("points lists should verts");
                     // let mesh: Mesh = ico.into();
-                    
+
                     let Result::Ok(mesh) = Mesh::try_from(shape::Icosphere {
                         radius: 0.1,
                         subdivisions: 1,
                     }) else {
-                       continue; 
-                    }; 
+                       continue;
+                    };
 
                     c.spawn((
                         meshes.add(mesh),
@@ -103,7 +110,8 @@ impl<M:Material + Default> GeoRenderer<M> {
                         ),
                         NoFrustumCulling,
                         Name::new(id.clone()),
-                    )).id()
+                    ))
+                    .id()
                 }
                 bevy::render::render_resource::PrimitiveTopology::LineList => c
                     .spawn((
@@ -125,33 +133,37 @@ impl<M:Material + Default> GeoRenderer<M> {
                         Name::new(id.clone()),
                     ))
                     .id(),
-                bevy::render::render_resource::PrimitiveTopology::TriangleList => 
+                bevy::render::render_resource::PrimitiveTopology::TriangleList => {
                     match use_custom_material {
-                        true => c.spawn((
-                            MaterialMeshBundle {
-                                mesh: meshes.add(mesh),
-                                material: gr.custom_mat.clone(),
-                                ..default()
-                            },
-                            Name::new(id.clone()),
-                        )).id(),   
+                        true => c
+                            .spawn((
+                                MaterialMeshBundle {
+                                    mesh: meshes.add(mesh),
+                                    material: gr.custom_mat.clone(),
+                                    ..default()
+                                },
+                                Name::new(id.clone()),
+                            ))
+                            .id(),
                         false => c
-                        .spawn((
-                            MaterialMeshBundle {
-                                mesh: meshes.add(mesh),
-                                material: f_materials.add(FaceMaterial { color }),
-                                // material: materials.add(StandardMaterial {
-                                //     base_color: color,
-                                //     unlit: true,
-                                //     alpha_mode: AlphaMode::Opaque,
-                                //     depth_bias: -1.0,
-                                //     ..default()
-                                // }),
-                                ..default()
-                            },
-                            Name::new(id.clone()),
-                        )).id(),
-                    },
+                            .spawn((
+                                MaterialMeshBundle {
+                                    mesh: meshes.add(mesh),
+                                    material: f_materials.add(FaceMaterial { color }),
+                                    // material: materials.add(StandardMaterial {
+                                    //     base_color: color,
+                                    //     unlit: true,
+                                    //     alpha_mode: AlphaMode::Opaque,
+                                    //     depth_bias: -1.0,
+                                    //     ..default()
+                                    // }),
+                                    ..default()
+                                },
+                                Name::new(id.clone()),
+                            ))
+                            .id(),
+                    }
+                }
                 bevy::render::render_resource::PrimitiveTopology::TriangleStrip => c
                     .spawn((
                         MaterialMeshBundle {
@@ -164,10 +176,10 @@ impl<M:Material + Default> GeoRenderer<M> {
                     .id(),
             };
             if let Entry::Vacant(e) = gr.rendered.entry(id) {
-                 e.insert(entity);
-             } else {
-                 println!("key already exists! update scheduling mistake occurred");
-             }
+                e.insert(entity);
+            } else {
+                println!("key already exists! update scheduling mistake occurred");
+            }
         }
 
         // TODO: This makes updates more efficient
@@ -208,7 +220,7 @@ impl<M: Material + Default, T: FreeSystemSet + Clone> GeoRendererPlugin<M, T> {
             dummy: M::default(),
             phase,
         }
-    }    
+    }
 }
 
 impl<M: Material + Default, T: FreeSystemSet + Clone> Plugin for GeoRendererPlugin<M, T> {

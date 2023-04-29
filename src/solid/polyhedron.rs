@@ -1208,7 +1208,7 @@ impl Polyhedron {
 
 impl Polyhedron {
     /// A method for wandering the graph, by going to the 'next' or 'previous' vertex on a disk
-    /// ```
+    /// ```something
     /// pos: the disk vertex
     /// from: the position on the disk from where we orient
     /// offset: the offset on the disk, relative to `from`.

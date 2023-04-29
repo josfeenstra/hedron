@@ -1,9 +1,9 @@
-use bevy_math::{UVec3};
-use rand::Rng;
+use bevy_math::UVec3;
 use rand::distributions::Uniform;
+use rand::Rng;
 
-use crate::kernel::{fxx, Vec3, uvec3_to_vec3, vec3};
-use crate::{util};
+use crate::kernel::{fxx, uvec3_to_vec3, vec3, Vec3};
+use crate::util;
 use std::ops::Range;
 
 use super::{Range1, Shaper};
@@ -29,7 +29,11 @@ impl Range3 {
     }
 
     pub fn splat(r: Range<fxx>) -> Self {
-        Self { x: r.clone(), y: r.clone(), z: r }
+        Self {
+            x: r.clone(),
+            y: r.clone(),
+            z: r,
+        }
     }
 
     pub fn from_radius(r: fxx) -> Self {
@@ -37,9 +41,12 @@ impl Range3 {
     }
 
     pub fn includes(&self, t: Vec3) -> bool {
-        !(t.x < self.x.start || t.x > self.x.end ||
-          t.y < self.y.start || t.y > self.y.end || 
-          t.z < self.z.start || t.z > self.z.end)
+        !(t.x < self.x.start
+            || t.x > self.x.end
+            || t.y < self.y.start
+            || t.y > self.y.end
+            || t.z < self.z.start
+            || t.z > self.z.end)
     }
 
     pub fn expand_to(&mut self, t: Vec3) {
@@ -49,15 +56,23 @@ impl Range3 {
     }
 
     pub fn center(&self) -> Vec3 {
-        self.lerp(Vec3::new(0.5,0.5,0.5))
+        self.lerp(Vec3::new(0.5, 0.5, 0.5))
     }
-    
+
     pub fn corners(&self) -> [Vec3; 8] {
         let mut i = 0;
         let arr: [Vec3; 8] = [0; 8].map(|_| {
-            let x = if i     % 2 == 0 { self.x.start } else { self.x.end }; 
-            let y = if (i/2) % 2 == 0 { self.y.start } else { self.y.end }; 
-            let z = if (i/4) % 2 == 0 { self.z.start } else { self.z.end }; 
+            let x = if i % 2 == 0 { self.x.start } else { self.x.end };
+            let y = if (i / 2) % 2 == 0 {
+                self.y.start
+            } else {
+                self.y.end
+            };
+            let z = if (i / 4) % 2 == 0 {
+                self.z.start
+            } else {
+                self.z.end
+            };
             i += 1;
             vec3(x, y, z)
         });
@@ -74,15 +89,15 @@ impl Range3 {
 
     /// linearly interpolate
     pub fn lerp(&self, t: Vec3) -> Vec3 {
-        Vec3::new(
-            self.x.lerp(t.x),
-            self.y.lerp(t.y),
-            self.z.lerp(t.z),
-        )
+        Vec3::new(self.x.lerp(t.x), self.y.lerp(t.y), self.z.lerp(t.z))
     }
 
     pub fn lerp_shaped(&self, t: Vec3, shapers: (Shaper, Shaper, Shaper)) -> Vec3 {
-        self.lerp(Vec3::new(shapers.0.eval(t.x), shapers.1.eval(t.y), shapers.2.eval(t.z)))
+        self.lerp(Vec3::new(
+            shapers.0.eval(t.x),
+            shapers.1.eval(t.y),
+            shapers.2.eval(t.z),
+        ))
     }
 
     /// remap from self to other
@@ -108,26 +123,30 @@ impl Range3 {
     /// iterate through this space
     /// hmmm... this approach is more stable, floating point wise
     pub fn iter(&self, n_times: UVec3) -> impl Iterator<Item = Vec3> + '_ {
-        let fcount: Vec3 = uvec3_to_vec3(n_times) + - Vec3::ONE;
+        let fcount: Vec3 = uvec3_to_vec3(n_times) + -Vec3::ONE;
         util::iter_xyz_u(n_times).map(move |u| self.lerp(uvec3_to_vec3(u) / fcount))
     }
 
-    /// same as above. 
+    /// same as above.
     /// Benchmark the fastest approach
-    pub fn iter_n_times(&self, x_steps: usize, y_steps: usize, z_steps: usize) -> impl Iterator<Item = Vec3> + '_ {
-        self.z.iter_n_times(z_steps)
-            .flat_map(move |z| self.x.iter_n_times(y_steps)
-            .flat_map(move |y| self.x.iter_n_times(x_steps)
-            .map(move |x| vec3(x, y, z))
-        ))
+    pub fn iter_n_times(
+        &self,
+        x_steps: usize,
+        y_steps: usize,
+        z_steps: usize,
+    ) -> impl Iterator<Item = Vec3> + '_ {
+        self.z.iter_n_times(z_steps).flat_map(move |z| {
+            self.x
+                .iter_n_times(y_steps)
+                .flat_map(move |y| self.x.iter_n_times(x_steps).map(move |x| vec3(x, y, z)))
+        })
     }
 
     pub fn iter_by_delta(&self, delta: Vec3) -> impl Iterator<Item = Vec3> + '_ {
-        self.z.iter_by_delta(delta.z)
-            .flat_map(move |z| self.x.iter_by_delta(delta.y)
-            .flat_map(move |y| self.x.iter_by_delta(delta.x)
-            .map(move |x| vec3(x, y, z))
-        ))
+        self.z.iter_by_delta(delta.z).flat_map(move |z| {
+            self.x
+                .iter_by_delta(delta.y)
+                .flat_map(move |y| self.x.iter_by_delta(delta.x).map(move |x| vec3(x, y, z)))
+        })
     }
-
 }

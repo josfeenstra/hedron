@@ -1,7 +1,7 @@
 mod bisurface;
-mod trisurface;
 mod rectangle3;
+mod trisurface;
 
 pub use bisurface::*;
-pub use trisurface::*;
 pub use rectangle3::*;
+pub use trisurface::*;

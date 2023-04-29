@@ -1,5 +1,15 @@
-use bevy::{prelude::*, render::{render_resource::{AsBindGroup, ShaderRef, RenderPipelineDescriptor, SpecializedMeshPipelineError, PolygonMode}, mesh::MeshVertexBufferLayout}, reflect::TypeUuid, pbr::{MaterialPipelineKey, MaterialPipeline}};
-
+use bevy::{
+    pbr::{MaterialPipeline, MaterialPipelineKey},
+    prelude::*,
+    reflect::TypeUuid,
+    render::{
+        mesh::MeshVertexBufferLayout,
+        render_resource::{
+            AsBindGroup, PolygonMode, RenderPipelineDescriptor, ShaderRef,
+            SpecializedMeshPipelineError,
+        },
+    },
+};
 
 // source: https://github.com/bevyengine/bevy/blob/main/examples/3d/lines.rs
 #[derive(Default, AsBindGroup, TypeUuid, Debug, Clone)]

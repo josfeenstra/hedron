@@ -39,7 +39,6 @@
 //      0 will be returned if the grid cell is either totally above
 //     of totally below the isolevel.
 //  */
-
 // // typedef struct {
 // //     XYZ p[3];
 // //  } TRIANGLE;
