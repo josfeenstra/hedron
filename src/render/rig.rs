@@ -7,12 +7,7 @@ use crate::{
 /// Using two angles to deal with latitude (up/down) and longiture (left/right) rotations
 use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
-    prelude::{
-        default, Camera, Component, EventReader, Input, KeyCode, MouseButton, Query, Res,
-        Transform, With,
-    },
-    time::Time,
-    window::CursorMoved,
+    prelude::*,
 };
 use bevy_inspector_egui::InspectorOptions;
 
