@@ -1,5 +1,7 @@
 #![allow(unused_variables)]
 
+use bevy::prelude::warn;
+
 use super::{quad_to_tri, Octoid, Polyhedron, CUBE_FACES};
 use crate::kernel::{fxx, kernel, vec2, vec3, Vec2, Vec3};
 use crate::prelude::*;
@@ -21,15 +23,25 @@ use std::ops::Range;
 /// - VertNormal -> 1 normal per vertex. check num_normals == num_vertices
 ///
 /// ```
+#[derive(Default, Debug, Clone)]
 pub enum Index {
+    #[default]
     Linear,
     Mono(Vec<usize>),
     Hetro(Vec<(usize, usize, usize)>),
 }
 
-pub enum Normal {
+#[derive(Debug, Clone)]
+pub enum Normals {
+    None,
     Face(Vec<Vec3>),
     Vertex(Vec<Vec3>),
+}
+
+impl Default for Normals {
+    fn default() -> Self {
+        Normals::None
+    }
 }
 
 /// A dead simple, internal data structure to store meshes.
@@ -39,11 +51,11 @@ pub struct Mesh {
     pub verts: Vec<Vec3>,
     pub tri: Vec<usize>, // TODO Index Enum
     pub uvs: Vec<Vec2>,
-    pub normals: Vec<Vec3>, // TODO Normal Enum
+    pub normals: Normals, // TODO Normal Enum
 }
 
 impl Mesh {
-    pub fn new(verts: Vec<Vec3>, tri: Vec<usize>, uvs: Vec<Vec2>, normals: Vec<Vec3>) -> Self {
+    pub fn new(verts: Vec<Vec3>, tri: Vec<usize>, uvs: Vec<Vec2>, normals: Normals) -> Self {
         Self {
             verts,
             tri,
@@ -65,9 +77,23 @@ impl Mesh {
         self
     }
 
-    pub fn with_normals(mut self, normals: Vec<Vec3>) -> Self {
+    pub fn with_normals(mut self, normals: Normals) -> Self {
         self.normals = normals;
         self
+    }
+
+    pub fn append_normals(&mut self, other_normals: &mut Normals) {
+        match (&mut self.normals, other_normals) {
+            (Normals::Face(normals), Normals::Face(others)) => {
+                normals.append(others);
+            }
+            (Normals::Vertex(normals), Normals::Vertex(others)) => {
+                normals.append(others);
+            }
+            _ => {
+                warn!("appending normals with non-uniform normal type");
+            }
+        }
     }
 
     pub fn calc_flat_face_normals(&self) -> Vec<Vec3> {
@@ -78,12 +104,11 @@ impl Mesh {
 
     pub fn calc_vertex_normals(&self) -> Vec<Vec3> {
         let flat_face_normals = self.calc_flat_face_normals();
-        let mut buckets: Vec<Vec<Vec3>> = Vec::with_capacity(self.verts.len());
-        buckets.fill_with(Default::default);
+        let mut buckets: Vec<Vec<Vec3>> = (0..self.verts.len()).map(|_| Vec::new()).collect();
 
         for (face_id, (ia, ib, ic)) in self.iter_triangles().enumerate() {
             for index in [ia, ib, ic] {
-                buckets[index].push(flat_face_normals[face_id].clone());
+                buckets[index].push(flat_face_normals[face_id]);
             }
         }
 
@@ -94,13 +119,12 @@ impl Mesh {
     }
 
     pub fn with_face_normals(mut self) -> Self {
-        self.normals = self.calc_flat_face_normals();
-        dbg!(&self.normals);
+        self.normals = Normals::Face(self.calc_flat_face_normals());
         self
     }
 
     pub fn with_vertex_normals(mut self) -> Self {
-        self.normals = self.calc_vertex_normals();
+        self.normals = Normals::Vertex(self.calc_vertex_normals());
         self
     }
 
@@ -108,13 +132,13 @@ impl Mesh {
         return self.tri.len() / 3;
     }
 
-    pub fn iter_triangles<'a>(&'a self) -> impl Iterator<Item = (usize, usize, usize)> + 'a {
+    pub fn iter_triangles(&self) -> impl Iterator<Item = (usize, usize, usize)> + '_ {
         (0..self.tri.len())
             .step_by(3)
             .map(|i| (self.tri[i], self.tri[i + 1], self.tri[i + 2]))
     }
 
-    pub fn iter_triangle_verts<'a>(&'a self) -> impl Iterator<Item = (Vec3, Vec3, Vec3)> + 'a {
+    pub fn iter_triangle_verts(&self) -> impl Iterator<Item = (Vec3, Vec3, Vec3)> + '_ {
         self.iter_triangles()
             .map(|(a, b, c)| (self.verts[a], self.verts[b], self.verts[c]))
     }
@@ -141,6 +165,20 @@ impl Mesh {
 
     pub fn linearize(self) -> Self {
         todo!();
+    }
+
+    pub fn get_normals(&self) -> Option<&Vec<Vec3>> {
+        match &self.normals {
+            Normals::Face(normals) | Normals::Vertex(normals) => Some(normals),
+            Normals::None => None,
+        }
+    }
+
+    pub fn get_normals_mut(&mut self) -> Option<&mut Vec<Vec3>> {
+        match &mut self.normals {
+            Normals::Face(normals) | Normals::Vertex(normals) => Some(normals),
+            Normals::None => None,
+        }
     }
 }
 
@@ -225,11 +263,16 @@ impl Mesh {
     }
 
     pub fn new_triangle(verts: [Vec3; 3]) -> Self {
-        Self::new(verts.to_vec(), [0, 1, 2].to_vec(), vec![], vec![])
+        Self::new(verts.to_vec(), [0, 1, 2].to_vec(), vec![], Normals::None)
     }
 
     pub fn new_quad(verts: [Vec3; 4]) -> Self {
-        Self::new(verts.to_vec(), [0, 1, 2, 0, 2, 3].to_vec(), vec![], vec![])
+        Self::new(
+            verts.to_vec(),
+            [0, 1, 2, 0, 2, 3].to_vec(),
+            vec![],
+            Normals::None,
+        )
     }
 
     pub fn new_oct(verts: [Vec3; 8]) -> Self {
@@ -240,7 +283,7 @@ impl Mesh {
                 tris.extend(idset);
                 tris
             });
-        Self::new(verts.to_vec(), ids, vec![], vec![])
+        Self::new(verts.to_vec(), ids, vec![], Normals::None)
     }
 
     pub fn from_octoid(oct: Octoid) -> Self {
@@ -614,7 +657,7 @@ impl Mesh {
             let length = other.verts.len();
             mesh.verts.append(&mut other.verts);
             mesh.uvs.append(&mut other.uvs);
-            mesh.normals.append(&mut other.normals);
+            mesh.append_normals(&mut other.normals);
             mesh.tri
                 .append(&mut other.tri.iter().map(|t| t + vertcount).collect());
             vertcount += length;
@@ -808,9 +851,12 @@ impl Mesh {
             *vert = oct.tri_lerp(*vert)
         }
 
-        for normal in &mut self.normals {
-            *normal = oct.tri_lerp_normal(*normal)
+        if let Some(normals) = self.get_normals_mut() {
+            for n in normals {
+                *n = oct.tri_lerp_normal(*n);
+            }
         }
+
         self
     }
 }

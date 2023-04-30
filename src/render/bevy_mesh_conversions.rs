@@ -1,5 +1,6 @@
 use bevy::{
     prelude::*,
+    render::mesh::Mesh as BevyMesh,
     render::mesh::VertexAttributeValues,
     render::{mesh::Indices, render_resource::PrimitiveTopology},
 };
@@ -14,11 +15,10 @@ use crate::{
 
 // make sure we can easily translate hedron types to bevy types
 
-impl From<HedronMesh> for Mesh {
+impl From<HedronMesh> for BevyMesh {
     fn from(hmesh: HedronMesh) -> Self {
-        let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
-        let verts = Vectors::new(hmesh.verts).to_vec_of_arrays();
-        let normals = Vectors::new(hmesh.normals).to_vec_of_arrays();
+        let mut mesh = BevyMesh::new(PrimitiveTopology::TriangleList);
+        let verts = Vectors::new(hmesh.verts.clone()).to_vec_of_arrays();
         let uvs = hmesh
             .uvs
             .iter()
@@ -26,12 +26,29 @@ impl From<HedronMesh> for Mesh {
             .collect::<Vec<[f32; 2]>>();
         let ids = hmesh.tri.iter().map(|v| *v as u32).collect();
 
-        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, verts);
-        if !normals.is_empty() {
-            mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
+        mesh.insert_attribute(BevyMesh::ATTRIBUTE_POSITION, verts);
+
+        match hmesh.normals {
+            crate::prelude::Normals::Face(_f_normals) => {
+                warn!("these are identified as face normals! should not work!");
+                let normals = Vectors::new(_f_normals).to_vec_of_arrays();
+                if !normals.is_empty() {
+                    mesh.insert_attribute(BevyMesh::ATTRIBUTE_NORMAL, normals);
+                }
+            }
+            crate::prelude::Normals::Vertex(v_normals) => {
+                let normals = Vectors::new(v_normals).to_vec_of_arrays();
+                if !normals.is_empty() {
+                    mesh.insert_attribute(BevyMesh::ATTRIBUTE_NORMAL, normals);
+                }
+            }
+            crate::prelude::Normals::None => {
+                // dont do anything
+            }
         }
+
         if !uvs.is_empty() {
-            mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
+            mesh.insert_attribute(BevyMesh::ATTRIBUTE_UV_0, uvs);
         }
         mesh.set_indices(Some(Indices::U32(ids)));
         mesh
@@ -42,17 +59,17 @@ impl From<HedronMesh> for Mesh {
 // These shouldnt exist here
 // On second thought, the PrimitiveTopology property makes this translation fine i guess
 
-impl From<Vectors> for Mesh {
+impl From<Vectors> for BevyMesh {
     fn from(points: Vectors) -> Self {
-        let mut mesh = Mesh::new(PrimitiveTopology::PointList);
-        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, points.to_vec_of_arrays());
+        let mut mesh = BevyMesh::new(PrimitiveTopology::PointList);
+        mesh.insert_attribute(BevyMesh::ATTRIBUTE_POSITION, points.to_vec_of_arrays());
         mesh
     }
 }
 
-impl From<Bezier> for Mesh {
+impl From<Bezier> for BevyMesh {
     fn from(val: Bezier) -> Self {
-        let mut mesh = Mesh::new(PrimitiveTopology::LineStrip);
+        let mut mesh = BevyMesh::new(PrimitiveTopology::LineStrip);
         let mut vertices = vec![];
         for vec in val.to_polyline(100) {
             vertices.push(vec.to_array());
@@ -60,7 +77,7 @@ impl From<Bezier> for Mesh {
         if let Some(last) = val.verts.last() {
             vertices.push(last.to_array())
         }
-        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
+        mesh.insert_attribute(BevyMesh::ATTRIBUTE_POSITION, vertices);
         mesh
     }
 }
@@ -88,19 +105,19 @@ impl From<Pose> for Transform {
     }
 }
 
-impl From<LineList> for Mesh {
+impl From<LineList> for BevyMesh {
     fn from(line: LineList) -> Self {
-        let mut mesh = Mesh::new(PrimitiveTopology::LineList);
+        let mut mesh = BevyMesh::new(PrimitiveTopology::LineList);
         let mut vertices = vec![];
         for vec in line.verts {
             vertices.push(vec.to_array());
         }
-        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
+        mesh.insert_attribute(BevyMesh::ATTRIBUTE_POSITION, vertices);
         mesh
     }
 }
 
-impl From<LineStrip> for Mesh {
+impl From<LineStrip> for BevyMesh {
     fn from(line: LineStrip) -> Self {
         let mut vertices = vec![];
         let mut normals = vec![];
@@ -111,11 +128,11 @@ impl From<LineStrip> for Mesh {
 
         // This tells wgpu that the positions are a list of points
         // where a line will be drawn between each consecutive point
-        let mut mesh = Mesh::new(PrimitiveTopology::LineStrip);
+        let mut mesh = BevyMesh::new(PrimitiveTopology::LineStrip);
 
-        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
+        mesh.insert_attribute(BevyMesh::ATTRIBUTE_POSITION, vertices);
         // Normals are currently required by bevy, but they aren't used by the [`LineMaterial`]
-        mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
+        mesh.insert_attribute(BevyMesh::ATTRIBUTE_NORMAL, normals);
         mesh
     }
 }
@@ -138,8 +155,8 @@ impl From<Polyhedron> for Mesh {
     }
 }
 
-pub fn borrow_verts(mesh: &Mesh) -> Option<&Vec<[f32; 3]>> {
-    let verts = mesh.attribute(Mesh::ATTRIBUTE_POSITION)?;
+pub fn borrow_verts(mesh: &BevyMesh) -> Option<&Vec<[f32; 3]>> {
+    let verts = mesh.attribute(BevyMesh::ATTRIBUTE_POSITION)?;
     if let VertexAttributeValues::Float32x3(vector) = verts {
         Some(vector)
     } else {
@@ -147,8 +164,8 @@ pub fn borrow_verts(mesh: &Mesh) -> Option<&Vec<[f32; 3]>> {
     }
 }
 
-pub fn borrow_normals(mesh: &Mesh) -> Option<&Vec<[f32; 3]>> {
-    let verts = mesh.attribute(Mesh::ATTRIBUTE_POSITION)?;
+pub fn borrow_normals(mesh: &BevyMesh) -> Option<&Vec<[f32; 3]>> {
+    let verts = mesh.attribute(BevyMesh::ATTRIBUTE_POSITION)?;
     if let VertexAttributeValues::Float32x3(vector) = verts {
         Some(vector)
     } else {
