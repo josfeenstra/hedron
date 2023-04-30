@@ -1,25 +1,45 @@
 #![allow(unused_variables)]
 
+use super::{quad_to_tri, Octoid, Polyhedron, CUBE_FACES};
+use crate::kernel::{fxx, kernel, vec2, vec3, Vec2, Vec3};
+use crate::prelude::*;
 use std::io::Write;
 use std::iter::Rev;
 use std::ops::Range;
 
-use crate::kernel::{fxx, kernel, vec2, vec3, Vec2, Vec3};
+/// TODO: write down all different types of mesh models, and try to model a sensible subset of these models
+/// Models:
+/// ```md
+///
+/// Index Mode:
+/// - Linear -> self.tri is empty, uvs and normals refer directly. check: verts, uvs, and normals are all the same length.
+/// - Mono -> self.tri indices are pointers to  vertices, uvs, and normals. check:  verts, uvs, and normals are all the same length.
+/// - Hetro -> self.tri has tuples, containing  separate vertices, uvs and normal pointers. check: verts, uvs, and normals contain different lengths
+///
+/// Normal Mode:
+/// - FaceNormal -> 1 normal per triangle. check: num_normals == num_faces
+/// - VertNormal -> 1 normal per vertex. check num_normals == num_vertices
+///
+/// ```
+pub enum Index {
+    Linear,
+    Mono(Vec<usize>),
+    Hetro(Vec<(usize, usize, usize)>),
+}
 
-use crate::lines::LineList;
-use crate::srf::{BiSurface, Rectangle3, TriSurface};
-use crate::{core::PointBased, data::Grid2};
-
-use super::{quad_to_tri, Octoid, Polyhedron, CUBE_FACES};
+pub enum Normal {
+    Face(Vec<Vec3>),
+    Vertex(Vec<Vec3>),
+}
 
 /// A dead simple, internal data structure to store meshes.
 /// Can get confusing in conjunction with bevy's mesh
 #[derive(Default, Debug, Clone)]
 pub struct Mesh {
     pub verts: Vec<Vec3>,
-    pub tri: Vec<usize>,
+    pub tri: Vec<usize>, // TODO Index Enum
     pub uvs: Vec<Vec2>,
-    pub normals: Vec<Vec3>, // TODO normalKind
+    pub normals: Vec<Vec3>, // TODO Normal Enum
 }
 
 impl Mesh {
@@ -31,6 +51,101 @@ impl Mesh {
             normals,
         }
     }
+
+    pub fn with_uvs(mut self, uvs: Vec<Vec2>) -> Self {
+        self.uvs = uvs;
+        self
+    }
+
+    pub fn with_uniform_uvs(mut self, uv: impl Into<Vec2>) -> Self {
+        let uv = uv.into();
+        for i in 0..self.verts.len() {
+            self.uvs.push(uv);
+        }
+        self
+    }
+
+    pub fn with_normals(mut self, normals: Vec<Vec3>) -> Self {
+        self.normals = normals;
+        self
+    }
+
+    pub fn calc_flat_face_normals(&self) -> Vec<Vec3> {
+        self.iter_triangle_verts()
+            .map(|(a, b, c)| Triangle::new(a, b, c).normal())
+            .collect::<Vec<_>>()
+    }
+
+    pub fn calc_vertex_normals(&self) -> Vec<Vec3> {
+        let flat_face_normals = self.calc_flat_face_normals();
+        let mut buckets: Vec<Vec<Vec3>> = Vec::with_capacity(self.verts.len());
+        buckets.fill_with(Default::default);
+
+        for (face_id, (ia, ib, ic)) in self.iter_triangles().enumerate() {
+            for index in [ia, ib, ic] {
+                buckets[index].push(flat_face_normals[face_id].clone());
+            }
+        }
+
+        buckets
+            .into_iter()
+            .map(|bucket| Vectors::average(&bucket).normalize())
+            .collect()
+    }
+
+    pub fn with_face_normals(mut self) -> Self {
+        self.normals = self.calc_flat_face_normals();
+        dbg!(&self.normals);
+        self
+    }
+
+    pub fn with_vertex_normals(mut self) -> Self {
+        self.normals = self.calc_vertex_normals();
+        self
+    }
+
+    pub fn count_triangles(&self) -> usize {
+        return self.tri.len() / 3;
+    }
+
+    pub fn iter_triangles<'a>(&'a self) -> impl Iterator<Item = (usize, usize, usize)> + 'a {
+        (0..self.tri.len())
+            .step_by(3)
+            .map(|i| (self.tri[i], self.tri[i + 1], self.tri[i + 2]))
+    }
+
+    pub fn iter_triangle_verts<'a>(&'a self) -> impl Iterator<Item = (Vec3, Vec3, Vec3)> + 'a {
+        self.iter_triangles()
+            .map(|(a, b, c)| (self.verts[a], self.verts[b], self.verts[c]))
+    }
+
+    pub fn get_triangles(&self) -> Vec<(usize, usize, usize)> {
+        let mut data = Vec::new();
+        assert!(self.tri.len() % 3 == 0);
+        for i in (0..self.tri.len()).step_by(3) {
+            data.push((self.tri[i], self.tri[i + 1], self.tri[i + 2]))
+        }
+        data
+    }
+
+    pub fn get_edges(&self) -> Vec<(usize, usize)> {
+        let tri = self.get_triangles();
+        let mut edges = Vec::new();
+        for (a, b, c) in tri {
+            edges.push((a, b));
+            edges.push((b, c));
+            edges.push((c, a));
+        }
+        edges
+    }
+
+    pub fn linearize(self) -> Self {
+        todo!();
+    }
+}
+
+impl Mesh {
+    // various constructors
 
     pub fn from_bi_surface(_srf: BiSurface, _u_segments: usize, _v_segments: usize) -> Mesh {
         // returns vertices & indices of a flat grid
@@ -575,26 +690,6 @@ impl Mesh {
 }
 
 impl Mesh {
-    pub fn get_triangles(&self) -> Vec<(usize, usize, usize)> {
-        let mut data = Vec::new();
-        assert!(self.tri.len() % 3 == 0);
-        for i in (0..self.tri.len()).step_by(3) {
-            data.push((self.tri[i], self.tri[i + 1], self.tri[i + 2]))
-        }
-        data
-    }
-
-    pub fn get_edges(&self) -> Vec<(usize, usize)> {
-        let tri = self.get_triangles();
-        let mut edges = Vec::new();
-        for (a, b, c) in tri {
-            edges.push((a, b));
-            edges.push((b, c));
-            edges.push((c, a));
-        }
-        edges
-    }
-
     pub fn to_lines(&self) -> LineList {
         let mut lines = Vec::new();
 
@@ -719,8 +814,6 @@ impl Mesh {
         self
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////
 
 impl PointBased for Mesh {
     // TODO how to IntoIterator, so we don't have to iter / collect
