@@ -31,17 +31,12 @@ pub enum Index {
     Hetro(Vec<(usize, usize, usize)>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub enum Normals {
+    #[default]
     None,
     Face(Vec<Vec3>),
     Vertex(Vec<Vec3>),
-}
-
-impl Default for Normals {
-    fn default() -> Self {
-        Normals::None
-    }
 }
 
 /// A dead simple, internal data structure to store meshes.
@@ -129,7 +124,7 @@ impl Mesh {
     }
 
     pub fn count_triangles(&self) -> usize {
-        return self.tri.len() / 3;
+        self.tri.len() / 3
     }
 
     pub fn iter_triangles(&self) -> impl Iterator<Item = (usize, usize, usize)> + '_ {
