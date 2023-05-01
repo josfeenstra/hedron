@@ -1,7 +1,5 @@
 #![allow(unused_variables)]
 
-use bevy::prelude::warn;
-
 use super::{quad_to_tri, Octoid, Polyhedron, CUBE_FACES};
 use crate::kernel::{fxx, kernel, vec2, vec3, Vec2, Vec3};
 use crate::prelude::*;
@@ -31,7 +29,8 @@ pub enum Index {
     Hetro(Vec<(usize, usize, usize)>),
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone, Default)]
+
 pub enum Normals {
     #[default]
     None,
@@ -86,7 +85,7 @@ impl Mesh {
                 normals.append(others);
             }
             _ => {
-                warn!("appending normals with non-uniform normal type");
+                println!("WARN: Skipping append normals with non-uniform normal type!");
             }
         }
     }
