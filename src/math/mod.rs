@@ -1,4 +1,5 @@
 mod cons;
+mod organic;
 mod polynomial;
 mod quick;
 mod range1;
@@ -8,6 +9,7 @@ mod shapers;
 mod stats;
 
 pub use cons::*;
+pub use organic::*;
 pub use polynomial::*;
 pub use quick::*;
 pub use range1::*;
