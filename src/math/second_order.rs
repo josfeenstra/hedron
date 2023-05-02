@@ -6,7 +6,7 @@ use std::{
 /// A second order system for producing an organic, realisticly delayed response to any input.
 /// Written by Jabuwu, credits to T3ssel8r
 #[derive(Debug, Default, Clone, Copy)]
-pub struct Organic<T> {
+pub struct SecondOrder<T> {
     pub input_previous: T,
     pub output: T,
     pub output_velocity: T,
@@ -16,7 +16,7 @@ pub struct Organic<T> {
     pub k3: f32,
 }
 
-impl<T> Organic<T>
+impl<T> SecondOrder<T>
 where
     T: Default
         + Copy
@@ -25,8 +25,8 @@ where
         + Add<T, Output = T>
         + Mul<f32, Output = T>,
 {
-    pub fn new(initial: T, k1: f32, k2: f32, k3: f32) -> Organic<T> {
-        Organic {
+    pub fn new(initial: T, k1: f32, k2: f32, k3: f32) -> SecondOrder<T> {
+        SecondOrder {
             input_previous: initial,
             output: initial,
             output_velocity: T::default(),
@@ -42,8 +42,8 @@ where
         frequency: f32,
         response: f32,
         damping: f32,
-    ) -> Organic<T> {
-        let mut second_order = Organic::new(initial, 0., 0., 0.);
+    ) -> SecondOrder<T> {
+        let mut second_order = SecondOrder::new(initial, 0., 0., 0.);
         second_order.set_frequency_response(frequency, response, damping);
         second_order
     }
