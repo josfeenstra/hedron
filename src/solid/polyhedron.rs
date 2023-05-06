@@ -247,7 +247,7 @@ impl Polyhedron {
             hedron.add_vert(*vert);
         }
 
-        for (ia, ib, ic) in mesh.get_triangles().into_iter() {
+        for (ia, ib, ic) in mesh.iter_triangles() {
             let (a, b, c) = (
                 hedron.verts.get(ia).expect("the mesh pointers should work"),
                 hedron.verts.get(ib).expect("the mesh pointers should work"),

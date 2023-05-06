@@ -136,30 +136,47 @@ impl Mesh {
             .map(|i| (self.tri[i], self.tri[i + 1], self.tri[i + 2]))
     }
 
+    pub fn iter_edges(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
+        self.iter_triangles()
+            .flat_map(|(a, b, c)| [(a, b), (b, c), (c, a)])
+    }
+
     pub fn iter_triangle_verts(&self) -> impl Iterator<Item = (Vec3, Vec3, Vec3)> + '_ {
         self.iter_triangles()
             .map(|(a, b, c)| (self.verts[a], self.verts[b], self.verts[c]))
     }
 
-    pub fn get_triangles(&self) -> Vec<(usize, usize, usize)> {
-        let mut data = Vec::new();
-        assert!(self.tri.len() % 3 == 0);
-        for i in (0..self.tri.len()).step_by(3) {
-            data.push((self.tri[i], self.tri[i + 1], self.tri[i + 2]))
-        }
-        data
+    pub fn iter_naked_edges(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
+        self.iter_edges().filter(|edge| {
+            let occurence_count = self
+                .iter_edges()
+                .filter(|other| edge == other || *edge == (other.1, other.0))
+                .count();
+            occurence_count < 3
+        })
     }
 
-    pub fn get_edges(&self) -> Vec<(usize, usize)> {
-        let tri = self.get_triangles();
-        let mut edges = Vec::new();
-        for (a, b, c) in tri {
-            edges.push((a, b));
-            edges.push((b, c));
-            edges.push((c, a));
-        }
-        edges
-    }
+    // pub fn get_triangles(&self) -> Vec<(usize, usize, usize)> {
+    //     let mut data = Vec::new();
+    //     assert!(self.tri.len() % 3 == 0);
+    //     for i in (0..self.tri.len()).step_by(3) {
+    //         data.push((self.tri[i], self.tri[i + 1], self.tri[i + 2]))
+    //     }
+    //     data
+    // }
+
+    // pub fn get_edges(&self) -> Vec<(usize, usize)> {
+    //     let tri = self.get_triangles();
+    //     let mut edges = Vec::new();
+    //     for (a, b, c) in tri {
+    //         edges.push((a, b));
+    //         edges.push((b, c));
+    //         edges.push((c, a));
+    //     }
+    //     edges
+    // }
+
+    /// an edge is naked if the same sequence cannot be found
 
     pub fn linearize(self) -> Self {
         todo!();
@@ -556,7 +573,7 @@ impl Mesh {
         mesh
     }
 
-    pub fn from_extrude(polygon: Polygon, extrusion: Vec3) -> Mesh {
+    pub fn from_extrude_polygon(polygon: Polygon, extrusion: Vec3) -> Mesh {
         let count = polygon.verts.len();
 
         let mut mesh = Mesh::from_join(
@@ -773,7 +790,7 @@ impl Mesh {
     pub fn to_lines(&self) -> LineList {
         let mut lines = Vec::new();
 
-        for edge in self.get_edges() {
+        for edge in self.iter_edges() {
             let (a, b) = edge;
             lines.push(self.verts[a]);
             lines.push(self.verts[b]);
@@ -868,12 +885,12 @@ impl Mesh {
         }
 
         if self.uvs.len() == self.verts.len() {
-            for (a, b, c) in self.get_triangles() {
+            for (a, b, c) in self.iter_triangles() {
                 let (a, b, c) = (a + 1, b + 1, c + 1);
                 writeln!(o, "f {a}/{a} {b}/{b} {c}/{c}")?;
             }
         } else {
-            for (a, b, c) in self.get_triangles() {
+            for (a, b, c) in self.iter_triangles() {
                 let (a, b, c) = (a + 1, b + 1, c + 1);
                 writeln!(o, "f {a} {b} {c}")?;
             }
@@ -882,6 +899,7 @@ impl Mesh {
     }
 }
 
+/// The real modelling tools
 impl Mesh {
     /// flip the full mesh by swapping triangle orders
     pub fn flip(mut self) -> Self {
@@ -889,6 +907,56 @@ impl Mesh {
             self.tri.swap(i, i + 1)
         }
         self
+    }
+
+    pub fn extrude(base: &Mesh, extrusion: Vec3) -> Mesh {
+        let offset = base.verts.len();
+        let mut mesh = Mesh::from_join([base.clone().flip(), base.clone().mv(extrusion)].into());
+
+        // NOTE: a naive polygon triangulation puts an additional point in the middle
+
+        // fill the two rings of vertices with triangles
+        for (i, j) in base.iter_naked_edges() {
+            mesh.tri.append(&mut vec![i, j, j + offset]);
+            mesh.tri.append(&mut vec![j + offset, i + offset, i]);
+        }
+
+        mesh
+    }
+
+    /// assumes all curves are of the same length!!!
+    #[rustfmt::skip]    
+    pub fn loft(mut curves: Vec<Vec<Vec3>>) -> Mesh {
+        let mut mesh = Mesh::default();
+        let curve_count = curves.len();
+        let count = curves[0].len();
+
+        for mut curve in &mut curves {
+            mesh.verts.append(&mut curve);
+        }
+
+        // fill the two rings of vertices with triangles
+
+        for ii in 0..curve_count-1 {
+
+            let base = ii * count;
+
+            for (i, j) in iter_pair_ids(count) {
+                mesh.tri
+                    .append(&mut vec![
+                        base + i, 
+                        base + j, 
+                        base + j + count]);
+                mesh.tri
+                    .append(&mut vec![
+                        base + j + count, 
+                        base + i + count, 
+                        base + i]);
+            }
+        }
+
+
+        mesh
     }
 
     pub fn tri_lerp_to_oct(mut self, oct: &Octoid) -> Self {

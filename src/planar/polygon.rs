@@ -109,7 +109,7 @@ impl Polygon {
     }
 
     /// segments: additional segments, besides a start and end point
-    pub fn round_corners(&self, segments: usize, radius: fxx) -> Self {
+    pub fn fillet_corners(&self, segments: usize, radius: fxx) -> Self {
         let mut pts = Vec::new();
 
         for (before, vert, after) in iter_triplets(&self.verts) {
