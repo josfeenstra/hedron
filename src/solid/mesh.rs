@@ -2,9 +2,10 @@
 
 use super::{quad_to_tri, Octoid, Polyhedron, CUBE_FACES};
 use crate::kernel::{fxx, kernel, vec2, vec3, Vec2, Vec3};
-use crate::prelude::*;
+use crate::{prelude::*, util};
 use std::io::Write;
 use std::iter::Rev;
+use std::mem::swap;
 use std::ops::Range;
 
 /// TODO: write down all different types of mesh models, and try to model a sensible subset of these models
@@ -83,6 +84,9 @@ impl Mesh {
             }
             (Normals::Vertex(normals), Normals::Vertex(others)) => {
                 normals.append(others);
+            }
+            (Normals::None, Normals::None) => {
+                //
             }
             _ => {
                 println!("WARN: Skipping append normals with non-uniform normal type!");
@@ -537,6 +541,45 @@ impl Mesh {
     // }
 }
 
+impl Mesh {
+    pub fn from_polygon_naive(polygon: &Polygon) -> Mesh {
+        let mut mesh = Mesh::default();
+
+        let count = polygon.verts.len(); // the center will end up at this vert id
+        for (a, b) in util::iter_pair_ids(count) {
+            mesh.verts.push(polygon.verts[a]);
+            mesh.tri.append(&mut vec![a, b, count]);
+        }
+        let center = Vectors::average(&polygon.verts);
+        mesh.verts.push(center);
+
+        mesh
+    }
+
+    pub fn from_extrude(polygon: Polygon, extrusion: Vec3) -> Mesh {
+        let count = polygon.verts.len();
+
+        let mut mesh = Mesh::from_join(
+            [
+                Mesh::from_polygon_naive(&polygon).flip(),
+                Mesh::from_polygon_naive(&polygon).mv(extrusion),
+            ]
+            .into(),
+        );
+
+        // NOTE: a naive polygon triangulation puts an additional point in the middle
+        let offset = count + 1;
+
+        // fill the two rings of vertices with triangles
+        for (i, j) in iter_pair_ids(count) {
+            mesh.tri.append(&mut vec![i, j, j + offset]);
+            mesh.tri.append(&mut vec![j + offset, i + offset, i]);
+        }
+
+        mesh
+    }
+}
+
 // more convoluted and specific constructors
 impl Mesh {
     // Get a grid mesh from weaving vertices of a grid.
@@ -840,6 +883,14 @@ impl Mesh {
 }
 
 impl Mesh {
+    /// flip the full mesh by swapping triangle orders
+    pub fn flip(mut self) -> Self {
+        for i in (0..self.tri.len()).step_by(3) {
+            self.tri.swap(i, i + 1)
+        }
+        self
+    }
+
     pub fn tri_lerp_to_oct(mut self, oct: &Octoid) -> Self {
         for vert in &mut self.verts {
             *vert = oct.tri_lerp(*vert)

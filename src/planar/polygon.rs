@@ -57,17 +57,7 @@ impl Polygon {
     /// Simple triangulate using a fan of triangles, and the center of the vertex
     /// This will work for convex polygons. concave polygons may become weird
     pub fn triangulate_naive(&self) -> Mesh {
-        let mut mesh = Mesh::default();
-
-        let count = self.verts.len(); // the center will end up at this vert id
-        for (a, b) in util::iter_pair_ids(count) {
-            mesh.verts.push(self.verts[a]);
-            mesh.tri.append(&mut vec![a, b, count]);
-        }
-        let center = Vectors::average(&self.verts);
-        mesh.verts.push(center);
-
-        mesh
+        Mesh::from_polygon_naive(&self)
     }
 
     pub fn simple_shrink(mut self, distance: fxx) -> Self {
@@ -128,7 +118,7 @@ impl Polygon {
 
             pts.push(start);
 
-            let bezier = Bezier::new([start, *vert, *vert, end].into());
+            let bezier = Bezier::new([start, *vert, end].into());
             for seg in iter_n_times(0.0, 1.0, 2 + segments).skip(1).take(segments) {
                 pts.push(bezier.point_at(seg));
             }
