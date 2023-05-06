@@ -130,6 +130,26 @@ pub fn between(t: fxx, data: Vec<fxx>) -> (usize, usize) {
     (start, end)
 }
 
+/// I know this is weird, I just want to go on with my life without worrying about NaN or whatever
+pub fn partial_clamp<T: PartialOrd>(a: T, lower: T, upper: T) -> T {
+    let lowered = match a.partial_cmp(&lower) {
+        Some(res) => match res {
+            std::cmp::Ordering::Less => lower,
+            std::cmp::Ordering::Equal => lower,
+            std::cmp::Ordering::Greater => a,
+        },
+        None => lower,
+    };
+    match lowered.partial_cmp(&upper) {
+        Some(res) => match res {
+            std::cmp::Ordering::Less => lowered,
+            std::cmp::Ordering::Equal => upper,
+            std::cmp::Ordering::Greater => upper,
+        },
+        None => lowered,
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 #[inline]

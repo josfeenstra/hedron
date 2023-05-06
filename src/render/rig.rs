@@ -1,7 +1,8 @@
+use std::ops::Range;
+
 use crate::{
     kernel::{fxx, Vec2, Vec3, FRAC_PI_2, PI},
-    math::spherical_to_cartesian,
-    smoothing::Dropoff,
+    math::{spherical_to_cartesian, Organic},
 };
 /// A rig to be used with the camera,
 /// Using two angles to deal with latitude (up/down) and longiture (left/right) rotations
@@ -14,7 +15,7 @@ use bevy_inspector_egui::InspectorOptions;
 const SPEED: fxx = 10.0;
 const EPSILON: fxx = 0.0001;
 
-const LERP_TOLERANCE: fxx = 0.001;
+// const LERP_TOLERANCE: fxx = 0.001;
 // const ROT_DELTA_DROPOFF:  fxx = 0.89;
 
 const MOUSE_ROTATE_POWER: fxx = 0.0015;
@@ -23,9 +24,11 @@ const MOUSE_SCROLL_POWER: fxx = 0.01;
 #[derive(Component, InspectorOptions, Debug)]
 pub struct Rig {
     pub pos: Vec3,
-    pub dis: Dropoff<fxx>,
-    pub rot_x: Dropoff<fxx>, // incl, azi
-    pub rot_y: Dropoff<fxx>, // incl, azi
+    pub dis: Organic<fxx>,
+    pub dis_range: Range<fxx>,
+    pub rot_x: Organic<fxx>, // incl, azi
+    pub rot_y: Organic<fxx>, // incl, azi
+    pub rot_y_range: Range<fxx>,
     pub has_updated: bool,
     pub active_look_controls: bool, // allow 'looking around' from the position of the rig (rotation and zooming)
     pub active_move_controls: bool, // allow movement of the rig
@@ -38,9 +41,11 @@ impl Default for Rig {
     fn default() -> Self {
         Self {
             pos: Vec3::ZERO,
-            dis: Dropoff::new(50.0, 1.0, 100.0, LERP_TOLERANCE),
-            rot_x: Dropoff::new(PI * 0.85, 0.0, 0.0, LERP_TOLERANCE),
-            rot_y: Dropoff::new(PI * 0.40, EPSILON, PI - EPSILON, LERP_TOLERANCE),
+            dis: Organic::new(50.0, 1.0, 1.0, 1.0),
+            dis_range: 1.0..100.0,
+            rot_x: Organic::new(PI * 0.85, 1.0, 1.0, 1.0),
+            rot_y: Organic::new(PI * 0.40, 1.0, 1.0, 1.0),
+            rot_y_range: EPSILON..PI - EPSILON,
             has_updated: false,
             active_look_controls: true,
             active_move_controls: false,
@@ -56,8 +61,9 @@ impl Rig {
     pub fn get_rot_x() {}
 
     pub fn set_rot_delta(&mut self, delta_x: fxx, delta_y: fxx) {
-        self.rot_x.set_delta(delta_x);
-        self.rot_y.set_delta(delta_y);
+        self.rot_x += delta_x;
+        self.rot_y
+            .add_clamped(delta_y, self.rot_y_range.start, self.rot_y_range.end);
     }
 
     // fn set_rot_clamped(&mut self, azi: fxx, incl: fxx) {
@@ -111,19 +117,19 @@ impl Rig {
 
         if self.active_look_controls {
             if key_input.pressed(KeyCode::Down) {
-                self.rot_y.set_delta(-rot_speed * dt);
+                self.rot_y += -rot_speed * dt;
                 changed = true;
             }
             if key_input.pressed(KeyCode::Up) {
-                self.rot_y.set_delta(rot_speed * dt);
+                self.rot_y += rot_speed * dt;
                 changed = true;
             }
             if key_input.pressed(KeyCode::Left) {
-                self.rot_x.set_delta(-rot_speed * dt);
+                self.rot_x += -rot_speed * dt;
                 changed = true;
             }
             if key_input.pressed(KeyCode::Right) {
-                self.rot_x.set_delta(rot_speed * dt);
+                self.rot_x += rot_speed * dt;
                 changed = true;
             }
         }
@@ -170,8 +176,11 @@ impl Rig {
         if self.active_look_controls {
             for event in mouse_wheel_events.iter() {
                 let y_normalized = if event.y > EPSILON { 1.0 } else { -1.0 };
-                self.dis
-                    .set_delta(self.dis.get() * y_normalized * -MOUSE_SCROLL_POWER);
+                self.dis.add_clamped(
+                    self.dis.get() * y_normalized * -MOUSE_SCROLL_POWER,
+                    self.dis_range.start,
+                    self.dis_range.end,
+                );
             }
         }
 
@@ -187,14 +196,14 @@ impl Rig {
 
     /// for smoothening the movement,, we delay certain values.
     fn update_smooths(&mut self, dt: fxx) {
-        let fps = 1.0 / dt; // = fps
-        let smooth_frames = fps * 0.5; // represent the number of frames of a smoothening
-        let tolerance_state = 0.0001; // represents the 'more or less zero' state of a smoothening
-        let factor = fxx::powf(tolerance_state, 1.0 / smooth_frames);
+        // let fps = 1.0 / dt; // = fps
+        // let smooth_frames = fps * 0.5; // represent the number of frames of a smoothening
+        // let tolerance_state = 0.0001; // represents the 'more or less zero' state of a smoothening
+        // let factor = fxx::powf(tolerance_state, 1.0 / smooth_frames);
 
-        self.rot_x.tick(factor);
-        self.rot_y.tick_clamped(factor);
-        self.dis.tick_clamped(factor);
+        self.rot_x.update(dt);
+        self.rot_y.update(dt);
+        self.dis.update(dt);
     }
 
     pub fn update(
@@ -226,8 +235,8 @@ impl Rig {
             );
 
             // if changes have occurred, recalculate the transform of the camera
-            let mut vec = spherical_to_cartesian(*rig.rot_y.get(), *rig.rot_x.get());
-            vec = rig.pos + (vec * *rig.dis.get());
+            let mut vec = spherical_to_cartesian(rig.rot_y.get(), rig.rot_x.get());
+            vec = rig.pos + (vec * rig.dis.get());
             tf.translation = vec;
             tf.look_at(rig.pos, Vec3::Z);
             rig.update_smooths(dt);
