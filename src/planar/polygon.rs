@@ -3,7 +3,9 @@ use crate::core::{Plane, Pose};
 use crate::kernel::{fxx, Vec2, Vec3, EPSILON, FRAC_PI_2, TAU};
 
 use crate::lines::Ray;
-use crate::util::iter_pairs;
+use crate::math::{iter_n_times, Range1};
+use crate::prelude::Bezier;
+use crate::util::{iter_pairs, iter_triplets};
 use crate::{
     core::PointBased,
     lines::{Line, LineStrip},
@@ -18,6 +20,8 @@ pub struct Polygon {
 }
 
 // TODO create support for Polylines (non-closed polygons)
+/// A polygon model.
+/// unlike some GIS polygon models, we do NOT include the seam point twice.
 impl Polygon {
     pub fn new(verts: Vec<Vec3>) -> Self {
         Self { verts }
@@ -112,6 +116,27 @@ impl Polygon {
             // keep z the same
         }
         self
+    }
+
+    /// segments: additional segments, besides a start and end point
+    pub fn round_corners(&self, segments: usize, radius: fxx) -> Self {
+        let mut pts = Vec::new();
+
+        for (before, vert, after) in iter_triplets(&self.verts) {
+            let start = *vert + (*before - *vert).normalize() * radius;
+            let end = *vert + (*after - *vert).normalize() * radius;
+
+            pts.push(start);
+
+            let bezier = Bezier::new([start, *vert, *vert, end].into());
+            for seg in iter_n_times(0.0, 1.0, 2 + segments).skip(1).take(segments) {
+                pts.push(bezier.point_at(seg));
+            }
+
+            pts.push(end);
+        }
+
+        Polygon::new(pts)
     }
 
     // pretend the polygon is 2d
