@@ -1,4 +1,6 @@
 //! I like to split away these intersection / geometric predicates stuff from the main code
+use std::cmp::Ordering;
+
 use crate::kernel::{fxx, Vec3};
 
 // simple 2x2
@@ -78,6 +80,11 @@ pub fn line_x_plane(a: Vec3, b: Vec3, plane_pos: Vec3, plane_normal: Vec3) -> Op
     }
     let t = top / bot;
     Some(t)
+}
+
+#[inline]
+pub fn half_plane_test(pos: Vec3, normal: Vec3, point: Vec3) -> Option<Ordering> {
+    (point - pos).dot(normal).partial_cmp(&0.0)
 }
 
 #[cfg(test)]

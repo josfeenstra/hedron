@@ -1,6 +1,9 @@
-use std::ops::Mul;
+use std::{cmp::Ordering, ops::Mul};
 
-use crate::kernel::{fxx, Affine3, Mat3, Mat4, Quat, Vec3};
+use crate::{
+    kernel::{fxx, Affine3, Mat3, Mat4, Quat, Vec3},
+    prelude::half_plane_test,
+};
 
 /// TODO: Merge Pose with Plane
 /// Strictly speaking, a pose should not have a scale.
@@ -142,52 +145,16 @@ impl Pose {
         self.rot * Vec3::X
     }
 
-    /// Equivalent to [`-local_x()`][Pose::local_x()]
-    #[inline]
-    pub fn left(&self) -> Vec3 {
-        -self.local_x()
-    }
-
-    /// Equivalent to [`local_x()`][Pose::local_x()]
-    #[inline]
-    pub fn right(&self) -> Vec3 {
-        self.local_x()
-    }
-
     /// Get the unit vector in the local `Y` direction.
     #[inline]
     pub fn local_y(&self) -> Vec3 {
         self.rot * Vec3::Y
     }
 
-    /// Equivalent to [`local_y()`][Pose::local_y]
-    #[inline]
-    pub fn up(&self) -> Vec3 {
-        self.local_y()
-    }
-
-    /// Equivalent to [`-local_y()`][Pose::local_y]
-    #[inline]
-    pub fn down(&self) -> Vec3 {
-        -self.local_y()
-    }
-
     /// Get the unit vector in the local `Z` direction.
     #[inline]
     pub fn local_z(&self) -> Vec3 {
         self.rot * Vec3::Z
-    }
-
-    /// Equivalent to [`-local_z()`][Pose::local_z]
-    #[inline]
-    pub fn forward(&self) -> Vec3 {
-        -self.local_z()
-    }
-
-    /// Equivalent to [`local_z()`][Pose::local_z]
-    #[inline]
-    pub fn back(&self) -> Vec3 {
-        self.local_z()
     }
 
     /// Rotates this [`Pose`] by the given rotation.
@@ -313,6 +280,25 @@ impl Pose {
     }
 }
 
+impl Pose {
+    /// Use the local Z as the normal
+    #[inline]
+    pub fn normal(&self) -> Vec3 {
+        self.local_z()
+    }
+
+    /// Test on which side a point is, relative to the plane this
+    /// pose represents
+    ///
+    /// Response:
+    /// greater -> point is on the side the normal is pointing to
+    /// less -> point is on the other side
+    /// Equal -> point lies exactly on the plane
+    pub fn half_plane_test(&self, point: Vec3) -> Option<Ordering> {
+        half_plane_test(self.pos, self.normal(), point)
+    }
+}
+
 impl Default for Pose {
     fn default() -> Self {
         Self::IDENTITY
@@ -334,3 +320,5 @@ impl Mul<Vec3> for Pose {
         self.transform_point(value)
     }
 }
+
+// TODO: make something like a CachedPose , then an Into<CachedPose>

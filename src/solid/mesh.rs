@@ -3,6 +3,7 @@
 use super::{quad_to_tri, Octoid, Polyhedron, CUBE_FACES};
 use crate::kernel::{fxx, kernel, vec2, vec3, Vec2, Vec3};
 use crate::{prelude::*, util};
+use std::cmp::Ordering;
 use std::io::Write;
 use std::iter::Rev;
 use std::mem::swap;
@@ -957,6 +958,31 @@ impl Mesh {
 
 
         mesh
+    }
+
+    /// re-use vertices by adding em twice
+    pub fn delinearize() {
+
+    }
+
+    // return two linear meshes (we can't recycle vert indices, since those indices get screwed by splitting the mesh)
+    pub fn split(mut self, plane: Pose) -> (Mesh, Mesh) {
+
+        let mut left = Mesh::default();
+        let mut right = Mesh::default();
+
+        for (a,b,c) in self.iter_triangle_verts() {
+            let abc = [a,b,c].iter().map(|p| plane.half_plane_test(*p)).map(|ord| match ord {
+                Ordering::Less => todo!(),
+                Ordering::Equal => todo!(),
+                Ordering::Greater => todo!(),
+            }
+            ).collect::<Vec<_>>();
+
+            // then do a crazy match with match oa, ob, oc
+        }
+
+        (left, right)
     }
 
     pub fn tri_lerp_to_oct(mut self, oct: &Octoid) -> Self {
