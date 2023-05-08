@@ -1,9 +1,6 @@
-use std::{cmp::Ordering, ops::Mul};
+use std::ops::Mul;
 
-use crate::{
-    kernel::{fxx, Affine3, Mat3, Mat4, Quat, Vec3},
-    prelude::half_plane_test,
-};
+use crate::kernel::{fxx, Affine3, Mat3, Mat4, Quat, Vec3};
 
 use super::Plane;
 

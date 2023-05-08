@@ -141,7 +141,8 @@ impl Plane {
         self.normal_col().dot(self.origin_col()) * -1.0
     }
 
-    fn abcd(&self) -> (fxx, fxx, fxx, fxx) {
+    /// voor de liefhebber
+    pub fn abcd(&self) -> (fxx, fxx, fxx, fxx) {
         (self.a(), self.b(), self.c(), self.d())
     }
 
