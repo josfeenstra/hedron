@@ -3,7 +3,7 @@ use crate::core::{Plane, Pose};
 use crate::kernel::{fxx, Vec2, Vec3, EPSILON, FRAC_PI_2, TAU};
 
 use crate::lines::Ray;
-use crate::math::{iter_n_times, Range1};
+use crate::math::iter_n_times;
 use crate::prelude::Bezier;
 use crate::util::{iter_pairs, iter_triplets};
 use crate::{
@@ -11,7 +11,7 @@ use crate::{
     lines::{Line, LineStrip},
     pts::Vectors,
     solid::Mesh,
-    util::{self, iter_pair_ids},
+    util::iter_pair_ids,
 };
 
 #[derive(Debug, Clone)]

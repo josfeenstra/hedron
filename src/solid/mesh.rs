@@ -6,7 +6,6 @@ use crate::{prelude::*, util};
 use std::cmp::Ordering;
 use std::io::Write;
 use std::iter::Rev;
-use std::mem::swap;
 use std::ops::Range;
 
 /// TODO: write down all different types of mesh models, and try to model a sensible subset of these models
