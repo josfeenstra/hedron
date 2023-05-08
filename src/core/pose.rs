@@ -5,6 +5,8 @@ use crate::{
     prelude::half_plane_test,
 };
 
+use super::Plane;
+
 /// TODO: Merge Pose with Plane
 /// Strictly speaking, a pose should not have a scale.
 /// Its the difference between a 'transform' and a 'scale'
@@ -278,30 +280,28 @@ impl Pose {
         // point = point / self.scale;
         point
     }
-}
 
-impl Pose {
     /// Use the local Z as the normal
     #[inline]
     pub fn normal(&self) -> Vec3 {
         self.local_z()
     }
 
-    /// Test on which side a point is, relative to the plane this
-    /// pose represents
-    ///
-    /// Response:
-    /// greater -> point is on the side the normal is pointing to
-    /// less -> point is on the other side
-    /// Equal -> point lies exactly on the plane
-    pub fn half_plane_test(&self, point: Vec3) -> Option<Ordering> {
-        half_plane_test(self.pos, self.normal(), point)
+    /// turn into a precalculated plane
+    pub fn to_plane(self) -> Plane {
+        Plane::new(self.compute_matrix())
     }
 }
 
 impl Default for Pose {
     fn default() -> Self {
         Self::IDENTITY
+    }
+}
+
+impl Into<Plane> for Pose {
+    fn into(self) -> Plane {
+        self.to_plane()
     }
 }
 

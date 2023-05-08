@@ -1,6 +1,11 @@
+use std::cmp::Ordering;
+
+use bevy_math::Vec4Swizzles;
+
 use crate::kernel::{fxx, Mat4, Quat, Vec3, Vec4};
 
 use crate::math::TOLERANCE;
+use crate::prelude::{half_plane_test, line_x_plane};
 
 use super::geometry::Geometry;
 
@@ -75,20 +80,32 @@ impl Plane {
     }
 
     /// get the center of the plane
-    pub fn origin(&self) -> Vec4 {
+    #[inline]
+    pub fn origin_col(&self) -> Vec4 {
         self.mat.w_axis
     }
 
+    #[inline]
+    pub fn origin(&self) -> Vec3 {
+        self.mat.w_axis.xyz()
+    }
+
     /// get a clone of the normal of the plane
-    pub fn normal(&self) -> Vec4 {
+    #[inline]
+    pub fn normal_col(&self) -> Vec4 {
         self.mat.z_axis
+    }
+
+    #[inline]
+    pub fn normal(&self) -> Vec3 {
+        self.mat.w_axis.xyz()
     }
 
     /// take a point defined in the world, and translate it to 'plane space'
     pub fn point_to_plane(&self, point: Vec3) -> Vec3 {
         // there must be more effective ways of doing this...
         let p = point.extend(0.0);
-        let v = p - self.origin();
+        let v = p - self.origin_col();
         let dist_x = v.dot(self.mat.x_axis);
         let dist_y = v.dot(self.mat.y_axis);
         let dist_z = v.dot(self.mat.z_axis);
@@ -104,26 +121,44 @@ impl Plane {
         self.point_to_plane(point).z
     }
 
-    // #[inline]
-    // fn a(&self) -> fxx {
-    //     self.mat.z_axis.x
-    // }
-    // #[inline]
-    // fn b(&self) -> fxx {
-    //     self.mat.z_axis.y
-    // }
-    // #[inline]
-    // fn c(&self) -> fxx {
-    //     self.mat.z_axis.z
-    // }
     #[inline]
-    pub fn d(&self) -> fxx {
-        self.normal().dot(self.origin()) * -1.0
+    fn a(&self) -> fxx {
+        self.mat.z_axis.x
     }
 
-    // fn abcd(&self) -> (fxx, fxx, fxx, fxx) {
-    //     (self.a(), self.b(), self.c(), self.d())
-    // }
+    #[inline]
+    fn b(&self) -> fxx {
+        self.mat.z_axis.y
+    }
+
+    #[inline]
+    fn c(&self) -> fxx {
+        self.mat.z_axis.z
+    }
+
+    #[inline]
+    pub fn d(&self) -> fxx {
+        self.normal_col().dot(self.origin_col()) * -1.0
+    }
+
+    fn abcd(&self) -> (fxx, fxx, fxx, fxx) {
+        (self.a(), self.b(), self.c(), self.d())
+    }
+
+    /// Test on which side a point is, relative to the plane this
+    /// pose represents
+    ///
+    /// Response:
+    /// greater -> point is on the side the normal is pointing to
+    /// less -> point is on the other side
+    /// Equal -> point lies exactly on the plane
+    pub fn half_plane_test(&self, point: Vec3) -> Option<Ordering> {
+        half_plane_test(self.origin(), self.normal(), point)
+    }
+
+    pub fn x_line(&self, a: Vec3, b: Vec3) -> Option<Vec3> {
+        line_x_plane(a, b, self.origin(), self.normal()).map(|t| a.lerp(b, t))
+    }
 }
 
 impl Geometry for Plane {

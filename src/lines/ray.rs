@@ -30,7 +30,7 @@ impl Ray {
     /// returns the t parameter on this ray
     pub fn x_plane(&self, plane: &Plane) -> fxx {
         // let t = plane.
-        let pn = plane.normal().truncate();
+        let pn = plane.normal_col().truncate();
         -(self.origin.dot(pn) + plane.d()) / self.normal.dot(pn)
     }
 }

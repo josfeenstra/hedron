@@ -925,12 +925,11 @@ impl Mesh {
     }
 
     /// assumes all curves are of the same length!!!
-    #[rustfmt::skip]    
+    #[rustfmt::skip]
     pub fn loft(mut curves: Vec<Vec<Vec3>>) -> Mesh {
         let mut mesh = Mesh::default();
         let curve_count = curves.len();
         let count = curves[0].len();
-
         for mut curve in &mut curves {
             mesh.verts.append(&mut curve);
         }
@@ -944,13 +943,13 @@ impl Mesh {
             for (i, j) in iter_pair_ids(count) {
                 mesh.tri
                     .append(&mut vec![
-                        base + i, 
-                        base + j, 
+                        base + i,
+                        base + j,
                         base + j + count]);
                 mesh.tri
                     .append(&mut vec![
-                        base + j + count, 
-                        base + i + count, 
+                        base + j + count,
+                        base + i + count,
                         base + i]);
             }
         }
@@ -959,28 +958,101 @@ impl Mesh {
         mesh
     }
 
-    /// re-use vertices by adding em twice
-    pub fn delinearize() {
+    /// PREREQUISITE: TODO Index Enum
+    /// re-use vertices by pointing to them using indices
+    pub fn delinearize(&self, tolerance: f32) -> Mesh {
+        // let mut mesh = Mesh::default();
 
+        todo!();
+        // for (a, b, c) in self.iter_triangle_verts() {}
+
+        // mesh
     }
 
-    // return two linear meshes (we can't recycle vert indices, since those indices get screwed by splitting the mesh)
-    pub fn split(mut self, plane: Pose) -> (Mesh, Mesh) {
+    // return two linear meshes (we can't maintain the triangle index pointers during splitting.
+    // or we can, but it would still require re-formatting the meshes after the procedure.
+    // This way, we do the reverse: After the operation, the meshes can be de-linearized if desired.
+    #[rustfmt::skip]
+    pub fn split(self, cutting_plane: impl Into<Plane>) -> (Mesh, Mesh) {
 
+        enum Side {
+            Left,
+            Right,
+            Both,
+        }
+
+        let plane: Plane = cutting_plane.into();
+        let plane_ref = &plane;
+
+        // choice of naming is arbitrary
         let mut left = Mesh::default();
         let mut right = Mesh::default();
 
+        // To make the cutting plane actually cut individual triangles, 
+        // We must do special shit, depending on if any one vertex is on one or the other side of the cutting plane. 
         for (a,b,c) in self.iter_triangle_verts() {
-            let abc = [a,b,c].iter().map(|p| plane.half_plane_test(*p)).map(|ord| match ord {
-                Ordering::Less => todo!(),
-                Ordering::Equal => todo!(),
-                Ordering::Greater => todo!(),
+
+            let tabc = &[a,b,c].iter().map(|p| plane.half_plane_test(a)).map(|ord| match ord {
+                Some(ord) => match ord {
+                    Ordering::Less => Side::Left,
+                    Ordering::Greater => Side::Right,
+                    Ordering::Equal => Side::Both, // its practically on both sides
+                }
+                None => {
+                    println!("WARN: splitting a degenerate point");
+                    Side::Right
+                }
+            }).collect::<Vec<_>>()[..];
+
+            let [ta, tb, tc] = tabc else {
+                continue;
+            };
+
+            // take special care to keep the ordering cyclicly alphabetical, if you get what I mean
+            // otherwise, newly added triangles will become flipped 
+            match (ta, tb, tc) {
+                (Side::Left | Side::Both, Side::Left  | Side::Both, Side::Left  | Side::Both) => {
+                    left.verts.append(&mut vec![a,b,c]);
+                },
+                (Side::Right  | Side::Both, Side::Right  | Side::Both, Side::Right | Side::Both) => {
+                    right.verts.append(&mut vec![a,b,c]);
+                },
+                (Side::Right, Side::Left, Side::Left)  => asym_split(&plane, &mut left, &mut right, b, c, a),
+                (Side::Left, Side::Right, Side::Right) => asym_split(&plane, &mut right, &mut left, b, c, a),
+                (Side::Left, Side::Right, Side::Left)  => asym_split(&plane, &mut left, &mut right, c, a, b),
+                (Side::Right, Side::Left, Side::Right) => asym_split(&plane, &mut right, &mut left, c, a, b),
+                (Side::Left, Side::Left, Side::Right)  => asym_split(&plane, &mut left, &mut right, a, b, c),
+                (Side::Right, Side::Right, Side::Left) => asym_split(&plane, &mut right, &mut left, a, b, c),
+                (Side::Both, Side::Left, Side::Right) => perfect_split(&plane, &mut left, &mut right, b, c, a),
+                (Side::Both, Side::Right, Side::Left) => perfect_split(&plane, &mut right, &mut left, b, c, a),
+                (Side::Right, Side::Both, Side::Left) => perfect_split(&plane, &mut left, &mut right, c, a, b),
+                (Side::Left, Side::Both, Side::Right) => perfect_split(&plane, &mut right, &mut left, c, a, b),
+                (Side::Left, Side::Right, Side::Both) => perfect_split(&plane, &mut left, &mut right, a, b, c),
+                (Side::Right, Side::Left, Side::Both) => perfect_split(&plane, &mut right, &mut left, a, b, c),
             }
-            ).collect::<Vec<_>>();
 
-            // then do a crazy match with match oa, ob, oc
+            // in case of an asymetrical split, split like this
+            fn asym_split(plane: &Plane, maj_side: &mut Mesh, min_side: &mut Mesh, maj1: Vec3, maj2: Vec3, min: Vec3) {
+                let x1 = plane.x_line(maj1, min).expect("according to the match dispatch, this should hit");
+                let x2 = plane.x_line(maj2, min).expect("according to the match dispatch, this should hit");
+                // we assume the shortest brace is the most 'delaunay'
+                if x1.distance(maj2) < x2.distance(maj1) {
+                    maj_side.verts.append(&mut vec![x1, maj1, maj2]);
+                    maj_side.verts.append(&mut vec![maj2, x2, x1]);
+                } else {
+                    maj_side.verts.append(&mut vec![x2, x1, maj1]);
+                    maj_side.verts.append(&mut vec![maj1, maj2, x2]);
+                }
+                min_side.verts.append(&mut vec![min, x1, x2]);
+            }
+
+            // in case of a perfect split, split like this
+            fn perfect_split(plane: &Plane, mesh_top: &mut Mesh, mesh_bot: &mut Mesh, top: Vec3, bot: Vec3, halfway: Vec3) {
+                let x = plane.x_line(top, bot).expect("according to the match dispatch, this should hit");
+                mesh_top.verts.append(&mut vec![top, x, halfway]);
+                mesh_top.verts.append(&mut vec![x, bot, halfway]);
+            }
         }
-
         (left, right)
     }
 

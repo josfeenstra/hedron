@@ -32,15 +32,18 @@ where
         self.system.output
     }
 
-    pub fn set(&mut self, t: T) {
-        self.target = t;
-    }
-
+    /// shorthand for adding to target in a clamped manner.
     pub fn add_clamped(&mut self, delta: T, lower: T, upper: T) {
         self.target = partial_clamp(self.target + delta, lower, upper);
     }
 
+    /// set the target
+    pub fn set(&mut self, t: T) {
+        self.target = t;
+    }
+
     /// Force the system to `t`, by setting the target AND current position to t.
+    /// reset velocity too, so the system is in rest
     pub fn set_force(&mut self, t: T) {
         self.target = t;
         self.system.input_previous = t;
