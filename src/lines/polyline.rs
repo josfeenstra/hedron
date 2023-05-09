@@ -11,3 +11,8 @@ impl Polyline {
         Self { verts }
     }
 }
+
+/// how to deal with closeness?
+pub struct ClosedPolyline {
+    pub verts: Vec<Vec3>,
+}
