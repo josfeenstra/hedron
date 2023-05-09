@@ -7,7 +7,7 @@ use super::Plane;
 /// TODO: Merge Pose with Plane
 /// Strictly speaking, a pose should not have a scale.
 /// Its the difference between a 'transform' and a 'scale'
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Pose {
     pub pos: Vec3,
     pub rot: Quat,

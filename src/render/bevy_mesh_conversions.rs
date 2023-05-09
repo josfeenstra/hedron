@@ -30,11 +30,11 @@ impl From<HedronMesh> for BevyMesh {
 
         match hmesh.normals {
             crate::prelude::Normals::Face(_f_normals) => {
-                warn!("these are identified as face normals! should not work!");
-                let normals = Vectors::new(_f_normals).to_vec_of_arrays();
-                if !normals.is_empty() {
-                    mesh.insert_attribute(BevyMesh::ATTRIBUTE_NORMAL, normals);
-                }
+                warn!("ignoring face normals...");
+                // let normals = Vectors::new(_f_normals).to_vec_of_arrays();
+                // if !normals.is_empty() {
+                //     mesh.insert_attribute(BevyMesh::ATTRIBUTE_NORMAL, normals);
+                // }
             }
             crate::prelude::Normals::Vertex(v_normals) => {
                 let normals = Vectors::new(v_normals).to_vec_of_arrays();
@@ -112,7 +112,8 @@ impl From<LineList> for BevyMesh {
         for vec in line.verts {
             vertices.push(vec.to_array());
         }
-        mesh.insert_attribute(BevyMesh::ATTRIBUTE_POSITION, vertices);
+        mesh.insert_attribute(BevyMesh::ATTRIBUTE_POSITION, vertices.clone());
+        mesh.insert_attribute(BevyMesh::ATTRIBUTE_NORMAL, vertices); // this makes no sense, but it makes errors go away in the current prepass stuff
         mesh
     }
 }

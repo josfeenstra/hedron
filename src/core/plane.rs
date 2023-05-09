@@ -98,7 +98,7 @@ impl Plane {
 
     #[inline]
     pub fn normal(&self) -> Vec3 {
-        self.mat.w_axis.xyz()
+        self.mat.z_axis.xyz()
     }
 
     /// take a point defined in the world, and translate it to 'plane space'
@@ -158,7 +158,10 @@ impl Plane {
     }
 
     pub fn x_line(&self, a: Vec3, b: Vec3) -> Option<Vec3> {
-        line_x_plane(a, b, self.origin(), self.normal()).map(|t| a.lerp(b, t))
+        line_x_plane(a, b, self.origin(), self.normal()).map(|t| {
+            dbg!(t);
+            a.lerp(b, t)
+        })
     }
 }
 

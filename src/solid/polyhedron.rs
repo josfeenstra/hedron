@@ -483,6 +483,14 @@ impl Polyhedron {
         self.edges.delete(twin);
     }
 
+    /////////////////////////////////////////////////////////////// Dumb shit
+
+    /// this is really dumb
+    pub fn try_get_vertex_normal(&self, v: VertPtr) -> Option<Vec3> {
+        let normal = self.face(self.edge(self.vert(v).edge?).face?).normal;
+        Some(normal)
+    }
+
     /////////////////////////////////////////////////////////////// Complex Transactions & Traversals
 
     /// return true if the internal data structures are 'clean'

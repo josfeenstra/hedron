@@ -46,7 +46,7 @@ pub struct Mesh {
     pub verts: Vec<Vec3>,
     pub tri: Vec<usize>, // TODO Index Enum
     pub uvs: Vec<Vec2>,
-    pub normals: Normals, // TODO Normal Enum
+    pub normals: Normals,
 }
 
 impl Mesh {
@@ -75,6 +75,16 @@ impl Mesh {
     pub fn with_normals(mut self, normals: Normals) -> Self {
         self.normals = normals;
         self
+    }
+
+    /// bevy workaround
+    pub fn with_dummy_normals(mut self) -> Self {
+        self.normals = Normals::Vertex(self.verts.clone());
+        self
+    }
+
+    pub fn double_sided(self) -> Self {
+        Mesh::from_join(vec![self.clone().flip(), self])
     }
 
     pub fn append_normals(&mut self, other_normals: &mut Normals) {
@@ -284,11 +294,60 @@ impl Mesh {
             }
         }
 
+        let mut normals = vec![];
+        for (i, v) in graph.verts.iter_enum() {
+            let normal = graph.try_get_vertex_normal(i).unwrap_or(Vec3::ZERO);
+            normals.push(normal);
+        }
+        mesh.normals = Normals::Vertex(normals);
+
         mesh
     }
 
     pub fn new_triangle(verts: [Vec3; 3]) -> Self {
-        Self::new(verts.to_vec(), [0, 1, 2].to_vec(), vec![], Normals::None)
+        Triangle::new(verts[0], verts[1], verts[2]).into()
+    }
+
+    pub fn from_triangle(triangle: Triangle) -> Self {
+        triangle.into()
+    }
+
+    pub fn quad_from_flat_plane(scale: fxx) -> Self {
+        let verts = [
+            Vec3::new(-scale, -scale, 0.0),
+            Vec3::new(-scale, scale, 0.0),
+            Vec3::new(scale, scale, 0.0),
+            Vec3::new(scale, -scale, 0.0),
+        ];
+        let normal = Vec3::Z;
+
+        Self::new(
+            verts.to_vec(),
+            [0, 3, 2, 2, 1, 0].to_vec(),
+            vec![],
+            Normals::Vertex(vec![normal, normal, normal, normal]),
+        )
+    }
+
+    pub fn quad_from_plane(plane: Plane, scale: fxx) -> Self {
+        let verts = [
+            Vec3::new(-scale, -scale, 0.0),
+            Vec3::new(-scale, scale, 0.0),
+            Vec3::new(scale, scale, 0.0),
+            Vec3::new(scale, -scale, 0.0),
+        ]
+        .iter()
+        .map(|v| plane.point_to_world(*v))
+        .collect();
+
+        let normal = plane.normal();
+
+        Self::new(
+            verts,
+            [0, 1, 2, 2, 3, 0].to_vec(),
+            vec![],
+            Normals::Face(vec![normal, normal]),
+        )
     }
 
     pub fn new_quad(verts: [Vec3; 4]) -> Self {
@@ -716,6 +775,20 @@ impl Mesh {
     pub fn from_join(meshes: Vec<Mesh>) -> Mesh {
         let mut mesh = Mesh::default();
 
+        // this is dumb
+        match meshes.get(0) {
+            Some(m) => match m.normals {
+                Normals::Face(_) => {
+                    mesh.normals = Normals::Face(vec![]);
+                }
+                Normals::Vertex(_) => {
+                    mesh.normals = Normals::Vertex(vec![]);
+                }
+                _ => (),
+            },
+            None => (),
+        }
+
         let mut vertcount = 0;
         for mut other in meshes {
             let length = other.verts.len();
@@ -999,8 +1072,9 @@ impl Mesh {
     /// or we can, but it would still require re-formatting the meshes after the procedure.
     /// This way, we do the reverse: After the operation, the meshes can be de-linearized if desired.
     #[rustfmt::skip]
-    pub fn split(self, cutting_plane: impl Into<Plane>) -> (Mesh, Mesh) {
+    pub fn split(&self, cutting_plane: impl Into<Plane>) -> (Mesh, Mesh) {
 
+        #[derive(Debug)]
         enum Side {
             Left,
             Right,
@@ -1018,7 +1092,7 @@ impl Mesh {
         // We must do special shit, depending on if any one vertex is on one or the other side of the cutting plane. 
         for (a,b,c) in self.iter_triangle_verts() {
 
-            let tabc = &[a,b,c].iter().map(|p| plane.half_plane_test(a)).map(|ord| match ord {
+            let tabc = &[a,b,c].iter().map(|p| plane.half_plane_test(*p)).map(|ord| match ord {
                 Some(ord) => match ord {
                     Ordering::Less => Side::Left,
                     Ordering::Greater => Side::Right,
@@ -1033,6 +1107,8 @@ impl Mesh {
             let [ta, tb, tc] = tabc else {
                 continue;
             };
+
+            dbg!(&ta,&tb,&tc);
 
             // take special care to keep the ordering cyclicly alphabetical, if you get what I mean
             // otherwise, newly added triangles will become flipped 
@@ -1061,6 +1137,7 @@ impl Mesh {
             fn asym_split(plane: &Plane, maj_side: &mut Mesh, min_side: &mut Mesh, maj1: Vec3, maj2: Vec3, min: Vec3) {
                 let x1 = plane.x_line(maj1, min).expect("according to the match dispatch, this should hit");
                 let x2 = plane.x_line(maj2, min).expect("according to the match dispatch, this should hit");
+
                 // we assume the shortest brace is the most 'delaunay'
                 if x1.distance(maj2) < x2.distance(maj1) {
                     maj_side.verts.append(&mut vec![x1, maj1, maj2]);
@@ -1079,6 +1156,11 @@ impl Mesh {
                 mesh_top.verts.append(&mut vec![x, bot, halfway]);
             }
         }
+
+        // TODO: index enum
+        left.tri = (0..left.verts.len()).collect::<Vec<usize>>();
+        right.tri = (0..right.verts.len()).collect::<Vec<usize>>();
+
         (left, right)
     }
 
@@ -1115,6 +1197,17 @@ impl PointBased for Mesh {
     // TODO how to IntoIterator, so we don't have to iter / collect
     fn mutate_points(&mut self) -> Vec<&mut Vec3> {
         self.verts.iter_mut().collect() // its a bit sad we have to do this.
+    }
+}
+
+impl From<Triangle> for Mesh {
+    fn from(t: Triangle) -> Self {
+        Self::new(
+            vec![t.a, t.b, t.c],
+            vec![0, 1, 2],
+            vec![],
+            Normals::Face(vec![t.normal()]),
+        )
     }
 }
 

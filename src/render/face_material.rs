@@ -11,7 +11,6 @@ use bevy::{
     },
 };
 
-// source: https://github.com/bevyengine/bevy/blob/main/examples/3d/lines.rs
 #[derive(Default, AsBindGroup, TypeUuid, Debug, Clone)]
 #[uuid = "cc3af62a-f8c1-49dd-82e8-7dcac3fc8830"]
 pub struct FaceMaterial {
@@ -30,7 +29,6 @@ impl Material for FaceMaterial {
         _layout: &MeshVertexBufferLayout,
         _key: MaterialPipelineKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
-        // This is the important part to tell bevy to render this material as a line between vertices
         descriptor.primitive.polygon_mode = PolygonMode::Fill;
 
         Ok(())

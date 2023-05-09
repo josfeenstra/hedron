@@ -1,6 +1,10 @@
 use super::{extract_vertices, FaceMaterial, InstanceData, InstanceMaterialData, LineMaterial};
-use crate::kernel::fxx;
-use bevy::{ecs::schedule::FreeSystemSet, prelude::*, render::view::NoFrustumCulling};
+use crate::{kernel::fxx, prelude::Mesh as HedronMesh};
+use bevy::{
+    ecs::schedule::FreeSystemSet,
+    prelude::{shape::Icosphere, *},
+    render::view::NoFrustumCulling,
+};
 use std::collections::{hash_map::Entry, HashMap};
 
 #[derive(Resource, Default)]
@@ -210,8 +214,8 @@ impl<M: Material + Default> GeoRenderer<M> {
 
 #[derive(Default)]
 pub struct GeoRendererPlugin<M, T> {
-    pub dummy: M, // this is weird, don't look at it
     pub phase: T,
+    pub dummy: M, // I think this should be phantomdata
 }
 
 impl<M: Material + Default, T: FreeSystemSet + Clone> GeoRendererPlugin<M, T> {
@@ -227,5 +231,107 @@ impl<M: Material + Default, T: FreeSystemSet + Clone> Plugin for GeoRendererPlug
     fn build(&self, app: &mut App) {
         app.insert_resource(GeoRenderer::<M>::default());
         app.add_system(GeoRenderer::<M>::update_system.in_set(self.phase.clone()));
+        app.add_system(GeoRenderer::<M>::update_system.in_set(self.phase.clone()));
+        app.add_system(MeshGeometry::driver.in_set(self.phase.clone()));
     }
+}
+
+/////////////////////////////////////////////////////////////////// Alternative approach
+
+#[derive(Component, Clone, Default)]
+pub struct MeshGeometry {
+    rendered: bool,
+    pub mesh: HedronMesh,
+    pub face_color: Option<Color>,
+    pub edge_color: Option<Color>,
+}
+
+impl MeshGeometry {
+    pub fn new(mesh: HedronMesh) -> Self {
+        Self {
+            rendered: false,
+            mesh,
+            face_color: None,
+            edge_color: None,
+        }
+    }
+
+    pub fn with_face_color(mut self, color: Color) -> Self {
+        self.face_color = Some(color);
+        self
+    }
+
+    pub fn with_edge_color(mut self, color: Color) -> Self {
+        self.edge_color = Some(color);
+        self
+    }
+
+    pub fn driver(
+        mut mesh_geometries: Query<(Entity, &mut MeshGeometry)>,
+        mut c: Commands,
+        mut meshes: ResMut<Assets<Mesh>>,
+        mut _materials: ResMut<Assets<StandardMaterial>>,
+        mut l_materials: ResMut<Assets<LineMaterial>>,
+        mut f_materials: ResMut<Assets<FaceMaterial>>,
+    ) {
+        for (entity, mut geo) in &mut mesh_geometries {
+            if geo.rendered {
+                return;
+            }
+            let bevy_line_mesh: Mesh = geo.mesh.to_lines().into();
+            let lines = c
+                .spawn((
+                    ThingBundle::default(),
+                    LineRenderBundle {
+                        line_mesh: meshes.add(bevy_line_mesh),
+                        line_material: l_materials.add(LineMaterial {
+                            color: geo.edge_color.unwrap_or(Color::rgb(0.8, 0.8, 0.8)),
+                        }),
+                    },
+                ))
+                .id();
+            c.entity(entity)
+                .insert(MeshRenderBundle {
+                    face_material: f_materials.add(FaceMaterial {
+                        color: geo.face_color.unwrap_or(Color::RED.with_r(0.5)),
+                    }),
+                    mesh: meshes.add(geo.mesh.clone().into()),
+                })
+                .add_child(lines);
+            geo.rendered = true;
+        }
+    }
+}
+
+#[derive(Bundle, Clone, Default)]
+struct MeshRenderBundle {
+    pub mesh: Handle<Mesh>,
+    pub face_material: Handle<FaceMaterial>,
+}
+
+#[derive(Bundle, Clone, Default)]
+struct LineRenderBundle {
+    pub line_mesh: Handle<Mesh>,
+    pub line_material: Handle<LineMaterial>,
+}
+
+#[derive(Bundle, Clone, Default)]
+pub struct GeoRenderBundle {
+    pub geo: MeshGeometry,
+    pub transform: Transform,
+    pub global_transform: GlobalTransform,
+    /// User indication of whether an entity is visible
+    pub visibility: Visibility,
+    /// Algorithmically-computed indication of whether an entity is visible and should be extracted for rendering
+    pub computed_visibility: ComputedVisibility,
+}
+
+#[derive(Bundle, Clone, Default)]
+pub struct ThingBundle {
+    pub transform: Transform,
+    pub global_transform: GlobalTransform,
+    /// User indication of whether an entity is visible
+    pub visibility: Visibility,
+    /// Algorithmically-computed indication of whether an entity is visible and should be extracted for rendering
+    pub computed_visibility: ComputedVisibility,
 }
