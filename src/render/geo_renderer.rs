@@ -1,10 +1,6 @@
 use super::{extract_vertices, FaceMaterial, InstanceData, InstanceMaterialData, LineMaterial};
 use crate::{kernel::fxx, prelude::Mesh as HedronMesh};
-use bevy::{
-    ecs::schedule::FreeSystemSet,
-    prelude::{shape::Icosphere, *},
-    render::view::NoFrustumCulling,
-};
+use bevy::{ecs::schedule::FreeSystemSet, prelude::*, render::view::NoFrustumCulling};
 use std::collections::{hash_map::Entry, HashMap};
 
 #[derive(Resource, Default)]
