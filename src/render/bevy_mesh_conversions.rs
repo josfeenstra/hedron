@@ -7,7 +7,7 @@ use bevy::{
 
 use crate::{
     core::Pose,
-    lines::{Bezier, LineList, LineStrip},
+    lines::{Bezier, LineList, Polyline},
     planar::Polygon,
     pts::Vectors,
     solid::{Mesh as HedronMesh, Polyhedron},
@@ -117,8 +117,8 @@ impl From<LineList> for BevyMesh {
     }
 }
 
-impl From<LineStrip> for BevyMesh {
-    fn from(line: LineStrip) -> Self {
+impl From<Polyline> for BevyMesh {
+    fn from(line: Polyline) -> Self {
         let mut vertices = vec![];
         let mut normals = vec![];
         for pos in line.verts {

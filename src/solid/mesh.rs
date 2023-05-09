@@ -1,5 +1,7 @@
 #![allow(unused_variables)]
 
+use bevy::utils::HashSet;
+
 use super::{quad_to_tri, Octoid, Polyhedron, CUBE_FACES};
 use crate::kernel::{fxx, kernel, vec2, vec3, Vec2, Vec3};
 use crate::{prelude::*, util};
@@ -154,6 +156,16 @@ impl Mesh {
                 .count();
             occurence_count < 3
         })
+    }
+
+    /// join consequtive parts
+    pub fn aggregate_edges(&self, edges: impl Iterator<Item = (usize, usize)>) -> Vec<Vec<usize>> {
+        // let mut linked_list = HashSet::new();
+        // edges.it
+
+        todo!();
+
+        // edges.count()
     }
 
     // pub fn get_triangles(&self) -> Vec<(usize, usize, usize)> {
@@ -897,6 +909,22 @@ impl Mesh {
         }
         Ok(obj)
     }
+
+    /// rename to transform_to_oct
+    /// Transform a mesh in R(0..1) space towards
+    pub fn transform_within_oct(mut self, oct: &Octoid) -> Self {
+        for vert in &mut self.verts {
+            *vert = oct.tri_lerp(*vert)
+        }
+
+        if let Some(normals) = self.get_normals_mut() {
+            for n in normals {
+                *n = oct.tri_lerp_normal(*n);
+            }
+        }
+
+        self
+    }
 }
 
 /// The real modelling tools
@@ -969,9 +997,9 @@ impl Mesh {
         // mesh
     }
 
-    // return two linear meshes (we can't maintain the triangle index pointers during splitting.
-    // or we can, but it would still require re-formatting the meshes after the procedure.
-    // This way, we do the reverse: After the operation, the meshes can be de-linearized if desired.
+    /// return two linear meshes (we can't maintain the triangle index pointers during splitting.
+    /// or we can, but it would still require re-formatting the meshes after the procedure.
+    /// This way, we do the reverse: After the operation, the meshes can be de-linearized if desired.
     #[rustfmt::skip]
     pub fn split(self, cutting_plane: impl Into<Plane>) -> (Mesh, Mesh) {
 
@@ -1056,17 +1084,31 @@ impl Mesh {
         (left, right)
     }
 
-    pub fn tri_lerp_to_oct(mut self, oct: &Octoid) -> Self {
-        for vert in &mut self.verts {
-            *vert = oct.tri_lerp(*vert)
+    /// Intersect, do not add vertices. Just return the intersection points as polylines
+    pub fn intersect(&self, plane: impl Into<Plane>) -> Vec<Polyline> {
+        Vec::new()
+    }
+
+    /// intersect & add vertices
+    /// return aggregated loops of inlayed vertices
+    pub fn intersect_and_inlay(self) -> (Self, Vec<Vec<usize>>) {
+        (self, Vec::new())
+    }
+
+    pub fn cap_planar_holes(self) -> Self {
+        for edge_loop in self.aggregate_edges(self.iter_naked_edges()) {
+            // planar?
+            // polygon
+            // closed?
+            // triangulate (earcutr)
+            // based on that procedure, insert the right triangles into the source mesh
+            // done!
         }
 
-        if let Some(normals) = self.get_normals_mut() {
-            for n in normals {
-                *n = oct.tri_lerp_normal(*n);
-            }
-        }
+        self
+    }
 
+    pub fn cap_edges(self, edges: &[usize]) -> Self {
         self
     }
 }

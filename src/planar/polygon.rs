@@ -8,7 +8,7 @@ use crate::prelude::Bezier;
 use crate::util::{iter_pairs, iter_triplets};
 use crate::{
     core::PointBased,
-    lines::{Line, LineStrip},
+    lines::{Line, Polyline},
     pts::Vectors,
     solid::Mesh,
     util::iter_pair_ids,
@@ -215,9 +215,9 @@ impl PointBased for Polygon {
     }
 }
 
-impl From<Polygon> for LineStrip {
+impl From<Polygon> for Polyline {
     fn from(p: Polygon) -> Self {
-        LineStrip::new(p.verts)
+        Polyline::new(p.verts)
     }
 }
 
