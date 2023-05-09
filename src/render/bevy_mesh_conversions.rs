@@ -118,10 +118,10 @@ impl From<LineList> for BevyMesh {
 }
 
 impl From<Polyline> for BevyMesh {
-    fn from(line: Polyline) -> Self {
+    fn from(polyline: Polyline) -> Self {
         let mut vertices = vec![];
         let mut normals = vec![];
-        for pos in line.verts {
+        for pos in polyline.get_verts() {
             vertices.push(pos.to_array());
             normals.push(Vec3::ZERO.to_array());
         }

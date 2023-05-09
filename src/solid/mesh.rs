@@ -1,7 +1,5 @@
 #![allow(unused_variables)]
 
-use bevy::utils::HashSet;
-
 use super::{quad_to_tri, Octoid, Polyhedron, CUBE_FACES};
 use crate::kernel::{fxx, kernel, vec2, vec3, Vec2, Vec3};
 use crate::{prelude::*, util};

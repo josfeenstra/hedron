@@ -217,7 +217,7 @@ impl PointBased for Polygon {
 
 impl From<Polygon> for Polyline {
     fn from(p: Polygon) -> Self {
-        Polyline::new(p.verts)
+        Polyline::new_closed(p.verts)
     }
 }
 
