@@ -158,10 +158,7 @@ impl Plane {
     }
 
     pub fn x_line(&self, a: Vec3, b: Vec3) -> Option<Vec3> {
-        line_x_plane(a, b, self.origin(), self.normal()).map(|t| {
-            dbg!(t);
-            a.lerp(b, t)
-        })
+        line_x_plane(a, b, self.origin(), self.normal()).map(|t| a.lerp(b, t))
     }
 }
 

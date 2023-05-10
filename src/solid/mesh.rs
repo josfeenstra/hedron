@@ -1108,8 +1108,6 @@ impl Mesh {
                 continue;
             };
 
-            dbg!(&ta,&tb,&tc);
-
             // take special care to keep the ordering cyclicly alphabetical, if you get what I mean
             // otherwise, newly added triangles will become flipped 
             match (ta, tb, tc) {
