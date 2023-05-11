@@ -8,45 +8,33 @@ use std::io::Write;
 use std::iter::Rev;
 use std::ops::Range;
 
-/// TODO: write down all different types of mesh models, and try to model a sensible subset of these models
-/// Models:
-/// ```md
-///
-/// Index Mode:
-/// - Linear -> self.tri is empty, uvs and normals refer directly. check: verts, uvs, and normals are all the same length.
-/// - Mono -> self.tri indices are pointers to  vertices, uvs, and normals. check:  verts, uvs, and normals are all the same length.
-/// - Hetro -> self.tri has tuples, containing  separate vertices, uvs and normal pointers. check: verts, uvs, and normals contain different lengths
-///
-/// Normal Mode:
-/// - FaceNormal -> 1 normal per triangle. check: num_normals == num_faces
-/// - VertNormal -> 1 normal per vertex. check num_normals == num_vertices
-///
-/// ```
-#[derive(Default, Debug, Clone)]
-pub enum Index {
-    #[default]
-    Linear,
-    Mono(Vec<usize>),
-    Hetro(Vec<(usize, usize, usize)>),
-}
-
 #[derive(Debug, Clone, Default)]
-
 pub enum Normals {
     #[default]
     None,
-    Face(Vec<Vec3>),
     Vertex(Vec<Vec3>),
+    Face(Vec<Vec3>),
 }
 
 /// A dead simple, internal data structure to store meshes.
 /// Can get confusing in conjunction with bevy's mesh
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Mesh {
     pub verts: Vec<Vec3>,
     pub tri: Vec<usize>, // TODO Index Enum
     pub uvs: Vec<Vec2>,
     pub normals: Normals,
+}
+
+impl Default for Mesh {
+    fn default() -> Self {
+        Self {
+            verts: Default::default(),
+            tri: Default::default(),
+            uvs: Default::default(),
+            normals: Normals::None,
+        }
+    }
 }
 
 impl Mesh {
@@ -146,14 +134,19 @@ impl Mesh {
             .map(|i| (self.tri[i], self.tri[i + 1], self.tri[i + 2]))
     }
 
+    pub fn iter_triangle_verts(&self) -> impl Iterator<Item = (Vec3, Vec3, Vec3)> + '_ {
+        self.iter_triangles()
+            .map(|(a, b, c)| (self.verts[a], self.verts[b], self.verts[c]))
+    }
+
     pub fn iter_edges(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
         self.iter_triangles()
             .flat_map(|(a, b, c)| [(a, b), (b, c), (c, a)])
     }
 
-    pub fn iter_triangle_verts(&self) -> impl Iterator<Item = (Vec3, Vec3, Vec3)> + '_ {
+    pub fn iter_unique_edges(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
         self.iter_triangles()
-            .map(|(a, b, c)| (self.verts[a], self.verts[b], self.verts[c]))
+            .flat_map(|(a, b, c)| [(a, b), (b, c), (c, a)])
     }
 
     pub fn iter_naked_edges(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
@@ -1057,17 +1050,6 @@ impl Mesh {
         mesh
     }
 
-    /// PREREQUISITE: TODO Index Enum
-    /// re-use vertices by pointing to them using indices
-    pub fn delinearize(&self, tolerance: f32) -> Mesh {
-        // let mut mesh = Mesh::default();
-
-        todo!();
-        // for (a, b, c) in self.iter_triangle_verts() {}
-
-        // mesh
-    }
-
     /// return two linear meshes (we can't maintain the triangle index pointers during splitting.
     /// or we can, but it would still require re-formatting the meshes after the procedure.
     /// This way, we do the reverse: After the operation, the meshes can be de-linearized if desired.
@@ -1171,6 +1153,29 @@ impl Mesh {
     /// return aggregated loops of inlayed vertices
     pub fn intersect_and_inlay(self) -> (Self, Vec<Vec<usize>>) {
         (self, Vec::new())
+    }
+
+    /// returns data about where the intersection "WOULD" take place, but don't intersect it yet.
+    /// Fuels  
+    fn pre_intersect(&self, plane: Plane) -> Option<()> {
+        // TODO:  half-plane test every vertex, then create a hashmap[usize_vertex] -> Side
+        // TODO2: pre-split every edge, then create a hashmap[(usizelowest_vertex, usizehighest_vertex)] -> (Vec3, usize_triangle_left, usize_triangle_right)
+
+        // let tabc = &[a,b,c].iter().map(|p| plane.half_plane_test(*p)).map(|ord| match ord {
+        //     Some(ord) => match ord {
+        //         Ordering::Less => Side::Left,
+        //         Ordering::Greater => Side::Right,
+        //         Ordering::Equal => Side::Both, // its practically on both sides
+        //     }
+        //     None => {
+        //         println!("WARN: splitting a degenerate point");
+        //         Side::Right
+        //     }
+        // }).collect::<Vec<_>>()[..];
+
+        for edge in self.iter_edges() {}
+
+        None
     }
 
     pub fn cap_planar_holes(self) -> Self {
