@@ -1,54 +1,44 @@
 #![allow(dead_code)]
 use crate::{
     kernel::*,
+    prelude::{Triangle, Vectors},
     util::{roughly_equals, OneOrMany},
 };
 
-// /// a corner of a triangle face
-// #[derive(Debug, Clone)]
-// pub struct TriCorner {
-//     v: usize,          // index of vertex
-//     uv: usize,         // index of uv
-//     n: usize,          // index of normal
-//     nb: Option<usize>, // index of nb triangle. Given triangle (a,b,c), nb of corner (a) is adjacent to (b, c)
-// }
+/// a corner of a triangle face
+#[derive(Debug, Clone)]
+pub struct TriCorner {
+    v: usize,  // index of vertex
+    uv: usize, // index of uv
+    n: usize,  // index of normal
+}
 
-// impl TriCorner {
-//     /// uniform
-//     pub fn new(v: usize, uv: usize, n: usize, nb: Option<usize>) -> Self {
-//         Self { v, uv, n, nb }
-//     }
+impl TriCorner {
+    /// uniform
+    pub fn new(v: usize, uv: usize, n: usize) -> Self {
+        Self { v, uv, n }
+    }
 
-//     pub fn new_uni(i: usize) -> Self {
-//         Self {
-//             v: i,
-//             uv: i,
-//             n: i,
-//             nb: None,
-//         }
-//     }
+    pub fn uniform(i: usize) -> Self {
+        Self { v: i, uv: i, n: i }
+    }
 
-//     pub fn with_nb(mut self, nb: usize) -> Self {
-//         self.nb = Some(nb);
-//         self
-//     }
-
-//     // a face normal is just the unique case in which all three corners of a face point to the same normal
-//     pub fn try_get_face_normal(face: &(TriCorner, TriCorner, TriCorner)) -> Option<usize> {
-//         let (a, b, c) = face;
-//         if a.n == b.n && a.n == c.n {
-//             return Some(a.n);
-//         }
-//         return None;
-//     }
-// }
+    // a face normal is just the unique case in which all three corners of a face point to the same normal
+    pub fn try_get_face_normal(face: &(TriCorner, TriCorner, TriCorner)) -> Option<usize> {
+        let (a, b, c) = face;
+        if a.n == b.n && a.n == c.n {
+            return Some(a.n);
+        }
+        return None;
+    }
+}
 
 /// triangle model used
 #[derive(Debug, Clone)]
 enum Triangles {
     Linear,
     Mono(Vec<usize>),
-    // Hetero(Vec<(TriCorner, TriCorner, TriCorner)>),
+    Hetero(Vec<TriCorner>),
 }
 
 /// A triangular mesh.
@@ -80,7 +70,7 @@ impl TriMesh {
         tri: Triangles,
         uvs: OneOrMany<Vec2>,
         normals: OneOrMany<Vec3>,
-        neighbors: Option<Vec<usize>>,
+        neighbors: Option<Vec<usize>>, // Given triangle (a,b,c), nb of corner (a) is adjacent to (b, c)
     ) -> Self {
         Self {
             verts,
@@ -107,13 +97,13 @@ impl TriMesh {
         }
     }
 
-    // pub fn new_hetero(verts: Vec<Vec3>, tri: Vec<(TriCorner, TriCorner, TriCorner)>) -> Self {
-    //     Self {
-    //         verts,
-    //         tri: Triangles::Hetero(tri),
-    //         ..Default::default()
-    //     }
-    // }
+    pub fn new_hetero(verts: Vec<Vec3>, tri: Vec<TriCorner>) -> Self {
+        Self {
+            verts,
+            tri: Triangles::Hetero(tri),
+            ..Default::default()
+        }
+    }
 
     pub fn with_verts(mut self, verts: Vec<Vec3>) -> Self {
         self.verts = verts;
@@ -132,12 +122,12 @@ impl TriMesh {
         self
     }
 
-    // // a non-uniform triangle model, with individual pointers for vertex, uvs, and normals.
-    // // triangle corners cal also house pointers to neighboring triangles.
-    // pub fn with_tri_hetero(mut self, tri: Vec<(TriCorner, TriCorner, TriCorner)>) -> Self {
-    //     self.tri = Triangles::Hetero(tri);
-    //     self
-    // }
+    /// a non-uniform triangle model, with individual pointers for vertex, uvs, and normals.
+    /// triangle corners cal also house pointers to neighboring triangles.
+    pub fn with_tri_hetero(mut self, tri: Vec<TriCorner>) -> Self {
+        self.tri = Triangles::Hetero(tri);
+        self
+    }
 
     /// set multiple uvs
     pub fn with_uvs(mut self, uvs: impl Into<Vec<Vec2>>) -> Self {
@@ -163,22 +153,26 @@ impl TriMesh {
         self
     }
 
-    // // /// turns mesh heterogenos
-    // pub fn with_face_normals(mut self) -> Self {
-    //     self = self.to_hetero();
-    //     self.normals = OneOrMany::Many(self.calc_flat_face_normals());
+    /// turns mesh heterogenos
+    pub fn with_face_normals(mut self) -> Self {
+        self = self.to_hetero();
+        self.normals = OneOrMany::Many(self.calc_flat_face_normals());
 
-    //     self
-    // }
+        let Triangles::Hetero(hetero) = &mut self.tri else {
+            unreachable!()
+        };
 
-    // pub fn with_vertex_normals(mut self) -> Self {
-    //     self.normals = OneOrMany::Many(self.calc_vertex_normals());
-    //     self
-    // }
+        for (i, corner) in hetero.iter_mut().enumerate() {
+            corner.n = i / 3;
+        }
 
-    // pub fn with_neighbors(mut self) -> Self {
-    //     todo!();
-    // }
+        self
+    }
+
+    pub fn with_vertex_normals(mut self) -> Self {
+        self.normals = OneOrMany::Many(self.calc_vertex_normals());
+        self
+    }
 
     ///////////////////////////////////////////////////////////////////////////
 
@@ -186,28 +180,28 @@ impl TriMesh {
 
     ///////////////////////////////////////////////////////////////////////////
 
-    // pub fn calc_flat_face_normals(&self) -> Vec<Vec3> {
-    //     self.iter_triangle_verts()
-    //         .map(|(a, b, c)| Triangle::new(a, b, c).normal())
-    //         .collect::<Vec<_>>()
-    // }
+    pub fn calc_flat_face_normals(&self) -> Vec<Vec3> {
+        self.iter_triangle_verts()
+            .map(|(a, b, c)| Triangle::new(a, b, c).normal())
+            .collect::<Vec<_>>()
+    }
 
-    // /// this is not how vertex normals are supposed to work.
-    // pub fn calc_vertex_normals(&self) -> Vec<Vec3> {
-    //     let flat_face_normals = self.calc_flat_face_normals();
-    //     let mut buckets: Vec<Vec<Vec3>> = (0..self.verts.len()).map(|_| Vec::new()).collect();
+    /// this is not how vertex normals are supposed to work.
+    pub fn calc_vertex_normals(&self) -> Vec<Vec3> {
+        let flat_face_normals = self.calc_flat_face_normals();
+        let mut buckets: Vec<Vec<Vec3>> = (0..self.verts.len()).map(|_| Vec::new()).collect();
 
-    //     for (face_id, (ia, ib, ic)) in self.iter_triangles().enumerate() {
-    //         for index in [ia, ib, ic] {
-    //             buckets[index].push(flat_face_normals[face_id]);
-    //         }
-    //     }
+        for (face_id, (ia, ib, ic)) in self.iter_triangles().enumerate() {
+            for index in [ia, ib, ic] {
+                buckets[index].push(flat_face_normals[face_id]);
+            }
+        }
 
-    //     buckets
-    //         .into_iter()
-    //         .map(|bucket| Vectors::average(&bucket).normalize())
-    //         .collect()
-    // }
+        buckets
+            .into_iter()
+            .map(|bucket| Vectors::average(&bucket).normalize())
+            .collect()
+    }
 
     ///////////////////////////////////////////////////////////////////////////
 
@@ -215,33 +209,51 @@ impl TriMesh {
         match &self.tri {
             Triangles::Linear => self.verts.len() / 3,
             Triangles::Mono(tri) => tri.len(),
+            Triangles::Hetero(tri) => tri.len(),
         }
     }
 
-    // /// This thing is key!
-    // pub fn iter_triangles(&self) -> impl Iterator<Item = TriCorner> + '_ {
-    //     match self.tri {
-    //         Triangles::Linear => {
-    //             let count = self.verts.len();
-    //             (0..count).step_by(3).map(|i| {
-    //                 (
-    //                     TriCorner::new_uni(i),
-    //                     TriCorner::new_uni(i + 1),
-    //                     TriCorner::new_uni(i + 2),
-    //                 )
-    //             })
-    //         }
-    //         Triangles::Mono(tri) => tri.iter().map(|(a, b, c)| {
-    //             (
-    //                 TriCorner::new_uni(*a),
-    //                 TriCorner::new_uni(*b),
-    //                 TriCorner::new_uni(*c),
-    //             )
-    //         }),
-    //         Triangles::Hetero(tri) => tri.iter(),
-    //         Triangles::MonoNb(tri) => tri.iter().map(|(a, b, c, nba, nbb, nbc)| {}),
-    //     }
-    // }
+    /// pretend to iter mono
+    pub fn iter_triangles(&self) -> impl Iterator<Item = (usize, usize, usize)> + '_ {
+        (0..self.tri_count() * 3)
+            .step_by(3)
+            .map(|i| match &self.tri {
+                Triangles::Linear => (i * 3, (i * 3) + 1, (i * 3) + 2),
+                Triangles::Mono(tri) => (tri[i], tri[i + 1], tri[i + 2]),
+                Triangles::Hetero(tri) => (tri[i].v, tri[i + 1].v, tri[i + 2].v),
+            })
+    }
+
+    /// pretend to iter hetero
+    pub fn iter_triangles_hetero(
+        &self,
+    ) -> impl Iterator<Item = (TriCorner, TriCorner, TriCorner)> + '_ {
+        (0..self.tri_count() * 3)
+            .step_by(3)
+            .map(|i| match &self.tri {
+                Triangles::Linear => (
+                    TriCorner::uniform(i * 3),
+                    TriCorner::uniform(i * 3 + 1),
+                    TriCorner::uniform(i * 3 + 2),
+                ),
+                Triangles::Mono(tri) => (
+                    TriCorner::uniform(tri[i]),
+                    TriCorner::uniform(tri[i + 1]),
+                    TriCorner::uniform(tri[i + 2]),
+                ),
+                Triangles::Hetero(tri) => (tri[i].clone(), tri[i + 1].clone(), tri[i + 2].clone()),
+            })
+    }
+
+    pub fn iter_triangle_verts(&self) -> impl Iterator<Item = (Vec3, Vec3, Vec3)> + '_ {
+        self.iter_triangles()
+            .map(|(a, b, c)| (self.verts[a], self.verts[b], self.verts[c]))
+    }
+
+    pub fn iter_edges(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
+        self.iter_triangles()
+            .flat_map(|(a, b, c)| [(a, b), (b, c), (c, a)])
+    }
 
     // get data of a vertex in a triangle
     fn get_vertex_data(
@@ -271,97 +283,49 @@ impl TriMesh {
         ))
     }
 
-    // fn get_triangle(&self, i: usize) -> Option<(TriCorner, TriCorner, TriCorner)> {
-
-    //     match &self.tri {
-    //         Triangles::Linear => Some(
-    //             (i * 3,
-    //             (i * 3) + 1,
-    //             (i * 3) + 2)
-    //         ),
-    //         Triangles::Mono(mono) => mono.get(i).map(|tr| ),
-    //         Triangles::MonoNb(mono_nb) => mono_nb.get(i).map(|tr| (tr.0, tr.1, tr.2)),
-    //         Triangles::Hetero(hetero) => hetero.get(i).cloned(),
-    //     }
-    // }
-
-    /// Whatever triangle model we are using, pretend the triangle is mono, and iterate over it
-    // pub fn iter_triangles_mono(&self) -> impl Iterator<Item = (usize, usize, usize)> + '_ {
-    //     (0..self.tri_count()).map(|i| self.get_triangle_mono(i).unwrap())
-    // }
-
-    // pub fn iter_triangle_verts_ids(&self) -> impl Iterator<Item = (usize, usize, usize)> + '_ {
-    //     (0..self.tri.len())
-    //         .step_by(3)
-    //         .map(|i| (self.tri[i], self.tri[i + 1], self.tri[i + 2]))
-    // }
-
-    // pub fn iter_triangle_verts(&self) -> impl Iterator<Item = (Vec3, Vec3, Vec3)> + '_ {
-    //     self.iter_triangles()
-    //         .map(|(a, b, c)| (self.verts[a], self.verts[b], self.verts[c]))
-    // }
-
-    // pub fn iter_edges(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
-    //     self.iter_triangles_hetero()
-    //         .flat_map(|(a, b, c)| [(a, b), (b, c), (c, a)])
-    // }
-
-    // pub fn iter_unique_edges(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
-    //     self.iter_triangles_hetero()
-    //         .flat_map(|(a, b, c)| [(a, b), (b, c), (c, a)])
-    // }
-
-    // pub fn iter_naked_edges(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
-    //     self.iter_edges().filter(|edge| {
-    //         let occurence_count = self
-    //             .iter_edges()
-    //             .filter(|other| edge == other || *edge == (other.1, other.0))
-    //             .count();
-    //         occurence_count < 3
-    //     })
-    // }
-
     pub fn to_linear(self) -> Self {
         match self.tri {
             Triangles::Linear => self,
             Triangles::Mono(mono) => {
-                let verts = mono
-                    .iter()
-                    .map(|i| self.verts[*i])
-                    .collect::<Vec<Vec3>>();
+                let verts = mono.iter().map(|i| self.verts[*i]).collect::<Vec<Vec3>>();
                 let normals = match self.normals {
                     OneOrMany::One(one) => OneOrMany::One(one),
                     OneOrMany::Many(many) => {
-                        let normals = mono
-                            .iter()
-                            .map(|i| many[*i])
-                            .collect::<Vec<Vec3>>();
+                        let normals = mono.iter().map(|i| many[*i]).collect::<Vec<Vec3>>();
                         OneOrMany::Many(normals)
                     }
                 };
                 let uvs = match self.uvs {
                     OneOrMany::One(one) => OneOrMany::One(one),
                     OneOrMany::Many(many) => {
-                        let uvs = mono
-                            .iter()
-                            .map(|i| many[*i])
-                            .collect::<Vec<Vec2>>();
+                        let uvs = mono.iter().map(|i| many[*i]).collect::<Vec<Vec2>>();
                         OneOrMany::Many(uvs)
                     }
                 };
                 Self::new(verts, Triangles::Linear, uvs, normals, None)
             }
-            // Triangles::MonoNb(mono_nb) => {} 
-            // Triangles::Hetero(hetero) => {},
-        }
-    }
+            Triangles::Hetero(hetero) => {
+                let verts = hetero
+                    .iter()
+                    .map(|h| self.verts[h.v])
+                    .collect::<Vec<Vec3>>();
 
-    // just make sure we are re-using vertices
-    pub fn to_at_least_mono(self) -> Self {
-        if matches!(self.tri, Triangles::Linear) {
-            self.to_mono()
-        } else {
-            self
+                let normals = match self.normals {
+                    OneOrMany::One(one) => OneOrMany::One(one),
+                    OneOrMany::Many(many) => {
+                        let normals = hetero.iter().map(|h| many[h.n]).collect::<Vec<Vec3>>();
+                        OneOrMany::Many(normals)
+                    }
+                };
+                let uvs = match self.uvs {
+                    OneOrMany::One(one) => OneOrMany::One(one),
+                    OneOrMany::Many(many) => {
+                        let uvs = hetero.iter().map(|h| many[h.uv]).collect::<Vec<Vec2>>();
+                        OneOrMany::Many(uvs)
+                    }
+                };
+                Self::new(verts, Triangles::Linear, uvs, normals, None)
+            }
         }
     }
 
@@ -369,11 +333,11 @@ impl TriMesh {
         match &self.tri {
             Triangles::Mono(_) => self,
             Triangles::Linear => {
-                let ids = Self::desoupify(&self.verts);
+                let mono = Self::desoupify(&self.verts);
                 let mut uvs = self.uvs.map(|_| Vec::new());
                 let mut normals = self.normals.map(|_| Vec::new());
                 let mut verts = Vec::new();
-                for (i, id) in ids.iter().enumerate() {
+                for (i, id) in mono.iter().enumerate() {
                     if i == *id {
                         verts.push(self.verts[i]);
                         uvs.push(self.uvs.get(i).unwrap().clone());
@@ -381,8 +345,58 @@ impl TriMesh {
                     }
                 }
 
-                Self::new(verts, Triangles::Mono(ids), uvs, normals, None)
+                Self::new(verts, Triangles::Mono(mono), uvs, normals, None)
             }
+            Triangles::Hetero(hetero) => {
+                // linearize uvs and normals
+                let mut uvs = self.uvs.map(|_| Vec::new());
+                let mut normals = self.normals.map(|_| Vec::new());
+
+                let mono = hetero
+                    .into_iter()
+                    .map(|h| {
+                        uvs.push(self.uvs.get(h.uv).unwrap().clone());
+                        normals.push(self.normals.get(h.n).unwrap().clone());
+                        h.v
+                    })
+                    .collect();
+                Self::new(
+                    self.verts,
+                    Triangles::Mono(mono),
+                    self.uvs,
+                    self.normals,
+                    None,
+                )
+            }
+        }
+    }
+
+    pub fn to_hetero(self) -> Self {
+        match &self.tri {
+            Triangles::Hetero(_) => self,
+            Triangles::Linear => self.to_mono().to_hetero(),
+            Triangles::Mono(mono) => {
+                let hetero = mono
+                    .iter()
+                    .map(|m| TriCorner::uniform(*m))
+                    .collect::<Vec<_>>();
+                Self::new(
+                    self.verts,
+                    Triangles::Hetero(hetero),
+                    self.uvs,
+                    self.normals,
+                    None,
+                )
+            }
+        }
+    }
+
+    // just make sure we are re-using vertices, don't care about mono / hetero
+    pub fn to_at_least_mono(self) -> Self {
+        if matches!(self.tri, Triangles::Linear) {
+            self.to_mono()
+        } else {
+            self
         }
     }
 }
