@@ -1,4 +1,4 @@
-#![allow(unused_variables)]
+#![allow(unused_variables, dead_code)]
 
 use super::{quad_to_tri, Octoid, Polyhedron, CUBE_FACES};
 use crate::kernel::{fxx, kernel, vec2, vec3, Vec2, Vec3};

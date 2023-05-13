@@ -1,13 +1,15 @@
 mod dir;
 mod iter;
+pub mod misc;
+pub mod named_enum;
+mod one_or_many;
 mod rot;
 mod simple_step_range;
-
-pub mod named_enum;
+mod vecs;
 
 pub use dir::*;
 pub use iter::*;
+pub use one_or_many::*;
 pub use rot::*;
 pub use simple_step_range::*;
-
-pub mod misc;
+pub use vecs::*;

@@ -25,6 +25,8 @@ pub mod kernel {
     pub const INFINITY: f32 = std::f32::INFINITY;
     pub const NEG_INFINITY: f32 = std::f32::NEG_INFINITY;
 
+    pub const IS_VEC_THE_SAME_TOLERANCE: f32 = 0.001;
+
     pub use bevy_math::vec2;
     pub use bevy_math::vec3;
 
