@@ -430,4 +430,23 @@ impl TriMesh {
     }
 }
 
-impl TriMesh {}
+impl TriMesh {
+    // simple join, not taking common verts into account
+    pub fn from_join(meshes: Vec<TriMesh>) -> TriMesh {
+        let mut mesh = TriMesh::default();
+
+        todo!();
+        // let mut vertcount = 0;
+        // for mut other in meshes {
+        //     let length = other.verts.len();
+        //     mesh.verts.append(&mut other.verts);
+        //     mesh.uvs.append(&mut other.uvs);
+        //     mesh.append_normals(&mut other.normals);
+        //     mesh.tri
+        //         .append(&mut other.tri.iter().map(|t| t + vertcount).collect());
+        //     vertcount += length;
+        // }
+
+        // mesh
+    }
+}
