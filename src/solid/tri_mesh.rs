@@ -33,20 +33,20 @@ impl TriCorner {
     }
 }
 
-/// triangle model used
+/// the mesh indexing model used
 #[derive(Debug, Clone)]
-enum Triangles {
-    Linear,
-    Mono(Vec<usize>),
-    Hetero(Vec<TriCorner>),
+pub enum Indexing {
+    Linear,                 // linear, non-indexed model
+    Uniform(Vec<usize>),    // uniform indexing
+    Hetero(Vec<TriCorner>), // refer to different vertices, normals, and uvs per triangle
 }
 
 /// A triangular mesh.
 ///
 /// Represented in various ways, See `Triangles`.
-struct TriMesh {
+pub struct TriMesh {
     pub verts: Vec<Vec3>,
-    pub tri: Triangles,
+    pub tri: Indexing,
     pub uvs: OneOrMany<Vec2>,
     pub normals: OneOrMany<Vec3>,
     pub neighbors: Option<Vec<usize>>,
@@ -56,7 +56,7 @@ impl Default for TriMesh {
     fn default() -> Self {
         Self {
             verts: Default::default(),
-            tri: Triangles::Linear,
+            tri: Indexing::Linear,
             uvs: OneOrMany::One(Vec2::ZERO),
             normals: OneOrMany::One(Vec3::Z),
             neighbors: None,
@@ -67,7 +67,7 @@ impl Default for TriMesh {
 impl TriMesh {
     pub fn new(
         verts: Vec<Vec3>,
-        tri: Triangles,
+        tri: Indexing,
         uvs: OneOrMany<Vec2>,
         normals: OneOrMany<Vec3>,
         neighbors: Option<Vec<usize>>, // Given triangle (a,b,c), nb of corner (a) is adjacent to (b, c)
@@ -84,15 +84,15 @@ impl TriMesh {
     pub fn new_linear(verts: Vec<Vec3>) -> Self {
         Self {
             verts,
-            tri: Triangles::Linear,
+            tri: Indexing::Linear,
             ..Default::default()
         }
     }
 
-    pub fn new_mono(verts: Vec<Vec3>, tri: Vec<usize>) -> Self {
+    pub fn new_uniform(verts: Vec<Vec3>, tri: Vec<usize>) -> Self {
         Self {
             verts,
-            tri: Triangles::Mono(tri),
+            tri: Indexing::Uniform(tri),
             ..Default::default()
         }
     }
@@ -100,7 +100,7 @@ impl TriMesh {
     pub fn new_hetero(verts: Vec<Vec3>, tri: Vec<TriCorner>) -> Self {
         Self {
             verts,
-            tri: Triangles::Hetero(tri),
+            tri: Indexing::Hetero(tri),
             ..Default::default()
         }
     }
@@ -112,20 +112,20 @@ impl TriMesh {
 
     /// leads to a linear mesh model. Verts are a simple vertex lists, and we are not reusing any vertex, normal or uv.
     pub fn with_tri_linear(mut self) -> Self {
-        self.tri = Triangles::Linear;
+        self.tri = Indexing::Linear;
         self
     }
 
     /// uniform triangle model, where a corner of the triangle points to a vertex, uv and normal.
-    pub fn with_tri_mono(mut self, tri: Vec<usize>) -> Self {
-        self.tri = Triangles::Mono(tri);
+    pub fn with_tri_uniform(mut self, tri: Vec<usize>) -> Self {
+        self.tri = Indexing::Uniform(tri);
         self
     }
 
     /// a non-uniform triangle model, with individual pointers for vertex, uvs, and normals.
     /// triangle corners cal also house pointers to neighboring triangles.
     pub fn with_tri_hetero(mut self, tri: Vec<TriCorner>) -> Self {
-        self.tri = Triangles::Hetero(tri);
+        self.tri = Indexing::Hetero(tri);
         self
     }
 
@@ -158,7 +158,7 @@ impl TriMesh {
         self = self.to_hetero();
         self.normals = OneOrMany::Many(self.calc_flat_face_normals());
 
-        let Triangles::Hetero(hetero) = &mut self.tri else {
+        let Indexing::Hetero(hetero) = &mut self.tri else {
             unreachable!()
         };
 
@@ -207,20 +207,20 @@ impl TriMesh {
 
     pub fn tri_count(&self) -> usize {
         match &self.tri {
-            Triangles::Linear => self.verts.len() / 3,
-            Triangles::Mono(tri) => tri.len(),
-            Triangles::Hetero(tri) => tri.len(),
+            Indexing::Linear => self.verts.len() / 3,
+            Indexing::Uniform(tri) => tri.len(),
+            Indexing::Hetero(tri) => tri.len(),
         }
     }
 
-    /// pretend to iter mono
+    /// pretend to iter uni
     pub fn iter_triangles(&self) -> impl Iterator<Item = (usize, usize, usize)> + '_ {
         (0..self.tri_count() * 3)
             .step_by(3)
             .map(|i| match &self.tri {
-                Triangles::Linear => (i * 3, (i * 3) + 1, (i * 3) + 2),
-                Triangles::Mono(tri) => (tri[i], tri[i + 1], tri[i + 2]),
-                Triangles::Hetero(tri) => (tri[i].v, tri[i + 1].v, tri[i + 2].v),
+                Indexing::Linear => (i * 3, (i * 3) + 1, (i * 3) + 2),
+                Indexing::Uniform(tri) => (tri[i], tri[i + 1], tri[i + 2]),
+                Indexing::Hetero(tri) => (tri[i].v, tri[i + 1].v, tri[i + 2].v),
             })
     }
 
@@ -231,17 +231,17 @@ impl TriMesh {
         (0..self.tri_count() * 3)
             .step_by(3)
             .map(|i| match &self.tri {
-                Triangles::Linear => (
+                Indexing::Linear => (
                     TriCorner::uniform(i * 3),
                     TriCorner::uniform(i * 3 + 1),
                     TriCorner::uniform(i * 3 + 2),
                 ),
-                Triangles::Mono(tri) => (
+                Indexing::Uniform(tri) => (
                     TriCorner::uniform(tri[i]),
                     TriCorner::uniform(tri[i + 1]),
                     TriCorner::uniform(tri[i + 2]),
                 ),
-                Triangles::Hetero(tri) => (tri[i].clone(), tri[i + 1].clone(), tri[i + 2].clone()),
+                Indexing::Hetero(tri) => (tri[i].clone(), tri[i + 1].clone(), tri[i + 2].clone()),
             })
     }
 
@@ -285,26 +285,26 @@ impl TriMesh {
 
     pub fn to_linear(self) -> Self {
         match self.tri {
-            Triangles::Linear => self,
-            Triangles::Mono(mono) => {
-                let verts = mono.iter().map(|i| self.verts[*i]).collect::<Vec<Vec3>>();
+            Indexing::Linear => self,
+            Indexing::Uniform(uni) => {
+                let verts = uni.iter().map(|i| self.verts[*i]).collect::<Vec<Vec3>>();
                 let normals = match self.normals {
                     OneOrMany::One(one) => OneOrMany::One(one),
                     OneOrMany::Many(many) => {
-                        let normals = mono.iter().map(|i| many[*i]).collect::<Vec<Vec3>>();
+                        let normals = uni.iter().map(|i| many[*i]).collect::<Vec<Vec3>>();
                         OneOrMany::Many(normals)
                     }
                 };
                 let uvs = match self.uvs {
                     OneOrMany::One(one) => OneOrMany::One(one),
                     OneOrMany::Many(many) => {
-                        let uvs = mono.iter().map(|i| many[*i]).collect::<Vec<Vec2>>();
+                        let uvs = uni.iter().map(|i| many[*i]).collect::<Vec<Vec2>>();
                         OneOrMany::Many(uvs)
                     }
                 };
-                Self::new(verts, Triangles::Linear, uvs, normals, None)
+                Self::new(verts, Indexing::Linear, uvs, normals, None)
             }
-            Triangles::Hetero(hetero) => {
+            Indexing::Hetero(hetero) => {
                 let verts = hetero
                     .iter()
                     .map(|h| self.verts[h.v])
@@ -324,20 +324,20 @@ impl TriMesh {
                         OneOrMany::Many(uvs)
                     }
                 };
-                Self::new(verts, Triangles::Linear, uvs, normals, None)
+                Self::new(verts, Indexing::Linear, uvs, normals, None)
             }
         }
     }
 
-    pub fn to_mono(self) -> Self {
+    pub fn to_uniform(self) -> Self {
         match &self.tri {
-            Triangles::Mono(_) => self,
-            Triangles::Linear => {
-                let mono = Self::desoupify(&self.verts);
+            Indexing::Uniform(_) => self,
+            Indexing::Linear => {
+                let uni = Self::desoupify(&self.verts);
                 let mut uvs = self.uvs.map(|_| Vec::new());
                 let mut normals = self.normals.map(|_| Vec::new());
                 let mut verts = Vec::new();
-                for (i, id) in mono.iter().enumerate() {
+                for (i, id) in uni.iter().enumerate() {
                     if i == *id {
                         verts.push(self.verts[i]);
                         uvs.push(self.uvs.get(i).unwrap().clone());
@@ -345,14 +345,14 @@ impl TriMesh {
                     }
                 }
 
-                Self::new(verts, Triangles::Mono(mono), uvs, normals, None)
+                Self::new(verts, Indexing::Uniform(uni), uvs, normals, None)
             }
-            Triangles::Hetero(hetero) => {
+            Indexing::Hetero(hetero) => {
                 // linearize uvs and normals
                 let mut uvs = self.uvs.map(|_| Vec::new());
                 let mut normals = self.normals.map(|_| Vec::new());
 
-                let mono = hetero
+                let uni = hetero
                     .into_iter()
                     .map(|h| {
                         uvs.push(self.uvs.get(h.uv).unwrap().clone());
@@ -362,7 +362,7 @@ impl TriMesh {
                     .collect();
                 Self::new(
                     self.verts,
-                    Triangles::Mono(mono),
+                    Indexing::Uniform(uni),
                     self.uvs,
                     self.normals,
                     None,
@@ -373,16 +373,16 @@ impl TriMesh {
 
     pub fn to_hetero(self) -> Self {
         match &self.tri {
-            Triangles::Hetero(_) => self,
-            Triangles::Linear => self.to_mono().to_hetero(),
-            Triangles::Mono(mono) => {
-                let hetero = mono
+            Indexing::Hetero(_) => self,
+            Indexing::Linear => self.to_uniform().to_hetero(),
+            Indexing::Uniform(uni) => {
+                let hetero = uni
                     .iter()
                     .map(|m| TriCorner::uniform(*m))
                     .collect::<Vec<_>>();
                 Self::new(
                     self.verts,
-                    Triangles::Hetero(hetero),
+                    Indexing::Hetero(hetero),
                     self.uvs,
                     self.normals,
                     None,
@@ -391,10 +391,10 @@ impl TriMesh {
         }
     }
 
-    // just make sure we are re-using vertices, don't care about mono / hetero
-    pub fn to_at_least_mono(self) -> Self {
-        if matches!(self.tri, Triangles::Linear) {
-            self.to_mono()
+    // just make sure we are re-using vertices, don't care about uni / hetero
+    pub fn to_at_least_uniform(self) -> Self {
+        if matches!(self.tri, Indexing::Linear) {
+            self.to_uniform()
         } else {
             self
         }
@@ -429,3 +429,5 @@ impl TriMesh {
         // edges.count()
     }
 }
+
+impl TriMesh {}
