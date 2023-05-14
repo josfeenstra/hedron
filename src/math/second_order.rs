@@ -1,9 +1,6 @@
-use std::{
-    f32::consts::PI,
-    ops::{Add, Div, Mul, Sub},
-};
+use std::ops::{Add, Div, Mul, Sub};
 
-use crate::kernel::fxx;
+use crate::kernel::{fxx, PI};
 
 /// A second order system for producing an organic, realisticly delayed response to any input.
 /// Written by Jabuwu, credits to T3ssel8r
@@ -41,9 +38,9 @@ where
     /// frequency, response and dampning are nicer parameters to play with
     pub fn new_frequency_response(
         initial: T,
-        frequency: f32,
-        response: f32,
-        damping: f32,
+        frequency: fxx,
+        response: fxx,
+        damping: fxx,
     ) -> SecondOrder<T> {
         let mut second_order = SecondOrder::new(initial, 0., 0., 0.);
         second_order.set_frequency_response(frequency, response, damping);
@@ -52,7 +49,7 @@ where
 
     pub fn set_frequency_response(&mut self, frequency: fxx, response: fxx, damping: fxx) {
         self.k1 = damping / (PI * frequency);
-        self.k2 = 1. / (2. * PI * frequency).powf(2.);
+        self.k2 = 1. / (2. * PI * frequency).powi(2);
         self.k3 = response * damping / (2. * PI * frequency);
     }
 
