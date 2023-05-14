@@ -16,5 +16,5 @@ pub fn epsilon_equals(a: Vec3, b: Vec3) -> bool {
 
 #[inline]
 pub fn roughly_equals(a: Vec3, b: Vec3) -> bool {
-    tolerance_equals(a, b, IS_VEC_THE_SAME_TOLERANCE)
+    tolerance_equals(a, b, VEC_TOLERANCE)
 }

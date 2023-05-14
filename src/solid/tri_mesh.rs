@@ -41,9 +41,49 @@ pub enum Indexing {
     Hetero(Vec<TriCorner>), // refer to different vertices, normals, and uvs per triangle
 }
 
+impl Indexing {
+    pub fn uniform(&self) -> Option<&Vec<usize>> {
+        match self {
+            Indexing::Uniform(uniform) => Some(uniform),
+            _ => None,
+        }
+    }
+
+    pub fn uniform_mut(&mut self) -> Option<&mut Vec<usize>> {
+        match self {
+            Indexing::Uniform(uniform) => Some(uniform),
+            _ => None,
+        }
+    }
+
+    pub fn hetero(&self) -> Option<&Vec<TriCorner>> {
+        match self {
+            Indexing::Hetero(hetero) => Some(hetero),
+            _ => None,
+        }
+    }
+
+    pub fn hetero_mut(&mut self) -> Option<&mut Vec<TriCorner>> {
+        match self {
+            Indexing::Hetero(hetero) => Some(hetero),
+            _ => None,
+        }
+    }
+}
+
 /// A triangular mesh.
 ///
 /// Represented in various ways, See `Triangles`.
+///
+/// |         | One        | Many         |
+/// |---------|------------|------------- |
+/// | Linear  | grabs the one| grabs from the list |
+/// |         |               |                     |
+/// | Mono    | grabs the one | grabs from the list |
+/// |         | ||
+/// | Hetero  | index is 0 | index is     |
+/// |         |            |              |
+///
 pub struct TriMesh {
     pub verts: Vec<Vec3>,
     pub tri: Indexing,
@@ -433,20 +473,32 @@ impl TriMesh {
 impl TriMesh {
     // simple join, not taking common verts into account
     pub fn from_join(meshes: Vec<TriMesh>) -> TriMesh {
-        let mut mesh = TriMesh::default();
+        let mut mesh = TriMesh::default().with_tri_uniform(Vec::new());
 
-        todo!();
-        // let mut vertcount = 0;
-        // for mut other in meshes {
-        //     let length = other.verts.len();
-        //     mesh.verts.append(&mut other.verts);
-        //     mesh.uvs.append(&mut other.uvs);
-        //     mesh.append_normals(&mut other.normals);
-        //     mesh.tri
-        //         .append(&mut other.tri.iter().map(|t| t + vertcount).collect());
-        //     vertcount += length;
-        // }
+        let mut vertcount = 0;
+        for other in meshes {
+            let mut other = other.to_uniform();
+            let length = other.verts.len();
+            mesh.verts.append(&mut other.verts);
+            // mesh.uvs.append(&mut other.uvs);
+            // mesh.normals.append(&mut other.normals);
+            mesh.tri.uniform_mut().unwrap().append(
+                &mut other
+                    .tri
+                    .uniform_mut()
+                    .unwrap()
+                    .iter()
+                    .map(|t| t + vertcount)
+                    .collect(),
+            );
+            vertcount += length;
+        }
 
-        // mesh
+        mesh
+    }
+
+    // more advanced join. Will make sure vertices are re-used as much as possible
+    pub fn from_merge(_meshes: Vec<TriMesh>) -> TriMesh {
+        todo!()
     }
 }

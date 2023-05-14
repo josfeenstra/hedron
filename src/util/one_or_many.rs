@@ -48,4 +48,13 @@ impl<T: Clone> OneOrMany<T> {
             many.push(item)
         }
     }
+
+    pub fn append(&mut self, other: Self) {
+        match (self, other) {
+            (OneOrMany::One(_), OneOrMany::One(_)) => todo!(),
+            (OneOrMany::One(_), OneOrMany::Many(_)) => todo!(),
+            (OneOrMany::Many(_), OneOrMany::One(_)) => todo!(),
+            (OneOrMany::Many(_), OneOrMany::Many(_)) => todo!(),
+        };
+    }
 }

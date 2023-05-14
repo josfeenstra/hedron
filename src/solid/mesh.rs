@@ -4,6 +4,7 @@ use super::{quad_to_tri, Octoid, Polyhedron, CUBE_FACES};
 use crate::kernel::{fxx, kernel, vec2, vec3, Vec2, Vec3};
 use crate::{prelude::*, util};
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::io::Write;
 use std::iter::Rev;
 use std::ops::Range;
@@ -142,31 +143,6 @@ impl Mesh {
     pub fn iter_edges(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
         self.iter_triangles()
             .flat_map(|(a, b, c)| [(a, b), (b, c), (c, a)])
-    }
-
-    pub fn iter_unique_edges(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
-        self.iter_triangles()
-            .flat_map(|(a, b, c)| [(a, b), (b, c), (c, a)])
-    }
-
-    pub fn iter_naked_edges(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
-        self.iter_edges().filter(|edge| {
-            let occurence_count = self
-                .iter_edges()
-                .filter(|other| edge == other || *edge == (other.1, other.0))
-                .count();
-            occurence_count < 3
-        })
-    }
-
-    /// join consequtive parts
-    pub fn aggregate_edges(&self, edges: impl Iterator<Item = (usize, usize)>) -> Vec<Vec<usize>> {
-        // let mut linked_list = HashSet::new();
-        // edges.it
-
-        todo!();
-
-        // edges.count()
     }
 
     // pub fn get_triangles(&self) -> Vec<(usize, usize, usize)> {
@@ -1056,13 +1032,6 @@ impl Mesh {
     #[rustfmt::skip]
     pub fn split(&self, cutting_plane: impl Into<Plane>) -> (Mesh, Mesh) {
 
-        #[derive(Debug)]
-        enum Side {
-            Left,
-            Right,
-            Both,
-        }
-
         let plane: Plane = cutting_plane.into();
         let plane_ref = &plane;
 
@@ -1078,7 +1047,7 @@ impl Mesh {
                 Some(ord) => match ord {
                     Ordering::Less => Side::Left,
                     Ordering::Greater => Side::Right,
-                    Ordering::Equal => Side::Both, // its practically on both sides
+                    Ordering::Equal => Side::OnTop, // its practically on both sides
                 }
                 None => {
                     println!("WARN: splitting a degenerate point");
@@ -1093,24 +1062,25 @@ impl Mesh {
             // take special care to keep the ordering cyclicly alphabetical, if you get what I mean
             // otherwise, newly added triangles will become flipped 
             match (ta, tb, tc) {
-                (Side::Left | Side::Both, Side::Left  | Side::Both, Side::Left  | Side::Both) => {
+                (Side::Left | Side::OnTop, Side::Left  | Side::OnTop, Side::Left  | Side::OnTop) => {
                     left.verts.append(&mut vec![a,b,c]);
                 },
-                (Side::Right  | Side::Both, Side::Right  | Side::Both, Side::Right | Side::Both) => {
+                (Side::Right  | Side::OnTop, Side::Right  | Side::OnTop, Side::Right | Side::OnTop) => {
                     right.verts.append(&mut vec![a,b,c]);
                 },
-                (Side::Right, Side::Left, Side::Left)  => asym_split(&plane, &mut left, &mut right, b, c, a),
+                (Side::Right, Side::Left, Side::Left)  => asym_split(&plane, &mut left, &mut right, b, c, a), // TODO something like asym_split(swap, ia, ib, ic) -> (list_for_right, list_for_left)
                 (Side::Left, Side::Right, Side::Right) => asym_split(&plane, &mut right, &mut left, b, c, a),
                 (Side::Left, Side::Right, Side::Left)  => asym_split(&plane, &mut left, &mut right, c, a, b),
                 (Side::Right, Side::Left, Side::Right) => asym_split(&plane, &mut right, &mut left, c, a, b),
                 (Side::Left, Side::Left, Side::Right)  => asym_split(&plane, &mut left, &mut right, a, b, c),
                 (Side::Right, Side::Right, Side::Left) => asym_split(&plane, &mut right, &mut left, a, b, c),
-                (Side::Both, Side::Left, Side::Right) => perfect_split(&plane, &mut left, &mut right, b, c, a),
-                (Side::Both, Side::Right, Side::Left) => perfect_split(&plane, &mut right, &mut left, b, c, a),
-                (Side::Right, Side::Both, Side::Left) => perfect_split(&plane, &mut left, &mut right, c, a, b),
-                (Side::Left, Side::Both, Side::Right) => perfect_split(&plane, &mut right, &mut left, c, a, b),
-                (Side::Left, Side::Right, Side::Both) => perfect_split(&plane, &mut left, &mut right, a, b, c),
-                (Side::Right, Side::Left, Side::Both) => perfect_split(&plane, &mut right, &mut left, a, b, c),
+
+                (Side::OnTop, Side::Left, Side::Right) => perfect_split(&plane, &mut left, &mut right, b, c, a),
+                (Side::OnTop, Side::Right, Side::Left) => perfect_split(&plane, &mut right, &mut left, b, c, a),
+                (Side::Right, Side::OnTop, Side::Left) => perfect_split(&plane, &mut left, &mut right, c, a, b),
+                (Side::Left, Side::OnTop, Side::Right) => perfect_split(&plane, &mut right, &mut left, c, a, b),
+                (Side::Left, Side::Right, Side::OnTop) => perfect_split(&plane, &mut left, &mut right, a, b, c),
+                (Side::Right, Side::Left, Side::OnTop) => perfect_split(&plane, &mut right, &mut left, a, b, c),
             }
 
             // in case of an asymetrical split, split like this
@@ -1120,11 +1090,9 @@ impl Mesh {
 
                 // we assume the shortest brace is the most 'delaunay'
                 if x1.distance(maj2) < x2.distance(maj1) {
-                    maj_side.verts.append(&mut vec![x1, maj1, maj2]);
-                    maj_side.verts.append(&mut vec![maj2, x2, x1]);
+                    maj_side.verts.append(&mut vec![x1, maj1, maj2, maj2, x2, x1]);
                 } else {
-                    maj_side.verts.append(&mut vec![x2, x1, maj1]);
-                    maj_side.verts.append(&mut vec![maj1, maj2, x2]);
+                    maj_side.verts.append(&mut vec![x2, x1, maj1, maj1, maj2, x2]);
                 }
                 min_side.verts.append(&mut vec![min, x1, x2]);
             }
@@ -1133,7 +1101,7 @@ impl Mesh {
             fn perfect_split(plane: &Plane, mesh_top: &mut Mesh, mesh_bot: &mut Mesh, top: Vec3, bot: Vec3, halfway: Vec3) {
                 let x = plane.x_line(top, bot).expect("according to the match dispatch, this should hit");
                 mesh_top.verts.append(&mut vec![top, x, halfway]);
-                mesh_top.verts.append(&mut vec![x, bot, halfway]);
+                mesh_bot.verts.append(&mut vec![x, bot, halfway]);
             }
         }
 
@@ -1151,38 +1119,139 @@ impl Mesh {
 
     /// intersect & add vertices
     /// return aggregated loops of inlayed vertices
-    pub fn intersect_and_inlay(self) -> (Self, Vec<Vec<usize>>) {
-        (self, Vec::new())
+    pub fn plane_loop_cut(self, plane: impl Into<Plane>) -> Self {
+        self
     }
 
     /// returns data about where the intersection "WOULD" take place, but don't intersect it yet.
-    /// Fuels  
-    fn pre_intersect(&self, plane: Plane) -> Option<()> {
-        // TODO:  half-plane test every vertex, then create a hashmap[usize_vertex] -> Side
-        // TODO2: pre-split every edge, then create a hashmap[(usizelowest_vertex, usizehighest_vertex)] -> (Vec3, usize_triangle_left, usize_triangle_right)
+    /// This ensures certain checks are only made once
+    /// Returns:
+    /// - the side of every vertex (to the of the plane, to the right of the plane, or on the plane)
+    /// - hashmap[(usizelowest_vertex, usizehighest_vertex)] -> (Vec3, usize_triangle_left, usize_triangle_right)
+    fn pre_intersect_plane(
+        &self,
+        plane: Plane,
+    ) -> Option<(
+        Vec<Side>,
+        HashMap<(usize, usize), (Vec3, usize, Option<usize>)>,
+    )> {
+        let vertex_sides = self
+            .verts
+            .iter()
+            .map(|v| plane.half_plane_test(*v))
+            .map(|ord| match ord {
+                Some(ord) => match ord {
+                    Ordering::Less => Side::Left,
+                    Ordering::Greater => Side::Right,
+                    Ordering::Equal => Side::OnTop, // its practically on both sides
+                },
+                None => {
+                    println!("WARN: splitting a degenerate point");
+                    Side::Right
+                }
+            })
+            .collect::<Vec<_>>();
 
-        // let tabc = &[a,b,c].iter().map(|p| plane.half_plane_test(*p)).map(|ord| match ord {
-        //     Some(ord) => match ord {
-        //         Ordering::Less => Side::Left,
-        //         Ordering::Greater => Side::Right,
-        //         Ordering::Equal => Side::Both, // its practically on both sides
-        //     }
-        //     None => {
-        //         println!("WARN: splitting a degenerate point");
-        //         Side::Right
-        //     }
-        // }).collect::<Vec<_>>()[..];
+        let mut intersections = HashMap::<(usize, usize), (Vec3, usize, Option<usize>)>::new();
+        for (triangle_index, (va, vb, vc)) in self.iter_triangles().enumerate() {
+            for (a, b) in [(va, vb), (vb, vc), (vc, va)] {
+                // make sure a is always the smallest
+                // prevents us from checking the same edge twice
+                let (a, b) = if a < b { (a, b) } else { (b, a) };
 
-        for edge in self.iter_edges() {}
+                // if the same edge is found twice, we know the second triangle
+                if let Some(entry) = intersections.get_mut(&(a, b)) {
+                    entry.2 = Some(triangle_index);
+                    continue;
+                }
 
-        None
+                let (side_a, side_b) = (&vertex_sides[a], &vertex_sides[b]);
+                match (side_a, side_b) {
+                    (Side::Left, Side::Right) | (Side::Right, Side::Left) => {
+                        let (vert_a, vert_b) = (self.verts[a], self.verts[b]);
+                        let x = plane
+                            .x_line(vert_a, vert_b)
+                            .expect("according to the match dispatch, this should hit");
+                        intersections.insert((a, b), (x, triangle_index, None));
+                    }
+                    _ => (),
+                }
+            }
+        }
+
+        Some((vertex_sides, intersections))
     }
 
-    pub fn cap_planar_holes(self) -> Self {
-        for edge_loop in self.aggregate_edges(self.iter_naked_edges()) {
-            // planar?
-            // polygon
-            // closed?
+    pub fn get_neighborized_edges(&self) -> HashMap<(usize, usize), (usize, Option<usize>)> {
+        let mut neighborized = HashMap::<(usize, usize), (usize, Option<usize>)>::new();
+        for (triangle_index, (va, vb, vc)) in self.iter_triangles().enumerate() {
+            for (a, b) in [(va, vb), (vb, vc), (vc, va)] {
+                let (a, b) = if a < b { (a, b) } else { (b, a) };
+
+                // if the same edge is found twice, we know the second triangle
+                if let Some(entry) = neighborized.get_mut(&(a, b)) {
+                    entry.1 = Some(triangle_index);
+                    continue;
+                }
+                neighborized.insert((a, b), (triangle_index, None));
+            }
+        }
+        neighborized
+    }
+
+    pub fn iter_naked_edges(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
+        self.get_neighborized_edges()
+            .into_iter()
+            .filter_map(|((a, b), (t1, t2))| if t2.is_none() { Some((a, b)) } else { None })
+    }
+
+    /// join consequtive edges.
+    /// This algorithm essentially plays domino's
+    /// Its extremely simple and slow in its current form
+    /// not sure what the algorithm does to duplicates
+    pub fn aggregate_edges(edges: impl Iterator<Item = (usize, usize)>) -> Vec<Vec<usize>> {
+        let mut edges = edges.into_iter().collect::<Vec<_>>();
+        let mut loops = Vec::new();
+        while let Some(first_edge) = edges.pop() {
+            let mut this_loop = vec![first_edge.0];
+            let mut cursor = first_edge.1;
+            loop {
+                this_loop.push(cursor);
+                let Some(index) = edges.iter().position(|e| e.0 == cursor || e.1 == cursor) else {
+                    break;
+                };
+
+                let edge = edges.remove(index);
+                if cursor == edge.0 {
+                    cursor = edge.1;
+                } else {
+                    cursor = edge.0;
+                }
+                if cursor == first_edge.0 {
+                    // found a circular loop!
+                    // indicate this by adding the first index again
+                    this_loop.push(first_edge.0);
+                    break;
+                }
+            }
+
+            loops.push(this_loop);
+        }
+        loops
+    }
+
+    /// try to patch any closed loops of naked edges
+    pub fn patch_holes(self) -> Self {
+        for edge_loop in Self::aggregate_edges(self.iter_naked_edges()) {
+            if edge_loop.len() == 2 {
+                println!("detected something weird");
+            }
+            if edge_loop.len() < 3 || edge_loop.first() != edge_loop.last() {
+                // this would not lead to a valid, closed polygon
+                continue;
+            }
+            let verts = edge_loop.iter().map(|e| self.verts[*e]).collect::<Vec<_>>();
+            let polygon = Polygon::new(verts);
             // triangulate (earcutr)
             // based on that procedure, insert the right triangles into the source mesh
             // done!
@@ -1191,7 +1260,8 @@ impl Mesh {
         self
     }
 
-    pub fn cap_edges(self, edges: &[usize]) -> Self {
+    /// cap holes between given edges
+    pub fn cap_edges(self, edges: &[(usize, usize)]) -> Self {
         self
     }
 }
@@ -1258,6 +1328,16 @@ mod test {
                 vec3(0.0, 0.0, 1.0),
                 vec3(0.0, 0.0, -1.0)
             ]
+        );
+    }
+
+    #[test]
+    fn test_aggregate() {
+        // TODO: convey the difference between an open and a closed loop of edges
+        let edges = vec![(1, 4), (2, 4), (3, 2), (5, 6), (3, 1)];
+        assert_eq!(
+            Mesh::aggregate_edges(edges.into_iter()),
+            vec![vec![3, 1, 4, 2, 3], vec![5, 6]]
         );
     }
 }
