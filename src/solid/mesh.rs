@@ -1241,8 +1241,9 @@ impl Mesh {
     }
 
     /// try to patch any closed loops of naked edges
-    pub fn patch_holes(self) -> Self {
+    pub fn cap_planarish_holes(&mut self) {
         for edge_loop in Self::aggregate_edges(self.iter_naked_edges()) {
+            dbg!(&edge_loop);
             if edge_loop.len() == 2 {
                 println!("detected something weird");
             }
@@ -1250,14 +1251,20 @@ impl Mesh {
                 // this would not lead to a valid, closed polygon
                 continue;
             }
-            let verts = edge_loop.iter().map(|e| self.verts[*e]).collect::<Vec<_>>();
-            let polygon = Polygon::new(verts);
-            // triangulate (earcutr)
-            // based on that procedure, insert the right triangles into the source mesh
-            // done!
-        }
+            let verts = edge_loop
+                .iter()
+                .skip(1)
+                .map(|e| self.verts[*e])
+                .collect::<Vec<_>>();
+            let plane = Plane::from_pts(verts[0], verts[1], verts[2]);
 
-        self
+            let Some(ids) = earcut_3d(&verts, &vec![], &plane) else {
+                // something went wrong during earcutting
+                continue;
+            };
+            let mut real_ids = ids.iter().map(|id| edge_loop[*id]).collect();
+            self.tri.append(&mut real_ids);
+        }
     }
 
     /// cap holes between given edges
