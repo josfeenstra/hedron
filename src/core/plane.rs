@@ -58,8 +58,6 @@ impl Plane {
         let i = vi.normalize();
         let j = k.cross(i).normalize(); // is a cross product between normalized vectors always normalized ????
 
-        debug_assert!(k.length() > 0.0001);
-
         Self {
             mat: Mat4::from_cols(i.extend(0.0), j.extend(0.0), k.extend(0.0), p.extend(1.0)),
         }

@@ -2,7 +2,7 @@
 use crate::{
     kernel::*,
     prelude::{Triangle, Vectors},
-    util::{roughly_equals, OneOrMany},
+    util::{epsilon_equals, roughly_equals, OneOrMany},
 };
 
 /// a corner of a triangle face
@@ -375,17 +375,19 @@ impl TriMesh {
             Indexing::Linear => {
                 let uni = Self::desoupify(&self.verts);
                 let mut uvs = self.uvs.map(|_| Vec::new());
+                let mut ids = Vec::new();
                 let mut normals = self.normals.map(|_| Vec::new());
                 let mut verts = Vec::new();
                 for (i, id) in uni.iter().enumerate() {
                     if i == *id {
                         verts.push(self.verts[i]);
+                        ids.push(i);
                         uvs.push(self.uvs.get(i).unwrap().clone());
                         normals.push(self.normals.get(i).unwrap().clone());
                     }
                 }
 
-                Self::new(verts, Indexing::Uniform(uni), uvs, normals, None)
+                Self::new(verts, Indexing::Uniform(ids), uvs, normals, None)
             }
             Indexing::Hetero(hetero) => {
                 // linearize uvs and normals
@@ -450,7 +452,7 @@ impl TriMesh {
         let mut sim = Vec::new();
         for i in 0..verts.len() {
             let i_similar_vertex = (0..i)
-                .find(|j| roughly_equals(verts[i], verts[*j]))
+                .find(|j| epsilon_equals(verts[i], verts[*j]))
                 .unwrap_or(i);
             sim.push(i_similar_vertex)
         }

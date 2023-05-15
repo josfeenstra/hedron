@@ -5,8 +5,8 @@ use crate::kernel::*;
 #[inline]
 fn tolerance_equals(a: Vec3, b: Vec3, tolerance: fxx) -> bool {
     fxx::abs(a.x - b.x) < tolerance
-        || fxx::abs(a.y - b.y) < tolerance
-        || fxx::abs(a.z - b.z) < tolerance
+        && fxx::abs(a.y - b.y) < tolerance
+        && fxx::abs(a.z - b.z) < tolerance
 }
 
 #[inline]

@@ -184,6 +184,39 @@ impl Mesh {
             Normals::None => None,
         }
     }
+
+    pub fn to_uniform(&self) -> Self {
+        dbg!(&self.tri);
+        let desouped = TriMesh::desoupify(&self.verts);
+        dbg!(&desouped);
+        // let mut uvs = Vec::new();
+        let mut verts = Vec::new();
+        let mut ids = Vec::new();
+        // let mut normals = Vec::new();
+
+        // the desouped vertices point to the old vertex list
+        // for a new, unique vertex, i will be equal to id
+        // for all others, id must be replaced with this i
+        let mut map = HashMap::new();
+        let mut new_vert_index = 0;
+        for (i, id) in desouped.iter().enumerate() {
+            if i == *id {
+                verts.push(self.verts[*id]);
+                ids.push(new_vert_index);
+                map.insert(id, new_vert_index);
+                new_vert_index += 1;
+                // uvs.push(self.uvs.get(i).unwrap().clone());
+                // normals.push(self.normals.get(i).unwrap().clone());
+            } else {
+                let index = map
+                    .get(id)
+                    .expect("must be present due to the nature of the desoup algorithm");
+                ids.push(*index);
+            }
+        }
+
+        Self::new(verts, ids, Vec::new(), Normals::None)
+    }
 }
 
 impl Mesh {
@@ -1211,6 +1244,7 @@ impl Mesh {
     /// not sure what the algorithm does to duplicates
     pub fn aggregate_edges(edges: impl Iterator<Item = (usize, usize)>) -> Vec<Vec<usize>> {
         let mut edges = edges.into_iter().collect::<Vec<_>>();
+
         let mut loops = Vec::new();
         while let Some(first_edge) = edges.pop() {
             let mut this_loop = vec![first_edge.0];
@@ -1243,7 +1277,6 @@ impl Mesh {
     /// try to patch any closed loops of naked edges
     pub fn cap_planarish_holes(&mut self) {
         for edge_loop in Self::aggregate_edges(self.iter_naked_edges()) {
-            dbg!(&edge_loop);
             if edge_loop.len() == 2 {
                 println!("detected something weird");
             }
@@ -1262,6 +1295,9 @@ impl Mesh {
                 // something went wrong during earcutting
                 continue;
             };
+
+            dbg!(&ids);
+
             let mut real_ids = ids.iter().map(|id| edge_loop[*id]).collect();
             self.tri.append(&mut real_ids);
         }
