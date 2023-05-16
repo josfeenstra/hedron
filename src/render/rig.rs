@@ -48,7 +48,7 @@ impl Default for Rig {
             rot_y_range: EPSILON..PI - EPSILON,
             has_updated: false,
             active_look_controls: true,
-            active_move_controls: false,
+            active_move_controls: true,
 
             mouse_x: 0.0,
             mouse_y: 0.0,

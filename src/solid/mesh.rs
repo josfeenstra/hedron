@@ -186,9 +186,8 @@ impl Mesh {
     }
 
     pub fn to_uniform(&self) -> Self {
-        dbg!(&self.tri);
         let desouped = TriMesh::desoupify(&self.verts);
-        dbg!(&desouped);
+
         // let mut uvs = Vec::new();
         let mut verts = Vec::new();
         let mut ids = Vec::new();
@@ -1057,6 +1056,8 @@ impl Mesh {
     #[rustfmt::skip]
     pub fn split(&self, cutting_plane: impl Into<Plane>) -> (Mesh, Mesh) {
 
+        let tolerance = 0.001;
+
         let plane: Plane = cutting_plane.into();
         let plane_ref = &plane;
 
@@ -1068,7 +1069,7 @@ impl Mesh {
         // We must do special shit, depending on if any one vertex is on one or the other side of the cutting plane. 
         for (a,b,c) in self.iter_triangle_verts() {
 
-            let tabc = &[a,b,c].iter().map(|p| plane.half_plane_test(*p)).map(|ord| match ord {
+            let tabc = &[a,b,c].iter().map(|p| plane.half_plane_test_tol(*p, 0.001)).map(|ord| match ord {
                 Ordering::Less => Side::Left,
                 Ordering::Greater => Side::Right,
                 Ordering::Equal => Side::OnTop, 
@@ -1258,6 +1259,9 @@ impl Mesh {
     /// try to patch any closed loops of naked edges
     pub fn cap_planarish_holes(&mut self) {
         for edge_loop in Self::aggregate_edges(self.iter_naked_edges()) {
+
+            dbg!(&edge_loop);
+
             if edge_loop.len() == 2 {
                 println!("detected something weird");
             }
@@ -1276,8 +1280,6 @@ impl Mesh {
                 // something went wrong during earcutting
                 continue;
             };
-
-            dbg!(&ids);
 
             let mut real_ids = ids.iter().map(|id| edge_loop[*id]).collect();
             self.tri.append(&mut real_ids);

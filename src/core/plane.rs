@@ -156,6 +156,10 @@ impl Plane {
         half_plane_test_tol(self.origin(), self.normal(), point, TOLERANCE)
     }
 
+    pub fn half_plane_test_tol(&self, point: Vec3, tolerance: fxx) -> Ordering {
+        half_plane_test_tol(self.origin(), self.normal(), point, tolerance)
+    }
+
     pub fn x_line(&self, a: Vec3, b: Vec3) -> Option<Vec3> {
         line_x_plane(a, b, self.origin(), self.normal()).map(|t| a.lerp(b, t))
     }
