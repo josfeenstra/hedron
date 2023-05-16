@@ -5,7 +5,7 @@ use bevy_math::Vec4Swizzles;
 use crate::kernel::{fxx, Mat4, Quat, Vec3, Vec4};
 
 use crate::math::TOLERANCE;
-use crate::prelude::{half_plane_test, half_plane_test_tol, line_x_plane};
+use crate::prelude::{half_plane_test_tol, line_x_plane, Vectors};
 
 use super::geometry::Geometry;
 
@@ -50,17 +50,19 @@ impl Plane {
 
     /// Create a plane from a center point and two axis.
     /// These axis do not need to be orthogonal or normalized
-    pub fn from_pvv_guess(p: Vec3, vi: Vec3, vj: Vec3) -> Self {
+    pub fn from_pvv_guess(p: Vec3, vi: Vec3, vj: Vec3) -> Option<Self> {
         // we do a trick so this works with non-orthogonal vectors
         // i is always i, j is adjusted to fit the model
         let k = vi.cross(vj).normalize();
-        debug_assert!(k.length() > TOLERANCE);
+        if vi.dot(vj) < TOLERANCE {
+            return None;
+        }
         let i = vi.normalize();
         let j = k.cross(i).normalize(); // is a cross product between normalized vectors always normalized ????
 
-        Self {
+        Some(Self {
             mat: Mat4::from_cols(i.extend(0.0), j.extend(0.0), k.extend(0.0), p.extend(1.0)),
-        }
+        })
     }
 
     /// Create a plane from a center point and two normalized, orthogonal axis
@@ -73,7 +75,27 @@ impl Plane {
         }
     }
 
-    pub fn from_pts(a: Vec3, b: Vec3, c: Vec3) -> Self {
+    /// TODO: improve this by using least squares or minimum volume algorithms
+    pub fn from_points(points: &[Vec3], tolerance: fxx) -> Option<Self> {
+        if points.len() < 3 {
+            return None;
+        }
+
+        let center = Vectors::average(points);
+        let axis_1 = points[0] - center;
+        for vert in points.iter().skip(1) {
+            let axis_2 = *vert - center;
+            dbg!(&axis_2);
+            if axis_2.dot(axis_1).abs() > tolerance {
+                dbg!("found one!");
+                return Self::from_pvv_guess(center, axis_1, axis_2);
+            }
+        }
+        dbg!("found none!");
+        None
+    }
+
+    pub fn from_pts(a: Vec3, b: Vec3, c: Vec3) -> Option<Self> {
         Self::from_pvv_guess(a, b - a, c - a)
     }
 

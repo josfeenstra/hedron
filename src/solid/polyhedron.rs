@@ -1196,7 +1196,7 @@ impl Polyhedron {
                 .get_vert_neighbors(vp)
                 .iter()
                 .map(|nb| self.vert(*nb).pos)
-                .collect();
+                .collect::<Vec<_>>();
             let avg = Vectors::average(&nbs_pos);
             self.mut_vert(vp).pos = avg;
         }

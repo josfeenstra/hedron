@@ -8,18 +8,8 @@ description = "An all-in-one 3D modelling library"
 repository = "https://github.com/josfeenstra/hedron"
 license = "MIT"
 readme = "README.md"
-keywords = [
-    "3d",
-    "mesh",
-    "half-edge",
-    "spline",
-    "brep",
-]
-categories = [
-    "game-development",
-    "game-engines",
-    "graphics",
-]
+keywords = ["3d", "mesh", "half-edge", "spline", "brep"]
+categories = ["game-development", "game-engines", "graphics"]
 
 [dependencies]
 bevy_math = "0.10.1"
@@ -31,16 +21,16 @@ colored = "2.0"
 num-traits = "0.2.15"
 lazy_static = "1.4.0"
 anyhow = "1.0.68"
+earcutr = "0.4.2"
 
 # optionals
-bevy = { version = "0.10.1", optional = true } 
+bevy = { version = "0.10.1", optional = true }
 bevy-inspector-egui = { version = "0.18.1", optional = true }
 nalgebra = { version = "0.32.2", features = ["glam022"], optional = true }
 
 # NOTE: these should also be optional
 rand_pcg = "0.3.1"
 dynstack = "0.4.0"
-earcutr = "0.4.2"
 
 [features]
 default = []

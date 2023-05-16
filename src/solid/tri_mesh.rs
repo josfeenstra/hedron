@@ -2,7 +2,7 @@
 use crate::{
     kernel::*,
     prelude::{Triangle, Vectors},
-    util::{epsilon_equals, roughly_equals, OneOrMany},
+    util::{tolerance_equals, OneOrMany},
 };
 
 /// a corner of a triangle face
@@ -373,7 +373,7 @@ impl TriMesh {
         match &self.tri {
             Indexing::Uniform(_) => self,
             Indexing::Linear => {
-                let uni = Self::desoupify(&self.verts);
+                let uni = Self::desoupify(&self.verts, 0.001);
                 let mut uvs = self.uvs.map(|_| Vec::new());
                 let mut ids = Vec::new();
                 let mut normals = self.normals.map(|_| Vec::new());
@@ -448,11 +448,11 @@ impl TriMesh {
     /// Check all vertices before you.
     /// If one looks similar, stop.
     /// Produces a mapping per vertex. Each vertex pointer points to itself of one earlier, similar looking vertex
-    pub fn desoupify(verts: &Vec<Vec3>) -> Vec<usize> {
+    pub fn desoupify(verts: &Vec<Vec3>, tolerance: fxx) -> Vec<usize> {
         let mut sim = Vec::new();
         for i in 0..verts.len() {
             let i_similar_vertex = (0..i)
-                .find(|j| epsilon_equals(verts[i], verts[*j]))
+                .find(|j| tolerance_equals(verts[i], verts[*j], tolerance))
                 .unwrap_or(i);
             sim.push(i_similar_vertex)
         }

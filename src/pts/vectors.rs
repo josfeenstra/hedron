@@ -99,7 +99,7 @@ impl Vectors {
         Some((right_id, left_id))
     }
 
-    pub fn average(verts: &Vec<Vec3>) -> Vec3 {
+    pub fn average(verts: &[Vec3]) -> Vec3 {
         verts.iter().fold(Vec3::ZERO, |sum, item| sum + *item) / verts.len() as fxx
     }
 

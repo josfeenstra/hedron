@@ -7,6 +7,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::io::Write;
 use std::iter::Rev;
+use std::mem::swap;
 use std::ops::Range;
 
 #[derive(Debug, Clone, Default)]
@@ -186,7 +187,7 @@ impl Mesh {
     }
 
     pub fn to_uniform(&self) -> Self {
-        let desouped = TriMesh::desoupify(&self.verts);
+        let desouped = TriMesh::desoupify(&self.verts, 0.001);
 
         // let mut uvs = Vec::new();
         let mut verts = Vec::new();
@@ -1260,13 +1261,13 @@ impl Mesh {
     pub fn cap_planarish_holes(&mut self) {
         for edge_loop in Self::aggregate_edges(self.iter_naked_edges()) {
 
-            dbg!(&edge_loop);
+            // dbg!(&edge_loop);
 
             if edge_loop.len() == 2 {
                 println!("detected something weird");
             }
             if edge_loop.len() < 3 || edge_loop.first() != edge_loop.last() {
-                // this would not lead to a valid, closed polygon
+                println!("this would not lead to a valid, closed polygon!");
                 continue;
             }
             let verts = edge_loop
@@ -1274,14 +1275,22 @@ impl Mesh {
                 .skip(1)
                 .map(|e| self.verts[*e])
                 .collect::<Vec<_>>();
-            let plane = Plane::from_pts(verts[0], verts[1], verts[2]);
 
+            // TODO: Concave polygon -> Convex polygon
+            let Some(plane) = Plane::from_points(&verts, 0.001) else {
+                println!("couldnt find a valid cap plane!");
+                continue;
+            };
+            
             let Some(ids) = earcut_3d(&verts, &vec![], &plane) else {
-                // something went wrong during earcutting
+                println!("something went wrong during earcutting!");
                 continue;
             };
 
-            let mut real_ids = ids.iter().map(|id| edge_loop[*id]).collect();
+            let mut real_ids = ids.iter().map(|id| edge_loop[*id]).collect::<Vec<_>>();
+            for i in (0..real_ids.len()-1).step_by(3) {
+                real_ids.swap(i, i+1);
+            }
             self.tri.append(&mut real_ids);
         }
     }
