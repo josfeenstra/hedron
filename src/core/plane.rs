@@ -5,7 +5,7 @@ use bevy_math::Vec4Swizzles;
 use crate::kernel::{fxx, Mat4, Quat, Vec3, Vec4};
 
 use crate::math::TOLERANCE;
-use crate::prelude::{half_plane_test, line_x_plane};
+use crate::prelude::{half_plane_test, half_plane_test_tol, line_x_plane};
 
 use super::geometry::Geometry;
 
@@ -146,13 +146,14 @@ impl Plane {
 
     /// Test on which side a point is, relative to the plane this
     /// pose represents
+    /// NOT using robust predicates. Uses the crate-defined tolerance value to deal with fuzzyness
     ///
     /// Response:
     /// greater -> point is on the side the normal is pointing to
     /// less -> point is on the other side
     /// Equal -> point lies exactly on the plane
-    pub fn half_plane_test(&self, point: Vec3) -> Option<Ordering> {
-        half_plane_test(self.origin(), self.normal(), point)
+    pub fn half_plane_test(&self, point: Vec3) -> Ordering {
+        half_plane_test_tol(self.origin(), self.normal(), point, TOLERANCE)
     }
 
     pub fn x_line(&self, a: Vec3, b: Vec3) -> Option<Vec3> {

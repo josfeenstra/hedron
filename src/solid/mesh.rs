@@ -741,15 +741,7 @@ impl Mesh {
         mesh
     }
 
-    //
-    pub fn new_diamonds(points: Vec<Vec3>, size: fxx) -> Self {
-        let mut meshes = Vec::new();
-        for point in points {
-            meshes.push(Self::new_diamond(point, size))
-        }
-        Self::from_join(meshes)
-    }
-
+    /// a very simple shape for if you want to visualize some point with a mesh
     pub fn new_diamond(center: Vec3, size: fxx) -> Self {
         let mut mesh = Mesh::default();
 
@@ -1077,15 +1069,9 @@ impl Mesh {
         for (a,b,c) in self.iter_triangle_verts() {
 
             let tabc = &[a,b,c].iter().map(|p| plane.half_plane_test(*p)).map(|ord| match ord {
-                Some(ord) => match ord {
-                    Ordering::Less => Side::Left,
-                    Ordering::Greater => Side::Right,
-                    Ordering::Equal => Side::OnTop, // its practically on both sides
-                }
-                None => {
-                    println!("WARN: splitting a degenerate point");
-                    Side::Right
-                }
+                Ordering::Less => Side::Left,
+                Ordering::Greater => Side::Right,
+                Ordering::Equal => Side::OnTop, 
             }).collect::<Vec<_>>()[..];
 
             let [ta, tb, tc] = tabc else {
@@ -1118,8 +1104,8 @@ impl Mesh {
 
             // in case of an asymetrical split, split like this
             fn asym_split(plane: &Plane, maj_side: &mut Mesh, min_side: &mut Mesh, maj1: Vec3, maj2: Vec3, min: Vec3) {
-                let x1 = plane.x_line(maj1, min).expect("according to the match dispatch, this should hit");
-                let x2 = plane.x_line(maj2, min).expect("according to the match dispatch, this should hit");
+                let x1 = plane.x_line(maj1, min).expect("asym hit. according to the match dispatch, this should hit");
+                let x2 = plane.x_line(maj2, min).expect("asym hit. according to the match dispatch, this should hit");
 
                 // we assume the shortest brace is the most 'delaunay'
                 if x1.distance(maj2) < x2.distance(maj1) {
@@ -1132,7 +1118,8 @@ impl Mesh {
 
             // in case of a perfect split, split like this
             fn perfect_split(plane: &Plane, mesh_top: &mut Mesh, mesh_bot: &mut Mesh, top: Vec3, bot: Vec3, halfway: Vec3) {
-                let x = plane.x_line(top, bot).expect("according to the match dispatch, this should hit");
+                println!("Perfection!");
+                let x = plane.x_line(top, bot).expect("perfect hit. according to the match dispatch, this should hit");
                 mesh_top.verts.append(&mut vec![top, x, halfway]);
                 mesh_bot.verts.append(&mut vec![x, bot, halfway]);
             }
@@ -1173,15 +1160,9 @@ impl Mesh {
             .iter()
             .map(|v| plane.half_plane_test(*v))
             .map(|ord| match ord {
-                Some(ord) => match ord {
-                    Ordering::Less => Side::Left,
-                    Ordering::Greater => Side::Right,
-                    Ordering::Equal => Side::OnTop, // its practically on both sides
-                },
-                None => {
-                    println!("WARN: splitting a degenerate point");
-                    Side::Right
-                }
+                Ordering::Less => Side::Left,
+                Ordering::Greater => Side::Right,
+                Ordering::Equal => Side::OnTop,
             })
             .collect::<Vec<_>>();
 

@@ -87,6 +87,18 @@ pub fn half_plane_test(pos: Vec3, normal: Vec3, point: Vec3) -> Option<Ordering>
     (point - pos).dot(normal).partial_cmp(&0.0)
 }
 
+#[inline]
+pub fn half_plane_test_tol(pos: Vec3, normal: Vec3, point: Vec3, tol: fxx) -> Ordering {
+    let test = (point - pos).dot(normal);
+    if test < -tol {
+        Ordering::Less
+    } else if test > tol {
+        Ordering::Greater
+    } else {
+        Ordering::Equal
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::line_x_plane;
