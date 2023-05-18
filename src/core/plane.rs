@@ -48,6 +48,17 @@ impl Plane {
     //     Self { tf }
     // }
 
+    pub fn from_normal(normal: Vec3) -> Self {
+        let mut ihat = normal.any_orthonormal_vector();
+        let jhat = ihat.cross(normal).normalize();
+        let khat = ihat.cross(jhat);
+        if khat.dot(normal) < 0.0 {
+            ihat *= -1.0;
+        }
+
+        Self::from_pvv_exact(Vec3::ZERO, ihat, jhat)
+    }
+
     /// Create a plane from a center point and two axis.
     /// These axis do not need to be orthogonal or normalized
     pub fn from_pvv_guess(p: Vec3, vi: Vec3, vj: Vec3) -> Option<Self> {

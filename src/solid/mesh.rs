@@ -4,7 +4,7 @@ use super::{quad_to_tri, Octoid, Polyhedron, CUBE_FACES};
 use crate::kernel::{fxx, kernel, vec2, vec3, Vec2, Vec3};
 use crate::{prelude::*, util};
 use std::cmp::Ordering;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::iter::Rev;
 use std::mem::swap;
@@ -200,18 +200,15 @@ impl Mesh {
         let mut map = HashMap::new();
         let mut new_vert_index = 0;
         for (i, id) in desouped.iter().enumerate() {
-            if i == *id {
-                verts.push(self.verts[*id]);
-                ids.push(new_vert_index);
+            if let Some(index) = map.get(id) {
+                ids.push(*index);
+            } else {
                 map.insert(id, new_vert_index);
-                new_vert_index += 1;
+                ids.push(new_vert_index);
+                verts.push(self.verts[*id]);
                 // uvs.push(self.uvs.get(i).unwrap().clone());
                 // normals.push(self.normals.get(i).unwrap().clone());
-            } else {
-                let index = map
-                    .get(id)
-                    .expect("must be present due to the nature of the desoup algorithm");
-                ids.push(*index);
+                new_vert_index += 1;
             }
         }
 
@@ -1257,30 +1254,82 @@ impl Mesh {
         loops
     }
 
+    pub fn clean_triangles(&mut self) {
+        let mut cleaned_tri = Vec::new();
+        let mut existing_tri = HashSet::new();
+
+        // i'm doing this the dumb way, no one can stop me!
+        fn sort(a: usize, b: usize, c: usize) -> (usize, usize, usize) {
+            if a < b && a < c {
+                if b < c {
+                    (a, b, c)
+                } else {
+                    (a, c, b)
+                }
+            } else if b < a && b < c {
+                if a < c {
+                    (b, a, c)
+                } else {
+                    (b, c, a)
+                }
+            } else {
+                if a < b {
+                    (c, a, b)
+                } else {
+                    (c, b, a)
+                }
+            }
+        }
+
+        for (a, b, c) in self.iter_triangles() {
+
+            // check duplicate vertices 
+            if a == b || b == c || c == a {
+                // println!("kill degenerate!");
+                continue;
+            }
+            
+            let hash = sort(a, b, c);
+            if existing_tri.contains(&hash) {
+                // println!("overlapping triangle!");
+                continue;
+            }
+            existing_tri.insert(hash);
+            cleaned_tri.append(&mut vec![a,b,c]);
+        }
+        self.tri = cleaned_tri;
+    }
+
     /// try to patch any closed loops of naked edges
-    pub fn cap_planarish_holes(&mut self) {
+    pub fn cap_holes_with_normal(&mut self, normal: Vec3) {
         for edge_loop in Self::aggregate_edges(self.iter_naked_edges()) {
 
             // dbg!(&edge_loop);
 
-            if edge_loop.len() == 2 {
-                println!("detected something weird");
-            }
-            if edge_loop.len() < 3 || edge_loop.first() != edge_loop.last() {
-                println!("this would not lead to a valid, closed polygon!");
+            if edge_loop.first() != edge_loop.last() {
+                println!("this naked edge is not a loop!");
                 continue;
             }
+            if edge_loop.len() == 2 {
+                println!("this is a naked vertex (this triangle should not exist...)");
+                continue;
+            }
+            if edge_loop.len() == 3 {
+                println!("this is a naked sliver edge (this triangle should not exist...)");
+                continue;
+            }
+
             let verts = edge_loop
                 .iter()
                 .skip(1)
                 .map(|e| self.verts[*e])
                 .collect::<Vec<_>>();
 
-            // TODO: Concave polygon -> Convex polygon
-            let Some(plane) = Plane::from_points(&verts, 0.001) else {
-                println!("couldnt find a valid cap plane!");
-                continue;
-            };
+            let plane = Plane::from_normal(normal);
+            // let Some(plane) = Plane::from_points(&verts, 0.001) else {
+            //     println!("couldnt find a valid cap plane!");
+            //     continue;
+            // };
             
             let Some(ids) = earcut_3d(&verts, &vec![], &plane) else {
                 println!("something went wrong during earcutting!");
@@ -1288,9 +1337,6 @@ impl Mesh {
             };
 
             let mut real_ids = ids.iter().map(|id| edge_loop[*id]).collect::<Vec<_>>();
-            for i in (0..real_ids.len()-1).step_by(3) {
-                real_ids.swap(i, i+1);
-            }
             self.tri.append(&mut real_ids);
         }
     }

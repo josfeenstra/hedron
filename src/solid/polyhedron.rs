@@ -1034,7 +1034,7 @@ impl Polyhedron {
             // let center = Vectors::average(&polygon.verts);
             let current_face_slot = self.edge(lp[0]).face;
 
-            // this is a warning assert statement
+            // this qis a warning assert statement
             for edge in lp.iter().skip(1) {
                 if self.edge(*edge).face != current_face_slot {
                     println!(
