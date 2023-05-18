@@ -1,18 +1,22 @@
 # Hedron
 An all-in-one 3D modelling & procedural generation crate
 
+## Disclamer 🚧
+Hedron is currently in an very early stage. 
+I don't recommend you use this crate quite yet, as it is not at all stable or complete, 
+but hopefully some of code provided can help you nonetheless!
+
 ## What it contains (or will contain)
 - A full set of **geometry** models:
   - planar: `Line`, `Circle`, `Triangle`, ...
   - curves: `Polyline`, `Bezier`, `Spline`, ...
-  - surfaces: `BezierSrf` (TODO), `SplineSrf` (TODO), ...
-  - solids: `Mesh`, `Polyhedron` (WIP), `Solid`, ... 
-  - graphs: `Graph` (WIP), ...
+  - surfaces: `BezierSrf`, `SplineSrf`, ...
+  - solids: `Mesh`, `Polyhedron`, `Solid` (TODO), ... 
 
 - **operators** on those models: 
-  - Point / Vector tools (Closest point) (TODO)
+  - Point / Vector tools (Closest point) 
   - Transformations between the various models  
-  - Modelling operations (`loft`, `inset`, `extrude`, `split`, `subdivide`) (TODO) 
+  - Modelling operations (`loft`, `inset`, `extrude`, `split`, `subdivide`) 
   - Intersections (intersect mesh with line) (TODO)
   - Boolean operators (join two solids) (TODO)
 
@@ -28,12 +32,7 @@ An all-in-one 3D modelling & procedural generation crate
 - **Procedural Geometry / 'Parametric Design'**: Hedron is intended for parametric modelling, akin to what can be done with Rhino & Grasshopper. 
 
 - **Web Geometry Processing**: The crate can be complied to WebAssembly, allowing these operations to be used on the web.
-
-## What it is not (yet)
-- **Not CAD ready** : The crate does not support common CAD file types such as STL. It also does not contain constructive solid geometry (CSG) models.
-- **Not BIM ready** : Currently, the crate does not support IFC models.
-- **No GIS support** : The crate offers no tooling to load and process large geographical datasets. 
-
+- 
 # Used in:
 > ![Nothing grabs the attention like some cute graphics](./LOGO.PNG)
 > [My upcoming game](https://twitter.com/i_am_feenster/status/1622708645606703104)
@@ -41,9 +40,4 @@ An all-in-one 3D modelling & procedural generation crate
 
 # Design 
 Hedron is designed to strike a balance between usability and expressiveness. It sacrifices A CGAL-level of expressivenes, in favor of a more simple and predictable API. 
-Hedron strifes to be a unified modelling library, having support for many different types, which can elegantly translate into each other. 
-
-
-# Stage: Pre Alpha
-Hedron is currently in an very early stage. 
-I don't recommend you use this library quite yet, but hopefully some of the models and operations presented can help you nonetheless!
+Hedron strifes to recreate a suite of tools 
