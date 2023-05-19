@@ -25,11 +25,11 @@ It includes:
   - surfaces: `BezierSrf`, `SplineSrf` (TODO), ...
   - solids: `Mesh`, `Polyhedron`, `Brep` (TODO), ... 
 
-- **operators on those models**: 
-  - Point / Vector tools (Closest point) 
-  - Transformations between the various models  
+- **Operators on those models**: 
+  - Point / Vector tools (Closest point, ...) 
+  - Transformations between the various models (triangulate  brep, ...)  
   - Modelling operations (`loft`, `inset`, `extrude`, `split`, `subdivide`) 
-  - Intersections (intersect mesh with line) (TODO)
+  - Intersections (intersect mesh with plane)
   - Boolean operators (join two solids) (TODO)
 
 - **Importers & Exporters**:
