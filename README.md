@@ -1,7 +1,7 @@
 # Hedron
 An all-in-one 3D modelling & procedural generation crate
 
-## Disclaimer 🚧
+## 🚧 Disclaimer 🚧
 Hedron is currently in an very early stage. 
 I don't recommend you use this crate quite yet, as it is not at all stable or complete, 
 but hopefully some of code provided can help you nonetheless!
