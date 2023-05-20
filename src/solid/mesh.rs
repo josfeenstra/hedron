@@ -1056,6 +1056,7 @@ impl Mesh {
         let tolerance = 0.001;
 
         let plane: Plane = cutting_plane.into();
+        let normal = plane.normal();
         let plane_ref = &plane;
 
         // choice of naming is arbitrary
@@ -1123,9 +1124,17 @@ impl Mesh {
             }
         }
 
-        // TODO: index enum
+        // cleanup
         left.tri = (0..left.verts.len()).collect::<Vec<usize>>();
+        
+        let mut left = left.to_uniform();
+        left.clean_triangles();
+        left.cap_holes_with_normal(normal * -1.0);
+        
         right.tri = (0..right.verts.len()).collect::<Vec<usize>>();
+        let mut right = right.to_uniform();
+        right.clean_triangles();
+        right.cap_holes_with_normal(normal);
 
         (left, right)
     }
