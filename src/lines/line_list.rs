@@ -1,4 +1,9 @@
-use crate::kernel::{fxx, Vec3};
+use crate::{
+    kernel::{fxx, Vec3},
+    util::iter_pairs,
+};
+
+use super::Polyline;
 
 /// A sequence line segments, each with a explicit start and end position
 #[derive(Debug, Clone)]
@@ -15,7 +20,7 @@ impl LineList {
         LineList { verts: Vec::new() }
     }
 
-    pub fn new_join(mut line_lists: Vec<LineList>) -> Self {
+    pub fn from_join(mut line_lists: Vec<LineList>) -> Self {
         if line_lists.is_empty() {
             return Self::new_empty();
         }
@@ -79,5 +84,23 @@ impl LineList {
 
     pub fn append(&mut self, mut rhs: LineList) {
         self.verts.append(&mut rhs.verts);
+    }
+}
+
+impl From<Polyline> for LineList {
+    fn from(value: Polyline) -> Self {
+        match value {
+            Polyline::Open(verts) => Self::new(
+                iter_pairs(&verts)
+                    .skip(1)
+                    .flat_map(|(a, b)| [*a, *b])
+                    .collect::<Vec<_>>(),
+            ),
+            Polyline::Closed(verts) => Self::new(
+                iter_pairs(&verts)
+                    .flat_map(|(a, b)| [*a, *b])
+                    .collect::<Vec<_>>(),
+            ),
+        }
     }
 }
