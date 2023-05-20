@@ -34,3 +34,9 @@ impl Material for FaceMaterial {
         Ok(())
     }
 }
+
+impl From<Color> for FaceMaterial {
+    fn from(color: Color) -> Self {
+        FaceMaterial { color }
+    }
+}

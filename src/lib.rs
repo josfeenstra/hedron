@@ -13,7 +13,7 @@ pub mod util;
 pub mod various;
 
 #[cfg(feature = "bevy")]
-pub mod render;
+pub mod bevy;
 
 #[cfg(feature = "bevy")]
 pub mod smoothing;
@@ -39,7 +39,7 @@ pub mod prelude {
     pub use crate::various::*;
 
     #[cfg(feature = "bevy")]
-    pub use crate::render::*;
+    pub use crate::bevy::*;
 
     #[cfg(feature = "bevy")]
     pub use crate::smoothing::*;

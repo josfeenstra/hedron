@@ -22,7 +22,7 @@ const MOUSE_ROTATE_POWER: fxx = 0.0015;
 const MOUSE_SCROLL_POWER: fxx = 0.01;
 
 #[derive(Component, InspectorOptions, Debug)]
-pub struct Rig {
+pub struct ArcBall {
     pub pos: Vec3,
     pub dis: Organic<fxx>,
     pub dis_range: Range<fxx>,
@@ -37,7 +37,7 @@ pub struct Rig {
     pub mouse_y: fxx,
 }
 
-impl Default for Rig {
+impl Default for ArcBall {
     fn default() -> Self {
         Self {
             pos: Vec3::ZERO,
@@ -57,7 +57,7 @@ impl Default for Rig {
 }
 
 // private
-impl Rig {
+impl ArcBall {
     pub fn get_rot_x() {}
 
     pub fn set_rot_delta(&mut self, delta_x: fxx, delta_y: fxx) {
@@ -189,9 +189,9 @@ impl Rig {
 }
 
 // public
-impl Rig {
-    pub fn new() -> Rig {
-        Rig { ..default() }
+impl ArcBall {
+    pub fn new() -> ArcBall {
+        ArcBall { ..default() }
     }
 
     /// for smoothening the movement,, we delay certain values.
@@ -213,7 +213,7 @@ impl Rig {
         mut mouse_motion_events: EventReader<MouseMotion>,
         mut mouse_wheel_events: EventReader<MouseWheel>,
         time: Res<Time>,
-        mut query: Query<(&mut Transform, &mut Rig), With<Camera>>,
+        mut query: Query<(&mut Transform, &mut ArcBall), With<Camera>>,
     ) {
         let dt = time.delta_seconds();
 
