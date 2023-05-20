@@ -73,6 +73,10 @@ impl<T> Pool<T> {
         }
     }
 
+    pub fn inner(&self) -> &Vec<Option<T>> {
+        &self.data
+    }
+
     pub fn len(&self) -> usize {
         self.data.len() - self.freed_ids.len()
     }
