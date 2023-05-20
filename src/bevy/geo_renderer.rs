@@ -1,7 +1,10 @@
 use super::{extract_vertices, FaceMaterial, InstanceData, InstanceMaterialData, LineMaterial};
 use crate::{kernel::fxx, prelude::Mesh as HedronMesh};
 use bevy::{ecs::schedule::FreeSystemSet, prelude::*, render::view::NoFrustumCulling};
-use std::collections::{hash_map::Entry, HashMap};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    process::Command,
+};
 
 #[derive(Resource, Default)]
 pub struct GeoRenderer<M: Material + Default> {
@@ -331,3 +334,44 @@ pub struct ThingBundle {
     /// Algorithmically-computed indication of whether an entity is visible and should be extracted for rendering
     pub computed_visibility: ComputedVisibility,
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+// #[derive(Component)]
+// pub struct SpawnedHedronMesh;
+
+// pub struct SpawnMesh {
+//     pos: Vec3,
+//     mesh: HedronMesh,
+// }
+// impl SpawnMesh {
+//     pub fn new(pos: Vec3, mesh: HedronMesh) -> Self {
+//         Self { mesh, pos }
+//     }
+// }
+// impl Command for SpawnMesh {
+//     fn write(self, world: &mut World) {
+//         let Self { mesh, pos } = self;
+//         let Some(asset_server) =
+//         world.get_resource::<AssetServer>() else {
+//             return;
+//         };
+//         world.spawn((
+//             TextBundle::from_section(
+//                 text,
+//                 TextStyle {
+//                     font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+//                     font_size: 12.0,
+//                     color: Color::WHITE,
+//                 },
+//             )
+//             .with_text_alignment(TextAlignment::Center)
+//             .with_style(Style {
+//                 position_type: PositionType::Absolute,
+//                 position: UiRect { ..default() },
+//                 ..default()
+//             }),
+//             SpawnedHedronMesh,
+//         ));
+//     }
+// }
