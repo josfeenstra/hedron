@@ -48,7 +48,8 @@ impl Plane {
     //     Self { tf }
     // }
 
-    pub fn from_normal(normal: Vec3) -> Self {
+    /// TODO: use look at?
+    pub fn from_pos_normal(point: Vec3, normal: Vec3) -> Self {
         let mut ihat = normal.any_orthonormal_vector();
         let jhat = ihat.cross(normal).normalize();
         let khat = ihat.cross(jhat);
@@ -56,7 +57,7 @@ impl Plane {
             ihat *= -1.0;
         }
 
-        Self::from_pvv_exact(Vec3::ZERO, ihat, jhat)
+        Self::from_pvv_exact(point, ihat, jhat)
     }
 
     /// Create a plane from a center point and two axis.

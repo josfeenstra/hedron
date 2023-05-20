@@ -6,7 +6,7 @@ use bevy::{
 };
 
 use crate::{
-    core::Pose,
+    core::{Plane, Pose},
     lines::{Bezier, LineList, Polyline},
     planar::Polygon,
     pts::Vectors,
@@ -149,7 +149,10 @@ impl From<Polyhedron> for Mesh {
         HedronMesh::from_join(
             p.all_cww_loops_as_polygons()
                 .into_iter()
-                .map(|pg| pg.offset(Vec3::Z, 0.02).triangulate_naive())
+                .map(|pg| {
+                    pg.offset(&Plane::from_pos_normal(Vec3::ZERO, Vec3::Z), 0.02)
+                        .triangulate_naive()
+                })
                 .collect(),
         )
         .into()

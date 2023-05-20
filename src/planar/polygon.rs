@@ -46,6 +46,27 @@ impl Polygon {
         Vectors::average(&self.verts)
     }
 
+    /// there are better ways of doing this,
+    /// TODO: principle component analysis ? overkill ?
+    /// this fails on colinear polygons
+    pub fn average_normal(&self) -> Vec3 {
+        assert!(
+            self.verts.len() >= 3,
+            "we need at least three vertices to calculate a valid cross product"
+        );
+        let center = self.center();
+        let mut normals = Vec::new();
+        for (a, b) in iter_pairs(&self.verts) {
+            normals.push((*a - center).cross(*b - center));
+        }
+
+        Vectors::average(&normals).normalize()
+    }
+
+    pub fn plane(&self) -> Plane {
+        return Plane::from_pos_normal(self.center(), self.average_normal());
+    }
+
     /// flip the polygon by reversing the order of the vertices
     #[inline]
     #[must_use]
@@ -70,7 +91,7 @@ impl Polygon {
 
     /// offset the polygon by pretending its 2D, offsetting all line segments,
     /// and calculating the intersection points in an inefficient manner :)
-    pub fn offset(mut self, normal: Vec3, distance: fxx) -> Self {
+    pub fn offset(mut self, plane: &Plane, distance: fxx) -> Self {
         let count = self.verts.len();
         // let mut line_offsets = vec![Vec3::ZERO; count];
         let mut offset_lines = vec![Line::NAN; count];
@@ -78,9 +99,12 @@ impl Polygon {
         // per line in the polyline, calculate the offset vector
         for (ia, ib) in iter_pair_ids(count) {
             let (a, b) = (self.verts[ia], self.verts[ib]);
-            let offset_vec = (b - a).cross(normal).normalize() * -distance;
+            let offset_vec = (b - a).cross(plane.normal()).normalize() * -distance;
             // line_offsets[ia] = offset_vec;
-            offset_lines[ia] = Line::new(a + offset_vec, b + offset_vec);
+            offset_lines[ia] = Line::new(
+                plane.point_to_plane(a + offset_vec),
+                plane.point_to_plane(b + offset_vec),
+            );
         }
 
         // vert I is intersection of line I and line I-1
@@ -100,10 +124,10 @@ impl Polygon {
             } else {
                 one.intersect_2d(two)
             };
-
-            self.verts[i_vert].x = intersection.x;
-            self.verts[i_vert].y = intersection.y;
-            // keep z the same
+            // TODO: do something like this
+            // intersection.z = 0;
+            let intersection = plane.point_to_world(intersection);
+            self.verts[i_vert].clone_from(&intersection);
         }
         self
     }
@@ -186,22 +210,6 @@ impl Polygon {
         }
         true
     }
-
-    /// there are better ways of doing this,
-    /// TODO: principle component analysis ? overkill ?
-    pub fn average_normal(&self) -> Vec3 {
-        assert!(
-            self.verts.len() >= 3,
-            "we need at least three vertices to calculate a valid cross product"
-        );
-        let center = self.center();
-        let mut normals = Vec::new();
-        for (a, b) in iter_pairs(&self.verts) {
-            normals.push((*a - center).cross(*b - center));
-        }
-
-        Vectors::average(&normals).normalize()
-    }
 }
 
 impl PointBased for Polygon {
@@ -236,7 +244,8 @@ mod tests {
             Vec3::new(1., 1., 0.),
             Vec3::new(0., 1., 0.),
         ]);
-        polygon = polygon.offset(Vec3::Z, 0.25);
+        let plane = polygon.plane();
+        polygon = polygon.offset(&plane, 0.25);
         println!("{polygon:?}");
     }
 }

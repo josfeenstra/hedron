@@ -82,8 +82,8 @@ pub fn build_demo_scene_plugin<R, M, T>(
 {
     // spawn a gizmo
     // TODO extract common logic: spawning tagged components on enter, removing these components on exit
-    app.add_system(crate::bevy::helpers::spawn_gizmo_system.in_schedule(OnEnter(state)))
-        .add_system(despawn_flagged::<GizmoTag>.in_schedule(OnExit(state)));
+    // app.add_system(crate::bevy::helpers::spawn_gizmo_system.in_schedule(OnEnter(state)))
+    //     .add_system(despawn_flagged::<GizmoTag>.in_schedule(OnExit(state)));
 
     // TODO: spawn a grid
 

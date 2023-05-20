@@ -1005,10 +1005,10 @@ impl Mesh {
         // NOTE: a naive polygon triangulation puts an additional point in the middle
 
         // fill the two rings of vertices with triangles
-        for (i, j) in base.iter_naked_edges() {
-            mesh.tri.append(&mut vec![i, j, j + offset]);
-            mesh.tri.append(&mut vec![j + offset, i + offset, i]);
-        }
+        // for (i, j) in base.iter_naked_edges() {
+        //     mesh.tri.append(&mut vec![i, j, j + offset]);
+        //     mesh.tri.append(&mut vec![j + offset, i + offset, i]);
+        // }
 
         mesh
     }
@@ -1333,7 +1333,7 @@ impl Mesh {
                 .map(|e| self.verts[*e])
                 .collect::<Vec<_>>();
 
-            let plane = Plane::from_normal(normal);
+            let plane = Plane::from_pos_normal(Vec3::ZERO, normal);
             // let Some(plane) = Plane::from_points(&verts, 0.001) else {
             //     println!("couldnt find a valid cap plane!");
             //     continue;
