@@ -1005,10 +1005,10 @@ impl Mesh {
         // NOTE: a naive polygon triangulation puts an additional point in the middle
 
         // fill the two rings of vertices with triangles
-        // for (i, j) in base.iter_naked_edges() {
-        //     mesh.tri.append(&mut vec![i, j, j + offset]);
-        //     mesh.tri.append(&mut vec![j + offset, i + offset, i]);
-        // }
+        for (i, j) in base.iter_naked_edges() {
+            mesh.tri.append(&mut vec![i, j, j + offset]);
+            mesh.tri.append(&mut vec![j + offset, i + offset, i]);
+        }
 
         mesh
     }
