@@ -21,7 +21,8 @@ pub mod smoothing;
 pub mod prelude {
     #[cfg(feature = "bevy")]
     pub use crate::kernel;
-    /// ignore the kernel if bevy is used, to make the vector stuff not interfere with
+
+    /// ignore the kernel if bevy is used, to make the vector stuff not interfere with bevy
     #[cfg(not(feature = "bevy"))]
     pub use crate::kernel::*;
 

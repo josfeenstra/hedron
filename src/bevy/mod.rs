@@ -5,7 +5,6 @@ mod bevy_helpers;
 mod bevy_mesh_conversions;
 mod bevy_mesh_helpers;
 mod billboard_text;
-mod ecs_helpers;
 mod face_material;
 mod geo_renderer;
 mod hedron_material_plugin;

@@ -7,7 +7,6 @@ use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::iter::Rev;
-use std::mem::swap;
 use std::ops::Range;
 
 #[derive(Debug, Clone, Default)]
