@@ -1,5 +1,7 @@
 #![allow(unused_variables, dead_code)]
 
+use bevy_inspector_egui::egui::epaint::Vertex;
+
 use super::{quad_to_tri, Octoid, Polyhedron, CUBE_FACES};
 use crate::kernel::{fxx, kernel, vec2, vec3, Vec2, Vec3};
 use crate::{prelude::*, util};
@@ -55,6 +57,7 @@ impl Mesh {
 
     pub fn with_uniform_uvs(mut self, uv: impl Into<Vec2>) -> Self {
         let uv = uv.into();
+        self.uvs.clear();
         for i in 0..self.verts.len() {
             self.uvs.push(uv);
         }
@@ -268,6 +271,63 @@ impl Mesh {
         // return this.fromLists(verts, faces);
         todo!();
     }
+
+    pub fn new_cube(size: fxx) -> Self {
+        Self::from_range(Range3::from_radius(size))
+    }
+
+    pub fn from_range(sp: Range3) -> Self {
+        // suppose Y-up right hand, and camera look from +z to -z
+        let vertices = &[
+            // Front
+            ([sp.x.start, sp.y.start, sp.z.end], [0., 0., 1.0], [0., 0.]),
+            ([sp.x.end, sp.y.start, sp.z.end], [0., 0., 1.0], [1.0, 0.]),
+            ([sp.x.end, sp.y.end, sp.z.end], [0., 0., 1.0], [1.0, 1.0]),
+            ([sp.x.start, sp.y.end, sp.z.end], [0., 0., 1.0], [0., 1.0]),
+            // Back
+            ([sp.x.start, sp.y.end, sp.z.start], [0., 0., -1.0], [1.0, 0.]),
+            ([sp.x.end, sp.y.end, sp.z.start], [0., 0., -1.0], [0., 0.]),
+            ([sp.x.end, sp.y.start, sp.z.start], [0., 0., -1.0], [0., 1.0]),
+            ([sp.x.start, sp.y.start, sp.z.start], [0., 0., -1.0], [1.0, 1.0]),
+            // Right
+            ([sp.x.end, sp.y.start, sp.z.start], [1.0, 0., 0.], [0., 0.]),
+            ([sp.x.end, sp.y.end, sp.z.start], [1.0, 0., 0.], [1.0, 0.]),
+            ([sp.x.end, sp.y.end, sp.z.end], [1.0, 0., 0.], [1.0, 1.0]),
+            ([sp.x.end, sp.y.start, sp.z.end], [1.0, 0., 0.], [0., 1.0]),
+            // Left
+            ([sp.x.start, sp.y.start, sp.z.end], [-1.0, 0., 0.], [1.0, 0.]),
+            ([sp.x.start, sp.y.end, sp.z.end], [-1.0, 0., 0.], [0., 0.]),
+            ([sp.x.start, sp.y.end, sp.z.start], [-1.0, 0., 0.], [0., 1.0]),
+            ([sp.x.start, sp.y.start, sp.z.start], [-1.0, 0., 0.], [1.0, 1.0]),
+            // Top
+            ([sp.x.end, sp.y.end, sp.z.start], [0., 1.0, 0.], [1.0, 0.]),
+            ([sp.x.start, sp.y.end, sp.z.start], [0., 1.0, 0.], [0., 0.]),
+            ([sp.x.start, sp.y.end, sp.z.end], [0., 1.0, 0.], [0., 1.0]),
+            ([sp.x.end, sp.y.end, sp.z.end], [0., 1.0, 0.], [1.0, 1.0]),
+            // Bottom
+            ([sp.x.end, sp.y.start, sp.z.end], [0., -1.0, 0.], [0., 0.]),
+            ([sp.x.start, sp.y.start, sp.z.end], [0., -1.0, 0.], [1.0, 0.]),
+            ([sp.x.start, sp.y.start, sp.z.start], [0., -1.0, 0.], [1.0, 1.0]),
+            ([sp.x.end, sp.y.start, sp.z.start], [0., -1.0, 0.], [0., 1.0]),
+        ];
+
+        let verts: Vec<Vec3> = vertices.iter().map(|(p, _, _)| (*p).into()).collect();
+        let normals: Vec<Vec3> = vertices.iter().map(|(_, n, _)| (*n).into()).collect();
+        let uvs: Vec<Vec2> = vertices.iter().map(|(_, _, uv)| (*uv).into()).collect();
+
+        let indices = vec![
+            0, 1, 2, 2, 3, 0, // front
+            4, 5, 6, 6, 7, 4, // back
+            8, 9, 10, 10, 11, 8, // right
+            12, 13, 14, 14, 15, 12, // left
+            16, 17, 18, 18, 19, 16, // top
+            20, 21, 22, 22, 23, 20, // bottom
+        ];
+
+        Self::new(verts, indices, uvs, Normals::Vertex(normals))
+    }
+    
+    
 
     /// will only convert triangular faces
     /// cap / triangulate before running this
