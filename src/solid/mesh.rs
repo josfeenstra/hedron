@@ -276,6 +276,8 @@ impl Mesh {
         Self::from_range(Range3::from_radius(size))
     }
 
+    /// Jup I stole this from bevy :)
+    /// TODO: rewrite this once Mesh & TriMesh are integrated 
     pub fn from_range(sp: Range3) -> Self {
         // suppose Y-up right hand, and camera look from +z to -z
         let vertices = &[
