@@ -97,6 +97,11 @@ impl<T> Pool<T> {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.data.clear();
+        self.freed_ids.clear();
+    }
+
     pub fn delete(&mut self, ptr: Ptr) {
         assert!(self.data.get(ptr).is_some());
         self.freed_ids.push(ptr);

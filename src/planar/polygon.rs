@@ -159,6 +159,16 @@ impl Polygon {
         sum / 2.0
     }
 
+    pub fn posed_signed_area(&self, pose: &Pose) -> fxx {
+        let verts = self
+            .verts
+            .iter()
+            .map(|vert| pose.transform_point_inv(*vert).truncate())
+            .collect();
+        let sum = iter_pairs(&verts).fold(0.0, |sum, (a, b)| sum + (b.x - a.x) * (b.y + a.y));
+        sum / 2.0
+    }
+
     pub fn estimate_pose(&self) -> Pose {
         assert!(
             self.verts.len() >= 3,

@@ -177,10 +177,10 @@ impl Polyhedron {
         hedron
     }
 
-    pub fn new_icosahedron(scale: fxx) -> Self {
+    pub fn new_icosahedron(radius: fxx) -> Self {
         let mut graph = Self::new();
 
-        let a = scale;
+        let a = radius;
         let phi = (1.0 + (5.0 as fxx).powf(0.5)) / 2.0;
         let b = a * phi;
 
@@ -863,6 +863,7 @@ impl Polyhedron {
     /// get the edges, lined as a disk around a vertex.
     /// starts with the outgoing edge the vertex points to.
     /// With the half-edge loops being counter clockwise, disk ordering is always clockwise
+    /// TODO: turn into iterator?
     fn get_disk(&self, vp: VertPtr) -> Vec<EdgePtr> {
         let Some(start) = self.vert(vp).edge else {
             return Vec::new();
@@ -969,21 +970,22 @@ impl Polyhedron {
     /// subdivide by creating quads from all polyhedrons
     pub fn quad_divide(&mut self) {
         // get center points, normal, and original start edges for all loops
+        // TODO: we should be looping over actual faces...
+        // make this into: cap_all_loops
         let faces_data: Vec<(Vec3, Vec3, usize)> = self
             .get_loops()
             .iter()
             .filter_map(|edges| {
                 let first_edge = edges[0];
                 let verts = self.edges_to_verts(edges);
-                let polygon = Polygon::new(verts);
-                let center = polygon.center();
-                let signed_area = polygon.signed_area_2d();
+                let pg = Polygon::new(verts);
+                let pose = pg.estimate_pose();
+                let center = pose.pos;
+                let signed_area = pg.posed_signed_area(&pose);
                 if signed_area > 0.0 {
                     None
                 } else {
-                    let normal = Vec3::Z; // TODO CREATE A GOOD NORMAL!
-                                          // NOTE: WE ALSO NEED A GOOD NORMAL FOR THE SIGNED AREA TEST.
-                                          // println!("{:?}", (center, normal, first_edge));
+                    let normal = pose.normal();
                     Some((center, normal, first_edge))
                 }
             })
@@ -1000,17 +1002,19 @@ impl Polyhedron {
             for edge in self.get_loop(first_edge).iter().skip(1).step_by(2) {
                 // NOTE: we can do this faster and without disk thingies, if we just carefully edit pointers
                 self.add_edge(vp, self.edge(*edge).from, normal, normal); // TODO FIX EDGE ORDERING MISTAKES :)
-                                                                          // break;
             }
         }
     }
+
+    /// subdivide faces by creating triangles in the corners
+    pub fn corner_divide(&mut self) {}
 
     /// cap closed, counter clockwise planar holes by creating faces at these holes.
     pub fn cap(&mut self, planar: bool) {
         self.add_faces_at_holes(planar)
     }
 
-    /// if `rel_planar` is true, we calculate the area using the relative planar orientation of a face.
+    /// if `planar` is true, we calculate the area using the relative planar orientation of a face.
     fn add_faces_at_holes(&mut self, planar: bool) {
         let loops = self.get_loops();
         for lp in loops {
@@ -1019,12 +1023,10 @@ impl Polyhedron {
             if polygon.verts.len() < 3 {
                 continue;
             }
-
-            let normal = polygon.average_normal();
-            let center = polygon.center();
+            let pose = polygon.estimate_pose();
 
             if planar {
-                let area = polygon.signed_area_2d();
+                let area = polygon.posed_signed_area(&pose);
                 if area > 0.0 {
                     continue;
                 }
@@ -1052,13 +1054,20 @@ impl Polyhedron {
             // create and set a new face
             let face = self.faces.push(Face {
                 edge: lp[0],
-                normal,
-                center,
+                normal: pose.normal(),
+                center: pose.pos,
             });
             for edge in lp {
                 self.mut_edge(edge).face = Some(face);
             }
         }
+    }
+
+    pub fn uncap(&mut self) {
+        for edge in self.edges.iter_mut() {
+            edge.face = None;
+        }
+        self.faces.clear();
     }
 
     pub fn edges_to_verts(&self, edges: &[EdgePtr]) -> Vec<Vec3> {
@@ -1219,17 +1228,6 @@ impl Polyhedron {
             let avg = Vectors::average(&nbs_pos);
             self.mut_vert(vp).pos = avg;
         }
-
-        // for ((lp, polygon), bad_apple) in loops.iter().zip(polygons.iter()).zip(bad_apples) {
-        //     if bad_apple { continue; }
-        //     let quad: [Vec3; 4] = polygon.verts.clone().try_into().expect("not a quad!");
-
-        //     let smoothers = get_smoothers_quad_to_square(&quad, normal);
-        //     // let smoothers = get_smoothers_quad_to_square_at_length(&quad, normal, length);
-        //     for (edge, smoother) in lp.iter().zip(smoothers) {
-        //         self.mut_vert(self.edge(*edge).from).pos += smoother;
-        //     }
-        // }
     }
 }
 
