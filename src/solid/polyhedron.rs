@@ -814,12 +814,11 @@ impl Polyhedron {
     }
 
     pub fn get_vert_neighbors(&self, vp: VertPtr) -> Vec<VertPtr> {
-        let disk_edges: Vec<EdgePtr> = self.get_disk(vp);
-        let neighbors: Vec<VertPtr> = disk_edges
+        let neighbors: Vec<VertPtr> = self
+            .get_disk(vp)
             .iter()
             .skip(1)
             .step_by(2)
-            // .map(|u| u.clone())
             .map(|ep| self.edge(*ep).from)
             .collect();
         neighbors
@@ -1176,22 +1175,42 @@ impl Polyhedron {
         None
     }
 
-    pub fn quad_smooth_planar_partition(&mut self, _normal: Vec3, _length: fxx) {
-        let loops = self.get_loops();
-        let _polygons = loops
+    pub fn naked_vps(&self) -> impl Iterator<Item = VertPtr> + '_ {
+        self.verts.iter_ids().filter(|vp| {
+            self.get_disk(*vp)
+                .iter()
+                .step_by(2)
+                .map(|ep| self.edge(*ep).face)
+                .any(|f| f.is_none())
+        })
+    }
+
+    pub fn quad_smooth_planar_partition(&mut self, normal: Vec3, _length: fxx) {
+        // NOTE: self.naked_vps does not work currently, cuz i'm not using proper faces...
+        let naked_verts = self
+            .get_loops()
             .iter()
-            .map(|lp| {
-                Polygon::new(
+            .filter(|lp| {
+                let pg = Polygon::new(
                     lp.iter()
                         .map(|ep| self.vert(self.edge(*ep).from).pos)
                         .collect(),
-                )
+                );
+                pg.average_normal().dot(normal) < 0.0
             })
-            .collect::<Vec<_>>();
-        // let bad_apples = polygons.iter().map(|p| p.signed_area() > 0.0);
+            .flat_map(|lp| lp.iter())
+            .cloned()
+            .collect::<HashSet<_>>();
+
+        println!("verts: {:?}", self.verts.len());
+        println!("verts: {:?}", naked_verts.len());
 
         // TODO uphold edge length by pushing out elastically on neighboring verts
         for vp in self.verts.all_ids() {
+            if naked_verts.contains(&vp) {
+                continue;
+            }
+
             let nbs_pos = self
                 .get_vert_neighbors(vp)
                 .iter()
@@ -1217,7 +1236,7 @@ impl Polyhedron {
 impl Polyhedron {
     /// A method for wandering the graph, by going to the 'next' or 'previous' vertex on a disk
     /// ```something
-    /// pos: the disk vertex
+    /// pos: the disk vertexquad_smooth_planar_partition
     /// from: the position on the disk from where we orient
     /// offset: the offset on the disk, relative to `from`.
     /// ```

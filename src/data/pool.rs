@@ -145,6 +145,10 @@ impl<T> Pool<T> {
             .map(|(i, item)| (i, item.as_ref().unwrap()))
     }
 
+    pub fn iter_ids(&self) -> impl Iterator<Item = usize> + '_ {
+        self.iter_enum().map(|(ptr, _)| ptr)
+    }
+
     pub fn all(&self) -> Vec<&T> {
         self.iter().collect()
     }
