@@ -5,7 +5,7 @@ use crate::algos::{line_hits_plane, line_x_plane};
 use crate::core::{Geometry, Pose};
 use crate::kernel::{fxx, vec3, Vec3};
 use crate::math::wrap_around;
-use crate::util::iter_triplets;
+use crate::util::{iter_triplets, roughly_equals};
 
 use crate::{
     core::PointBased,
@@ -485,15 +485,24 @@ impl Polyhedron {
 
     /////////////////////////////////////////////////////////////// Dumb shit
 
-    /// this is really dumb
-    pub fn try_get_vertex_normal(&self, v: VertPtr) -> Option<Vec3> {
-        let normal = self.face(self.edge(self.vert(v).edge?).face?).normal;
-        Some(normal)
+    /// Could be
+    pub fn vertex_normal_using_faces(&self, vp: VertPtr) -> Option<Vec3> {
+        let normals = self
+            .get_vert_faces(vp)
+            .into_iter()
+            .map(|face| self.face(face).normal)
+            .collect::<Vec<_>>();
+        let averaged = Vectors::average(&normals);
+        if roughly_equals(averaged, Vec3::ZERO) {
+            None
+        } else {
+            Some(averaged.normalize())
+        }
     }
 
     /////////////////////////////////////////////////////////////// Complex Transactions & Traversals
 
-    /// return true if the internal data structures are 'clean'
+    /// return true if the internal data structures are 'not clean'
     pub fn data_is_fragmented(&self) -> bool {
         self.verts.is_fragmented() || self.edges.is_fragmented() || self.faces.is_fragmented()
     }
@@ -1184,6 +1193,7 @@ impl Polyhedron {
         None
     }
 
+    /// get the vertex which could be considered `naked`
     pub fn naked_vps(&self) -> impl Iterator<Item = VertPtr> + '_ {
         self.verts.iter_ids().filter(|vp| {
             self.get_disk(*vp)

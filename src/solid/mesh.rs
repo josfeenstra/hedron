@@ -1,7 +1,5 @@
 #![allow(unused_variables, dead_code)]
 
-use bevy_inspector_egui::egui::epaint::Vertex;
-
 use super::{quad_to_tri, Octoid, Polyhedron, CUBE_FACES};
 use crate::kernel::{fxx, kernel, vec2, vec3, Vec2, Vec3};
 use crate::{prelude::*, util};
@@ -356,11 +354,10 @@ impl Mesh {
 
         let mut normals = vec![];
         for (i, v) in graph.verts.iter_enum() {
-            let normal = graph.try_get_vertex_normal(i).unwrap_or(Vec3::ZERO);
+            let normal = graph.vertex_normal_using_faces(i).unwrap_or(Vec3::ZERO);
             normals.push(normal);
         }
         mesh.normals = Normals::Vertex(normals);
-
         mesh
     }
 

@@ -1,5 +1,7 @@
 use std::ops::Mul;
 
+use bevy::prelude::Transform;
+
 use crate::kernel::{fxx, Affine3, Mat3, Mat4, Quat, Vec3};
 
 use super::Plane;
@@ -276,6 +278,17 @@ impl Pose {
         point = self.rot.inverse() * point;
         // point = point / self.scale;
         point
+    }
+
+    #[inline]
+    pub fn move_locally(&mut self, vector: Vec3) {
+        self.pos += self.rot * vector;
+    }
+
+    #[inline]
+    pub fn moved_locally(mut self, vector: Vec3) -> Pose {
+        self.pos += self.rot * vector;
+        self
     }
 
     /// Use the local Z as the normal
