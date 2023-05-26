@@ -1,7 +1,5 @@
 use std::ops::Mul;
 
-use bevy::prelude::Transform;
-
 use crate::kernel::{fxx, Affine3, Mat3, Mat4, Quat, Vec3};
 
 use super::Plane;
