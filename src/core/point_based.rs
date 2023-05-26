@@ -6,13 +6,10 @@ use crate::kernel::{fxx, Quat, Vec3};
 
 /// If some geometry is ultimately defined in terms of points,
 /// A whole set of common functionalities can be used to transform said geometry.
-/// it can also be used to
 pub trait PointBased: Sized + Geometry {
     // smooth
     // scramble
-    // scale from
 
-    // fn mutate_points<'a>(&'a mut self) -> &'a mut Vec<Vec3>;
     fn mutate_points(&mut self) -> Vec<&mut Vec3>;
 
     /// scale from a certain position.

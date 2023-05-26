@@ -26,25 +26,21 @@ impl Pose {
 
     pub const WORLD_YZ: Self = Self {
         pos: Vec3::ZERO,
-        rot: Quat::IDENTITY, // TODO
-                             // scale: Vec3::ONE,
+        rot: Quat::IDENTITY,
     };
 
     pub const WORLD_ZX: Self = Self {
         pos: Vec3::ZERO,
-        rot: Quat::IDENTITY, // TODO
-                             // scale: Vec3::ONE,
+        rot: Quat::IDENTITY,
     };
 
-    /// Creates a new [`Pose`] at the position `(x, y, z)`. In 2d, the `z` component
-    /// is used for z-ordering elements: higher `z`-value will be in front of lower
-    /// `z`-value.
+    /// Creates a new [`Pose`] at the position `(x, y, z)`.
     #[inline]
     pub const fn from_xyz(x: fxx, y: fxx, z: fxx) -> Self {
         Self::from_pos(Vec3::new(x, y, z))
     }
 
-    /// Extracts the translation, rotation, and scale from `matrix`. It must be a 3d affine
+    /// Extracts the translation & rotation from `matrix`. It must be a 3d affine
     /// transformation matrix.
     #[inline]
     pub fn from_matrix(matrix: Mat4) -> Self {
@@ -56,8 +52,7 @@ impl Pose {
         }
     }
 
-    /// Creates a new [`Pose`], with `translation`. Rotation will be 0 and scale 1 on
-    /// all axes.
+    /// Creates a new [`Pose`], with `translation`. Rotation will be 0
     #[inline]
     pub const fn from_pos(pos: Vec3) -> Self {
         Self {
@@ -66,8 +61,7 @@ impl Pose {
         }
     }
 
-    /// Creates a new [`Pose`], with `rotation`. Translation will be 0 and scale 1 on
-    /// all axes.
+    /// Creates a new [`Pose`], with `rotation`. Translation will be 0
     #[inline]
     pub const fn from_rot(rot: Quat) -> Self {
         Self {
@@ -75,16 +69,6 @@ impl Pose {
             ..Self::IDENTITY
         }
     }
-
-    // /// Creates a new [`Pose`], with `scale`. Translation will be 0 and rotation 0 on
-    // /// all axes.
-    // #[inline]
-    // pub const fn from_scale(scale: Vec3) -> Self {
-    //     Self {
-    //         scale,
-    //         ..Self::IDENTITY
-    //     }
-    // }
 
     /// Updates and returns this [`Pose`] by rotating it so that its unit
     /// vector in the local negative `Z` direction is toward `target` and its
@@ -111,14 +95,6 @@ impl Pose {
         self.rot = rotation;
         self
     }
-
-    // /// Returns this [`Pose`] with a new scale.
-    // #[inline]
-    // #[must_use]
-    // pub const fn with_scale(mut self, scale: Vec3) -> Self {
-    //     self.scale = scale;
-    //     self
-    // }
 
     /// Returns the 3d affine transformation matrix from this transforms translation,
     /// rotation, and scale.
@@ -217,16 +193,12 @@ impl Pose {
     }
 
     /// Translates this [`Pose`] around a `point` in space.
-    ///
-    /// If this [`Pose`] has a parent, the `point` is relative to the [`Pose`] of the parent.
     #[inline]
     pub fn translate_around(&mut self, point: Vec3, rotation: Quat) {
         self.pos = point + rotation * (self.pos - point);
     }
 
     /// Rotates this [`Pose`] around a `point` in space.
-    ///
-    /// If this [`Pose`] has a parent, the `point` is relative to the [`Pose`] of the parent.
     #[inline]
     pub fn rotate_around(&mut self, point: Vec3, rotation: Quat) {
         self.translate_around(point, rotation);
