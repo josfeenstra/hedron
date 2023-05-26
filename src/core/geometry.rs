@@ -13,38 +13,6 @@ use crate::kernel::{fxx, Quat, Vec3};
 /// If a Geometry is NOT purely defined by points,
 /// reimplement the mv, rot, scale, and scale_u operators.
 pub trait Geometry: Sized {
-    // fn mutate_points<'a>(&'a mut self) -> &'a mut Vec<Vec3>;
-
-    // fn mv(mut self, mv: &Vec3) -> Self {
-    //     for v in self.mutate_points() {
-    //         *v = *v + *mv;
-    //     }
-    //     self
-    // }
-
-    // fn rot(mut self, rot: &crate::math::Quat) -> Self {
-    //     for v in self.mutate_points() {
-    //         *v = *rot * *v;
-    //     }
-    //     self
-    // }
-
-    // fn scale(mut self, scale: &Vec3) -> Self {
-    //     for v in self.mutate_points() {
-    //         *v = *scale * *v;
-    //     }
-    //     self
-    // }
-
-    // fn scale_u(mut self, scale: fxx) -> Self {
-    //     for v in self.mutate_points() {
-    //         v.x *= scale;
-    //         v.y *= scale;
-    //         v.z *= scale;
-    //     }
-    //     self
-    // }
-
     fn mv(self, mv: Vec3) -> Self;
 
     fn rot(self, rot: &Quat) -> Self;
