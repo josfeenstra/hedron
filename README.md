@@ -14,8 +14,9 @@ but hopefully some of code provided can help you nonetheless!
 - **Web Geometry Processing**: The crate can be complied to WebAssembly, allowing these operations to be used on the web.
 
 ## What it contains / will contain:
-Hedron strifes to recreate a suite of tools exposed by the parametric design tool called Grasshopper. 
-However, any interesting procedural tools like perlin noise generation, or Wave Function Collapse, will also be added. 
+Hedron strifes for feature parody with the parametric design tool called Grasshopper. 
+In addition, any tools aiding procedural modelling like perlin noise generation, or Wave Function Collapse, will also be added.
+The crate intends to be your one-stop shop with regards to procedural modelling!
 
 It includes:
 
