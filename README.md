@@ -2,9 +2,11 @@
 An all-in-one 3D modelling & procedural generation crate
 
 ## 🚧 Disclaimer 🚧
-Hedron is currently in an very early stage. 
+Hedron is currently in an very early stage.
+I've continued working on it privately, as this allowed for more rapid development.
+ 
 I don't recommend you use this crate quite yet, as it is not at all stable or complete, 
-but hopefully some of code provided can help you nonetheless!
+but hopefully some of the code provided can help you nonetheless!
 
 ## Use cases:
 - **Basic Modelling**: Hedron could be used to develop a 3D modelling tool, a very basic `blender` clone.
